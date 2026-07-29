@@ -1,9 +1,15 @@
 {
-  "name": "KPX \u2014 Kubota Parts Export",
-  "short_name": "KPX",
+  "name": "Hakari Tractors Indonesia",
+  "short_name": "Hakari",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f1f3f4",
   "theme_color": "#f15a24",
-  "icons": []
+  "icons": [
+    {
+      "src": "assets/images/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    }
+  ]
 }

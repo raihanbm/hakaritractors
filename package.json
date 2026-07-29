@@ -1,8 +1,8 @@
 {
-  "name": "kpx-website-foundation",
+  "name": "hakari-tractors-catalog",
   "private": true,
   "version": "0.1.0",
-  "description": "KPX static staging foundation before backend and commerce integration.",
+  "description": "Hakari Tractors Indonesia static staging foundation before backend and commerce integration.",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "check": "node scripts/verify.mjs"
