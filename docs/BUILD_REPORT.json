@@ -1,0 +1,84 @@
+{
+  "source_bytes": 26368453,
+  "output_bytes": 2255056,
+  "images": [
+    {
+      "name": "hero",
+      "original_dimensions": [
+        2816,
+        2112
+      ],
+      "optimized_dimensions": [
+        1920,
+        1440
+      ],
+      "original_bytes": 1568687,
+      "optimized_bytes": 497674
+    },
+    {
+      "name": "tractor",
+      "original_dimensions": [
+        2816,
+        2112
+      ],
+      "optimized_dimensions": [
+        1600,
+        1200
+      ],
+      "original_bytes": 1549377,
+      "optimized_bytes": 531646
+    },
+    {
+      "name": "fleet",
+      "original_dimensions": [
+        2816,
+        2112
+      ],
+      "optimized_dimensions": [
+        1600,
+        1200
+      ],
+      "original_bytes": 2791404,
+      "optimized_bytes": 335208
+    },
+    {
+      "name": "engine",
+      "original_dimensions": [
+        3999,
+        2999
+      ],
+      "optimized_dimensions": [
+        1600,
+        1200
+      ],
+      "original_bytes": 6323702,
+      "optimized_bytes": 165774
+    },
+    {
+      "name": "piston",
+      "original_dimensions": [
+        2816,
+        2112
+      ],
+      "optimized_dimensions": [
+        1400,
+        1050
+      ],
+      "original_bytes": 3863338,
+      "optimized_bytes": 340190
+    },
+    {
+      "name": "head",
+      "original_dimensions": [
+        2816,
+        2112
+      ],
+      "optimized_dimensions": [
+        1400,
+        1050
+      ],
+      "original_bytes": 3619030,
+      "optimized_bytes": 293150
+    }
+  ]
+}

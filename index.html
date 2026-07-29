@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- STAGING FOUNDATION: catalog/order/payment data remains demo-only until backend integration. -->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f15a24">
+<meta name="color-scheme" content="light">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="description" content="KPX — compact export-ready Kubota spare parts catalog prototype for retail, workshop, fleet and B2B buyers.">
+<meta name="robots" content="noindex,nofollow">
+<meta name="application-name" content="KPX — Kubota Parts Export">
+<link rel="manifest" href="site.webmanifest">
+<title>KPX — Kubota Parts Export Catalog</title>
+<link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+<symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m21 21-4.35-4.35m1.35-5.65a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></symbol>
+<symbol id="i-cart" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L21 7H6m4 13h.01M18 20h.01"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M20 21a8 8 0 0 0-16 0m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="m21 8-9-5-9 5 9 5 9-5ZM3 8v8l9 5 9-5V8M12 13v8"/></symbol>
+<symbol id="i-truck" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 5h11v12H3V5Zm11 4h4l3 3v5h-7V9ZM7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3 4 6v6c0 5 3.4 8 8 10 4.6-2 8-5 8-10V6l-8-3Z"/><path fill="none" stroke="currentColor" stroke-width="2" d="m9 12 2 2 4-5"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m6 6 12 12M18 6 6 18"/></symbol>
+<symbol id="i-compare" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 4 4 8l4 4M4 8h12m0 4 4 4-4 4m4-4H8"/></symbol>
+<symbol id="i-filter" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 5h16l-6 7v5l-4 2v-7L4 5Z"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m-5-5 5 5 5-5M5 21h14"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 11v5m0-8h.01"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M6 3h8l4 4v14H6V3Zm8 0v5h5"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"/></symbol>
+</svg>
+
+<div class="topline"><div class="wrap"><div><span class="dot"></span><strong>Export desk online</strong> · Jakarta warehouse · GMT+7</div><div class="right"><span>Independent parts exporter</span><span>EN / ID</span><span>Support: +62 21 0000 0000</span></div></div></div>
+
+<header class="site-header">
+  <div class="wrap nav">
+    <a class="brand" href="#home" aria-label="KPX home"><span class="brand-mark">KPX</span><span class="brand-copy"><b>KUBOTA PARTS EXPORT</b><small>Indonesia · Global Supply</small></span></a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="#catalog">Parts Catalog</a><a href="#model-finder">Model Finder</a><a href="#export">Export</a><a href="#b2b">B2B</a><a href="#support">Support</a>
+    </nav>
+    <div class="nav-actions">
+      <select id="currencySelect" class="icon-btn desktop-only" aria-label="Currency"><option>USD</option><option>IDR</option><option>EUR</option><option>SGD</option><option>AUD</option></select>
+      <button class="square-btn hide-phone" id="wishlistBtn" aria-label="Wishlist"><svg width="18" height="18"><use href="#i-heart"/></svg><span class="badge-count" id="wishCount">0</span></button>
+      <button class="square-btn hide-phone" id="compareBtn" aria-label="Compare"><svg width="18" height="18"><use href="#i-compare"/></svg><span class="badge-count" id="compareCount">0</span></button>
+      <button class="icon-btn" id="cartBtn"><svg width="18" height="18"><use href="#i-cart"/></svg><span class="desktop-only">Order / RFQ</span><span class="badge-count" id="cartCount">0</span></button>
+    </div>
+  </div>
+</header>
+
+<main id="home">
+<section class="hero">
+  <div class="hero-media"><img id="heroImage" alt="Kubota orange tractor in agricultural field"></div>
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">Parts intelligence for global buyers</div>
+      <h1>Find the exact part.<br><span>Ship it worldwide.</span></h1>
+      <p class="hero-copy">A compact export catalog built for farmers, workshops, fleet operators and distributors. Search by SKU, machine model or engine series, compare price tiers, and request freight-ready quotations in one flow.</p>
+      <div class="hero-pills"><span>1,200 demo SKUs</span><span>Retail + B2B tiers</span><span>EXW / FOB / CIF / DDP</span><span>Mixed-carton RFQ</span><span>Fitment-first search</span></div>
+    </div>
+    <div class="search-console">
+      <div class="console-head"><b>Precision Parts Lookup</b><span>DEMO CATALOG · DATA IS ILLUSTRATIVE</span></div>
+      <div class="search-tabs"><button class="active" data-search-mode="part">Part / Keyword</button><button data-search-mode="model">Machine Model</button><button data-search-mode="engine">Engine Series</button></div>
+      <div class="big-search"><input id="heroSearch" placeholder="Try: oil filter, V2403, L4508, KPX-FLT-00018"><button id="heroSearchBtn" aria-label="Search"><svg width="20" height="20"><use href="#i-search"/></svg></button></div>
+      <div class="console-selects">
+        <div class="field"><label>Equipment family</label><select id="heroFamily"><option value="">All equipment</option><option>Tractor</option><option>Excavator</option><option>Engine</option><option>Combine</option><option>RTV</option></select></div>
+        <div class="field"><label>Buyer profile</label><select id="buyerProfile"><option value="retail">Retail / Workshop</option><option value="b2b">B2B Distributor</option><option value="fleet">Fleet Account</option></select></div>
+      </div>
+      <div class="console-actions"><button class="btn btn-primary" id="browseBtn"><svg width="17" height="17"><use href="#i-grid"/></svg>Browse catalog</button><button class="btn btn-light" id="uploadListBtn"><svg width="17" height="17"><use href="#i-file"/></svg>Upload parts list</button></div>
+      <div class="console-note"><svg width="15" height="15"><use href="#i-shield"/></svg><span>Prototype only. Production pricing, stock, tax, shipping and payment must be validated by a secure server-side system.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="stats-bar"><div class="wrap stats-grid">
+  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-box"/></svg></div><div><b>1,200+</b><small>searchable demo SKUs</small></div></div>
+  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-truck"/></svg></div><div><b>35+</b><small>destination markets</small></div></div>
+  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-globe"/></svg></div><div><b>5</b><small>Incoterm workflows</small></div></div>
+  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-shield"/></svg></div><div><b>3</b><small>buyer pricing levels</small></div></div>
+  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-search"/></svg></div><div><b>&lt;50 ms</b><small>local catalog filtering</small></div></div>
+</div></section>
+
+<section class="section white">
+<div class="wrap">
+  <div class="section-head"><div><span class="kicker">Shop by system</span><h2>Compact navigation for a deep catalog</h2></div><p>Product families are grouped by the way technicians actually diagnose and service equipment, not only by generic e-commerce labels.</p></div>
+  <div class="category-strip" id="categoryStrip"></div>
+</div>
+</section>
+
+<section class="section" id="catalog">
+<div class="wrap">
+  <div class="section-head"><div><span class="kicker">Searchable product database</span><h2>Parts Catalog</h2></div><p id="catalogContext">Filter by category, machine, availability, origin and export packaging. The front end handles 1,200 demo products without a framework.</p></div>
+  <div class="catalog-shell">
+    <aside class="filters" id="filtersPanel">
+      <div class="filters-head"><b>Filters</b><button id="resetFilters">Reset all</button></div>
+      <div class="filter-group"><div class="filter-title">Category</div><div id="categoryChecks"></div></div>
+      <div class="filter-group"><div class="filter-title">Equipment</div><label class="check"><input type="checkbox" name="machine" value="Tractor"> Tractor</label><label class="check"><input type="checkbox" name="machine" value="Excavator"> Excavator</label><label class="check"><input type="checkbox" name="machine" value="Engine"> Industrial engine</label><label class="check"><input type="checkbox" name="machine" value="Combine"> Combine / harvester</label></div>
+      <div class="filter-group"><div class="filter-title">Availability</div><label class="check"><input type="checkbox" name="stock" value="in"> Ready stock</label><label class="check"><input type="checkbox" name="stock" value="low"> Limited stock</label><label class="check"><input type="checkbox" name="stock" value="out"> Pre-order</label></div>
+      <div class="filter-group"><div class="filter-title">Part class</div><label class="check"><input type="checkbox" name="grade" value="OEM"> OEM / Genuine class</label><label class="check"><input type="checkbox" name="grade" value="Aftermarket"> Aftermarket</label><label class="check"><input type="checkbox" name="grade" value="Reman"> Remanufactured</label></div>
+      <div class="filter-group"><div class="filter-title">USD price range</div><div class="range-row"><input type="number" id="minPrice" placeholder="Min"><span>—</span><input type="number" id="maxPrice" placeholder="Max"></div></div>
+      <div class="filter-group"><div class="filter-title">Export options</div><label class="check"><input type="checkbox" id="exportPacked"> Export packed</label><label class="check"><input type="checkbox" id="dangerousGoods"> Exclude regulated items</label></div>
+    </aside>
+    <div class="catalog-main">
+      <div class="catalog-toolbar">
+        <div class="toolbar-search"><input id="catalogSearch" placeholder="Search SKU, part name, model or engine..."><svg width="17" height="17"><use href="#i-search"/></svg></div>
+        <button class="btn btn-light btn-sm mobile-filter-btn" id="mobileFilterBtn"><svg width="15" height="15"><use href="#i-filter"/></svg>Filters</button>
+        <select id="accountSelect" class="account-select"><option value="retail">Retail price</option><option value="b2b">B2B price</option><option value="export">Export price</option></select>
+        <select id="sortSelect" class="sort-select"><option value="featured">Featured</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="stock">Availability</option><option value="name">Name A–Z</option></select>
+        <div class="view-toggle"><button id="gridView" class="active" aria-label="Grid view"><svg width="16" height="16"><use href="#i-grid"/></svg></button><button id="listView" aria-label="List view"><svg width="16" height="16"><use href="#i-list"/></svg></button></div>
+      </div>
+      <div class="result-meta"><span id="resultCount">Loading products…</span><span>Prices exclude freight, duty and destination tax · demo rates</span></div>
+      <div class="product-grid" id="productGrid"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="section white" id="model-finder"><div class="wrap">
+  <div class="model-finder">
+    <div class="model-copy">
+      <span class="kicker">Equipment-first experience</span><h2>Save your machine. Stop guessing fitment.</h2>
+      <p>The “My Garage” pattern keeps model and engine context attached to every search, so buyers see compatible parts first and reduce costly export returns.</p>
+      <div class="finder-steps"><div class="finder-step"><span>01</span><b>Select equipment family</b></div><div class="finder-step"><span>02</span><b>Add model / engine code</b></div><div class="finder-step"><span>03</span><b>Browse verified fitment</b></div></div>
+      <div class="console-selects"><div class="field"><label>Family</label><select id="garageFamily"><option>Tractor</option><option>Excavator</option><option>Engine</option><option>Combine</option></select></div><div class="field"><label>Model</label><select id="garageModel"></select></div></div>
+      <button class="btn btn-primary" id="saveMachineBtn" style="margin-top:10px"><svg width="16" height="16"><use href="#i-plus"/></svg>Add to My Garage</button>
+      <div class="garage"><div class="garage-head"><b>My Garage</b><small id="garageCount">2 machines saved locally</small></div><div class="garage-items" id="garageItems"></div></div>
+    </div>
+    <div class="model-media"><img id="modelImage" alt="Kubota tractor for model finder"><div class="media-label"><b>Fitment-first catalog</b><br><span>Model · engine · serial-range ready</span></div></div>
+  </div>
+</div></section>
+
+<section class="section" id="export"><div class="wrap">
+  <div class="section-head"><div><span class="kicker">Quote-to-shipment workflow</span><h2>Built for export, not just checkout</h2></div><p>The order drawer captures commercial terms, destination and buyer type before quotation, so freight and packing can be calculated correctly.</p></div>
+  <div class="export-grid">
+    <div class="export-board">
+      <div class="export-tabs"><button class="active">Export process</button><button>Incoterm guide</button><button>Documents</button><button>Consolidation</button></div>
+      <div class="route">
+        <div class="route-node"><div class="route-icon"><svg width="16" height="16"><use href="#i-search"/></svg></div><b>Part match</b><small>Fitment check</small></div>
+        <div class="route-node"><div class="route-icon"><svg width="16" height="16"><use href="#i-file"/></svg></div><b>Proforma</b><small>Price validity</small></div>
+        <div class="route-node"><div class="route-icon"><svg width="16" height="16"><use href="#i-box"/></svg></div><b>Packing</b><small>Weight & volume</small></div>
+        <div class="route-node"><div class="route-icon"><svg width="16" height="16"><use href="#i-truck"/></svg></div><b>Dispatch</b><small>Air / sea / courier</small></div>
+        <div class="route-node"><div class="route-icon"><svg width="16" height="16"><use href="#i-globe"/></svg></div><b>Delivery</b><small>Destination support</small></div>
+      </div>
+      <table class="incoterm-table"><thead><tr><th>Term</th><th>Seller scope</th><th>Best for</th><th>Quote status</th></tr></thead><tbody>
+        <tr><td><b>EXW Jakarta</b></td><td>Goods packed at warehouse</td><td>Buyer-appointed forwarder</td><td><span class="pill green">Instant base</span></td></tr>
+        <tr><td><b>FOB Tanjung Priok</b></td><td>Export clearance + port delivery</td><td>Sea freight consolidations</td><td><span class="pill amber">Manual freight</span></td></tr>
+        <tr><td><b>CIF Main Port</b></td><td>Ocean freight + insurance</td><td>Distributor replenishment</td><td><span class="pill amber">Rate request</span></td></tr>
+        <tr><td><b>DAP / DDP</b></td><td>Door delivery; duty depends on term</td><td>Workshop / retail buyer</td><td><span class="pill dark">Compliance review</span></td></tr>
+      </tbody></table>
+    </div>
+    <div class="export-side">
+      <div class="side-card orange"><h3>Mixed-carton B2B orders</h3><p>Combine filters, seals, bearings and maintenance kits into a single commercial quotation with carton-level packing data.</p><div class="metric-row"><div class="metric"><b>10+</b><small>SKU mix</small></div><div class="metric"><b>3%</b><small>tier demo</small></div><div class="metric"><b>48h</b><small>RFQ target</small></div></div></div>
+      <div class="side-card"><h3>Commercial document pack</h3><p>Prototype flow includes proforma invoice, packing list, product origin field, HS-code placeholder and shipment notes. Final classifications require professional verification.</p><button class="btn btn-light btn-sm" id="downloadSampleBtn" style="margin-top:14px"><svg width="15" height="15"><use href="#i-download"/></svg>Download sample CSV</button></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="section dark" id="b2b"><div class="wrap">
+  <div class="section-head"><div><span class="kicker">Operational tools</span><h2>One storefront, four buying workflows</h2></div><p>The interface separates quick retail purchases from workshop orders, fleet replenishment and distributor RFQs without duplicating the catalog.</p></div>
+  <div class="service-grid">
+    <div class="service"><div class="service-icon"><svg width="20" height="20"><use href="#i-user"/></svg></div><h3>Retail & workshop</h3><p>Simple quantity ordering, visible stock state, fitment details, saved favorites and courier-oriented enquiry.</p><a href="#catalog">Browse retail catalog →</a></div>
+    <div class="service"><div class="service-icon"><svg width="20" height="20"><use href="#i-box"/></svg></div><h3>Distributor B2B</h3><p>MOQ, price tiers, mixed cartons, RFQ validity, proforma references and account-level commercial terms.</p><a href="#catalog">Switch to B2B price →</a></div>
+    <div class="service"><div class="service-icon"><svg width="20" height="20"><use href="#i-truck"/></svg></div><h3>Fleet replenishment</h3><p>Saved machines, maintenance-kit bundles, repeat order lists and destination-aware shipping requests.</p><a href="#model-finder">Open My Garage →</a></div>
+    <div class="service"><div class="service-icon"><svg width="20" height="20"><use href="#i-shield"/></svg></div><h3>Secure production path</h3><p>Server-authoritative prices, role-based access, audit logs, rate limits, signed uploads and payment-provider tokenization.</p><a href="#" id="securityBtn">Read architecture notes →</a></div>
+  </div>
+</div></section>
+
+<section class="image-band">
+  <div class="tile"><img id="engineImage" alt="Kubota engine display"><div class="tile-caption"><b>Engine systems</b><small>High-detail components and assemblies</small></div></div>
+  <div class="tile"><img id="pistonImage" alt="Kubota engine piston"><div class="tile-caption"><b>Internal parts</b><small>Fitment data matters</small></div></div>
+  <div class="tile"><img id="headImage" alt="Kubota cylinder head"><div class="tile-caption"><b>Technical catalog</b><small>Specs, condition and packing</small></div></div>
+</section>
+
+<section class="section" id="support"><div class="wrap">
+  <div class="section-head"><div><span class="kicker">Buyer confidence</span><h2>Support before the shipment leaves</h2></div><p>Good export UX makes uncertainty visible: fitment confidence, stock status, quotation validity, packaging, documentation and destination requirements.</p></div>
+  <div class="faq-contact">
+    <div class="faq-panel"><div id="faqList"></div></div>
+    <form class="contact-panel" id="contactForm">
+      <h3 style="margin:0 0 5px">Request a parts quotation</h3><p style="font-size:10px;color:var(--muted);margin:0 0 14px">Use this demo form to preview the RFQ flow. It does not send data.</p>
+      <div class="contact-grid"><div class="field"><label>Name / company</label><input required name="name"></div><div class="field"><label>Email</label><input required type="email" name="email"></div><div class="field"><label>Country</label><input required name="country"></div><div class="field"><label>Buyer type</label><select name="type"><option>Retail / workshop</option><option>B2B distributor</option><option>Fleet operator</option></select></div></div>
+      <div class="field" style="margin-top:9px"><label>Parts, model or engine details</label><textarea required name="message" placeholder="Example: V2403 service kit, 10 sets, destination Surabaya / Singapore / Manila..."></textarea></div>
+      <button class="btn btn-primary btn-block" type="submit" style="margin-top:10px">Create demo RFQ</button><div class="form-note">Never collect payment-card details or sensitive identity documents in an unprotected contact form.</div>
+    </form>
+  </div>
+</div></section>
+</main>
+
+<footer class="footer"><div class="wrap">
+  <div class="footer-grid">
+    <div><a class="brand" href="#home"><span class="brand-mark">KPX</span><span class="brand-copy"><b style="color:white">KUBOTA PARTS EXPORT</b><small>Independent catalog prototype</small></span></a><p style="max-width:460px;margin-top:15px">A professional front-end concept for an Indonesian spare-parts exporter. Kubota is a trademark of its respective owner. This prototype is not an official Kubota website and does not claim affiliation.</p></div>
+    <div><h4>Catalog</h4><a href="#catalog">All parts</a><a href="#model-finder">Model finder</a><a href="#catalog">Maintenance kits</a><a href="#catalog">Engine components</a></div>
+    <div><h4>Export</h4><a href="#export">Shipment process</a><a href="#export">Incoterms</a><a href="#export">Packing</a><a href="#support">Request quote</a></div>
+    <div><h4>Prototype</h4><a href="#" id="creditsBtn">Image credits</a><a href="#" id="securityFooterBtn">Security notes</a><a href="#support">Contact</a><a href="#" id="clearDataBtn">Clear local demo data</a></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 KPX prototype · Product data, prices, fitment and stock are illustrative.</span><span>Offline-ready single HTML · No framework · LocalStorage demo</span></div>
+</div></footer>
+
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="drawer" id="cartDrawer" aria-label="Order and quotation drawer">
+  <div class="drawer-head"><div><h3>Order / RFQ Builder</h3><small id="drawerModeLabel" style="color:var(--muted)">Retail order mode</small></div><button class="drawer-close" id="drawerClose"><svg width="17" height="17"><use href="#i-close"/></svg></button></div>
+  <div class="drawer-body"><div id="cartItems"></div><div id="emptyCart" style="padding:50px 12px;text-align:center;color:var(--muted)"><svg width="42" height="42"><use href="#i-cart"/></svg><h3 style="color:#252b31">Your order list is empty</h3><p style="font-size:10px">Add products from the catalog. Quantities and buyer tier are saved only in your browser.</p></div></div>
+  <div class="drawer-foot">
+    <div class="drawer-form"><div class="field"><label>Destination country</label><input id="destCountry" placeholder="e.g. Philippines"></div><div class="field"><label>Trade term</label><select id="incoterm"><option>EXW Jakarta</option><option>FOB Tanjung Priok</option><option>CIF Main Port</option><option>DAP Address</option><option>DDP Address</option></select></div><div class="field"><label>Shipping</label><select id="shippingMethod"><option>Quote best method</option><option>Courier</option><option>Air cargo</option><option>Sea LCL</option><option>Sea FCL</option></select></div><div class="field"><label>Reference</label><input id="buyerRef" placeholder="PO / project ref"></div></div>
+    <div class="totals"><div class="total-row"><span>Merchandise</span><b id="subtotalText">$0.00</b></div><div class="total-row"><span>Estimated packing</span><b id="packingText">$0.00</b></div><div class="total-row"><span>Freight & destination charges</span><b>Quoted separately</b></div><div class="total-row grand"><span>Quotation base</span><b id="grandText">$0.00</b></div></div>
+    <button class="btn btn-primary btn-block" id="checkoutBtn" style="margin-top:11px">Generate demo quotation</button>
+  </div>
+</aside>
+
+<div class="modal-backdrop" id="modalBackdrop"><div class="modal"><div class="modal-head"><h3 id="modalTitle">Details</h3><button class="drawer-close" id="modalClose"><svg width="17" height="17"><use href="#i-close"/></svg></button></div><div class="modal-body" id="modalBody"></div></div></div>
+<div class="toast-stack" id="toastStack"></div>
+<div class="demo-banner" id="demoBanner"><button id="dismissDemo">×</button><b>Interactive prototype</b><br>Prices, stock, fitment and shipping are demo data.</div>
+
+<script src="assets/js/app.js" defer></script>
+</body>
+</html>

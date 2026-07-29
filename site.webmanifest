@@ -1,0 +1,9 @@
+{
+  "name": "KPX \u2014 Kubota Parts Export",
+  "short_name": "KPX",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f3f4",
+  "theme_color": "#f15a24",
+  "icons": []
+}
