@@ -88,7 +88,7 @@ function makeProducts(count=1200){
      id:i,sku:`HIK-${prefix}-${String(i).padStart(5,"0")}`,name:names[i%names.length],category:c,machine,model,alt,
      engine:["D722","D1105","V1505","V2203","V2403","V3307","V3800"][(i*5)%7],
      grade,origin:i%5===0?"Japan":i%3===0?"Thailand":"Indonesia",
-     price:base,b2b:base*.91,export:base*.87,moq:grade==="OEM"?1:(i%5+2),stock:stockVal,qty,
+     price:base,b2b:base*.91,export:base*.87,moq:1,b2bMoq:grade==="OEM"?12:(Math.max(10,(i%5+6)*7)),exportMoq:grade==="OEM"?50:(Math.max(30,(i%5+6)*15)),stock:stockVal,qty,
      weight:Math.round((.12+hash(i+7)*18)*100)/100,
      dims:`${Math.round(10+hash(i+8)*42)}×${Math.round(8+hash(i+9)*34)}×${Math.round(5+hash(i+10)*30)} cm`,
      hs:`84${String(10+(i%89)).padStart(2,"0")}.${String(i%100).padStart(2,"0")}`,
@@ -133,6 +133,7 @@ function filtered(){
  return arr;
 }
 function priceFor(p){return p[state.account==="retail"?"price":state.account]}
+function moqFor(p){return state.account==="retail"?Math.max(1,p.moq||1):state.account==="b2b"?(p.b2bMoq||50):(p.exportMoq||200)}
 function stockLabel(p){return p.stock==="in"?`${p.qty} ${t("in stock")}`:p.stock==="low"?`${t("Only")} ${p.qty} ${t("left")}`:t("Pre-order")}
 function productCard(p){
  const saved=state.wishlist.has(p.id), compared=state.compare.has(p.id), price=priceFor(p);
@@ -141,7 +142,7 @@ function productCard(p){
  <div class="product-badges"><span class="pill ${p.grade==="OEM"?"orange":"dark"}">${esc(p.grade)}</span>${p.featured?`<span class="pill green">${t("Top match")}</span>`:""}</div>
  <div class="product-tools"><button class="${saved?"active":""}" data-action="wish" data-id="${p.id}" aria-label="${t("Save")}">${icon("i-heart",15)}</button><button class="${compared?"active":""}" data-action="compare" data-id="${p.id}" aria-label="${t("Compare")}">${icon("i-compare",15)}</button></div></div>
  <div class="product-body"><div><div class="sku">${esc(p.sku)} · ${esc(p.origin)}</div><div class="product-name">${esc(p.name)}</div><div class="fitment">${t("Fits")} ${esc(p.machine)} ${esc(p.model)} / ${esc(p.alt)} · ${t("Engine")} ${esc(p.engine)}</div><div class="stock-row"><span class="stock ${p.stock}">● ${stockLabel(p)}</span><span>${p.weight} kg</span></div></div>
- <div class="price-box"><div class="price-main"><div><small>${t(state.account.toUpperCase()+" UNIT PRICE")}</small><br><b>${money(price)}</b></div><small>${t("MOQ")} ${p.moq}</small></div><div class="tier"><span>B2B ${money(p.b2b)}</span><span>${t("Export")} ${money(p.export)}</span></div></div>
+ <div class="price-box"><div class="price-main"><div><small>${t(state.account.toUpperCase()+" UNIT PRICE")}</small><br><b>${money(price)}</b></div><small>${t("MOQ")} ${moqFor(p)} (${state.account})</small></div><div class="tier"><span>B2B ${money(p.b2b)}<small>MOQ ${p.b2bMoq||50}</small></span><span>${t("Export")} ${money(p.export)}<small>MOQ ${p.exportMoq||200}</small></span></div></div>
  <div class="product-actions"><button class="btn btn-primary" data-action="add" data-id="${p.id}">${icon("i-cart",14)} ${t("Add to order")}</button><button class="btn btn-light square-only" data-action="quick" data-id="${p.id}" aria-label="${t("Quick view")}">${icon("i-search",14)}</button></div></div></article>`;
 }
 function renderProducts(){
@@ -169,25 +170,53 @@ function updateFilterUi(total=filtered().length){
 }
 function addCart(id){
  const p=products.find(x=>x.id===id); if(!p)return;
- const found=state.cart.find(x=>x.id===id); if(found)found.qty++; else state.cart.push({id,qty:Math.max(1,p.moq)});
+ const found=state.cart.find(x=>x.id===id); if(found)found.qty++; else state.cart.push({id,qty:1});
  save("kpx_cart",state.cart);updateCounts();renderCart();toast("Added to order",`${p.sku} · ${p.name}`)
 }
 function renderCart(){
  const items=state.cart.map(ci=>({ci,p:products.find(x=>x.id===ci.id)})).filter(x=>x.p);
  emptyCart.classList.toggle("hidden",items.length>0);
- cartItems.innerHTML=items.map(({ci,p})=>`<div class="cart-item"><img src="${IMG[p.img]}" alt=""><div><b>${esc(p.name)}</b><small>${esc(p.sku)} · ${t("MOQ")} ${p.moq} · ${money(priceFor(p))}/${t("unit")}</small><div class="qty"><button data-cart="minus" data-id="${p.id}">−</button><span>${ci.qty}</span><button data-cart="plus" data-id="${p.id}">+</button></div></div><button class="remove-btn" data-cart="remove" data-id="${p.id}">${icon("i-close",15)}</button></div>`).join("");
+ cartItems.innerHTML=items.map(({ci,p})=>`<div class="cart-item"><img src="${IMG[p.img]}" alt=""><div><b>${esc(p.name)}</b><small>${esc(p.sku)} · ${t("MOQ")} ${moqFor(p)} · ${money(priceFor(p))}/${t("unit")}</small><div class="qty"><button data-cart="minus" data-id="${p.id}">−</button><span>${ci.qty}</span><button data-cart="plus" data-id="${p.id}">+</button></div></div><button class="remove-btn" data-cart="remove" data-id="${p.id}">${icon("i-close",15)}</button></div>`).join("");
  const subtotal=items.reduce((s,{ci,p})=>s+priceFor(p)*ci.qty,0),packing=items.length?Math.max(12,subtotal*.018):0;
  subtotalText.textContent=money(subtotal);packingText.textContent=money(packing);grandText.textContent=money(subtotal+packing);
  drawerModeLabel.textContent=t(state.account==="retail"?"Retail / workshop order mode":state.account==="b2b"?"B2B distributor quotation mode":"Export quotation mode");
+ updateRfqChecklist();
+}
+function updateRfqChecklist(){
+ if(!rfqChecklist)return;
+ const hasItems=state.cart.length>0;
+ const hasDest=destCountry?.value.trim().length>0;
+ const hasTerm=incoterm?.value&&!"Quote best method".includes(incoterm.value);
+ rfqChecklist.querySelectorAll("[data-check]").forEach(el=>{
+  const key=el.dataset.check;
+  const ok=key==="items"?hasItems:key==="dest"?hasDest:key==="term"?hasTerm:true;
+  el.classList.toggle("rfq-ready",ok);
+  el.classList.toggle("rfq-pending",!ok);
+ });
+}
+function collectRfqSummary(){
+ if(!rfqSummary)return;
+ const hasDest=destCountry?.value.trim().length>0;
+ rfqSummary.style.display=state.cart.length>0||hasDest?"block":"none";
+ rfqCountryLabel.textContent=hasDest?"📍 "+destCountry.value.trim():"";
+ rfqIncotermLabel.textContent=incoterm?.value||"";
+ rfqShippingLabel.textContent=shippingMethod?.value||"";
 }
 function openDrawer(){drawerBackdrop.classList.add("open");cartDrawer.classList.add("open");document.body.style.overflow="hidden";renderCart()}
 function closeDrawer(){drawerBackdrop.classList.remove("open");cartDrawer.classList.remove("open");document.body.style.overflow=""}
 function openModal(title,html){modalTitle.textContent=t(title);modalBody.innerHTML=html;translateStatic(modalBody);modalBackdrop.classList.add("open");document.body.style.overflow="hidden"}
 function closeModal(){modalBackdrop.classList.remove("open");document.body.style.overflow=""}
-function quickView(id){
- const p=products.find(x=>x.id===id);if(!p)return;
- openModal("Part detail",`<div class="quick-grid"><div class="quick-image"><img src="${IMG[p.img]}" alt="${esc(p.name)}"></div><div class="quick-info"><span class="pill orange">${esc(p.grade)}</span><div class="sku" style="margin-top:10px">${esc(p.sku)} · ${esc(p.origin)}</div><h2>${esc(p.name)}</h2><p style="font-size:10px;color:var(--muted)">Product record includes fitment, packing and commercial data for export quotation review.</p><div class="quick-price">${money(priceFor(p))}</div><div class="spec-grid"><div class="spec"><span>Fitment</span><b>${esc(p.model)} / ${esc(p.alt)}</b></div><div class="spec"><span>Engine</span><b>${esc(p.engine)}</b></div><div class="spec"><span>Availability</span><b>${stockLabel(p)}</b></div><div class="spec"><span>Lead time</span><b>${p.lead}</b></div><div class="spec"><span>Net weight</span><b>${p.weight} kg</b></div><div class="spec"><span>Pack size</span><b>${p.dims}</b></div><div class="spec"><span>HS review</span><b>${p.hs}</b></div><div class="spec"><span>MOQ</span><b>${p.moq} unit(s)</b></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px"><button class="btn btn-primary" onclick="addCart(${p.id});closeModal()">Add to order</button><button class="btn btn-light" onclick="toggleWish(${p.id})">Save part</button></div></div></div>
- <div class="tabs"><button class="active">Compatibility</button><button>Commercial</button><button>Packing</button><button>Documents</button></div><div class="tab-content"><b>Fitment note:</b> compatibility must be validated by machine model, engine code, serial range, superseded part numbers and market variant before confirming supply.</div>`);
+function quickView(id) {
+ const p = products.find(x => x.id === id); if (!p) return;
+ const ebl = p.exportPacked ? "Export packed" : "Pre-pack review", ebd = p.exportPacked ? "green" : "amber";
+ const availCls = p.stock === "in" ? "green" : p.stock === "low" ? "amber" : "dark";
+ const rel = products.filter(r => r.id !== p.id && (r.category === p.category || r.model === p.model || r.engine === p.engine)).slice(0, 4);
+ openModal("Part detail", `<div class="quickd"><div class="quickd-top"><div class="quickd-img"><img src="${IMG[p.img]}" alt="${esc(p.name)}"><div class="quickd-img-meta"><button class="btn-icon-sm" onclick="toggleWish(${p.id})" aria-label="Save part">${icon("i-heart", 15)}</button><button class="btn-icon-sm" onclick="toggleCompare(${p.id})" aria-label="Compare">${icon("i-compare", 15)}</button></div></div><div class="quickd-info"><div class="quickd-badges"><span class="pill ${p.grade === "OEM" ? "orange" : "dark"}">${esc(p.grade)}</span><span class="pill ${availCls}">${stockLabel(p)}</span><span class="pill ${ebd}">${ebl}</span></div><h2>${esc(p.name)}</h2><div class="quickd-sku">${esc(p.sku)} <span class="dot">·</span> ${esc(p.origin)} <span class="dot">·</span> HS ${p.hs}</div><div class="quickd-price"><b>${money(priceFor(p))}</b><small>${state.account === "retail" ? "Retail unit price" : state.account === "b2b" ? "B2B unit price" : "Export unit price"}</small></div><div class="quickd-actions"><button class="btn btn-primary quickd-cart" onclick="addCart(${p.id});closeModal()">${icon("i-cart", 15)} Add to order</button><button class="btn btn-light quickd-rfq" onclick="quickdRFQ(${p.id})">${icon("i-file", 15)} Request quotation</button></div></div></div><div class="quickd-tabs"><button class="quickd-tab active" data-tab="spec">${icon("i-info", 13)} Specifications</button><button class="quickd-tab" data-tab="fitment">${icon("i-search", 13)} Fitment</button><button class="quickd-tab" data-tab="commercial">${icon("i-file", 13)} Commercial</button><button class="quickd-tab" data-tab="packing">${icon("i-box", 13)} Packing</button></div><div class="quickd-panels"><div class="quickd-panel active" data-panel="spec"><div class="qspec-grid"><div class="qspec"><span>Part type</span><b>${esc(p.category)}</b></div><div class="qspec"><span>Equipment</span><b>${esc(p.machine)}</b></div><div class="qspec"><span>Engine series</span><b>${esc(p.engine)}</b></div><div class="qspec"><span>Grade</span><b>${esc(p.grade)}</b></div><div class="qspec"><span>Weight</span><b>${p.weight} kg</b></div><div class="qspec"><span>Dimensions</span><b>${p.dims}</b></div></div></div><div class="quickd-panel" data-panel="fitment"><div class="fitment-detail"><div class="fitment-main"><span class="pill orange">Match</span><b>${esc(p.machine)} ${esc(p.model)}</b></div><p>Confirmed for model code <b>${esc(p.model)}</b>. Also listed for <b>${esc(p.alt)}</b> where applicable. Serial range and market variant must be verified before final confirmation.</p><div class="fitment-rows"><div class="fitment-row"><span>Alternate model</span><b>${esc(p.alt)}</b></div><div class="fitment-row"><span>Engine reference</span><b>${esc(p.engine)}</b></div><div class="fitment-row"><span>Confidence</span><span class="pill green">High</span></div></div></div></div><div class="quickd-panel" data-panel="commercial"><div class="qspec-grid"><div class="qspec"><span>Retail</span><b>${money(p.price)}</b></div><div class="qspec"><span>B2B</span><b>${money(p.b2b)}</b></div><div class="qspec"><span>Export</span><b>${money(p.export)}</b></div><div class="qspec"><span>MOQ (${state.account})</span><b>${moqFor(p)} unit(s)</b></div><div class="qspec"><span>Stock</span><b>${stockLabel(p)}</b></div><div class="qspec"><span>Available</span><b>${p.qty} unit(s)</b></div></div><p class="form-note" style="margin-top: 14px">Final pricing, stock, and payment terms are confirmed during quotation review.</p></div><div class="quickd-panel" data-panel="packing"><div class="qspec-grid"><div class="qspec"><span>Pack size</span><b>${p.dims}</b></div><div class="qspec"><span>Weight</span><b>${p.weight} kg</b></div><div class="qspec"><span>Export ready</span><span class="pill ${ebd}">${ebl}</span></div><div class="qspec"><span>HS code</span><b>${p.hs}</b></div><div class="qspec"><span>Lead time</span><b>${p.lead}</b></div><div class="qspec"><span>Origin</span><b>${esc(p.origin)}</b></div></div></div></div>${rel.length ? `<div class="quickd-related"><div class="quickd-related-head"><b>Related parts</b><small>Same category or equipment</small></div><div class="quickd-related-grid">${rel.map(r => `<button class="rel-part" onclick="quickView(${r.id});event.stopPropagation()"><div class="rel-img"><img src="${IMG[r.img]}" alt=""></div><div class="rel-info"><b>${esc(r.name)}</b><small>${esc(r.sku)}</small><div>${money(priceFor(r))}</div></div></button>`).join("")}</div></div>` : ""}</div>`); setTimeout(() => { document.querySelectorAll(".quickd-tab").forEach(b => b.onclick = () => { document.querySelectorAll(".quickd-tab").forEach(x => x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".quickd-panel").forEach(p => p.style.display = "none"); const panel = document.querySelector(`.quickd-panel[data-panel="${b.dataset.tab}"]`); if (panel) { panel.classList.add("active"); panel.style.display = ""; } }); }, 50);
+}
+function quickdRFQ(id) {
+ const p = products.find(x => x.id === id); if (!p) return;
+ closeModal(); openDrawer();
+ setTimeout(() => { const ta = document.querySelector("#destCountry"); if (ta) ta.value = p.name; document.querySelector("#buyerRef")?.focus(); }, 200);
 }
 function toggleWish(id){state.wishlist.has(id)?state.wishlist.delete(id):state.wishlist.add(id);save("kpx_wishlist",[...state.wishlist]);renderProducts();toast(state.wishlist.has(id)?"Saved to wishlist":"Removed from wishlist")}
 function toggleCompare(id){if(state.compare.has(id))state.compare.delete(id);else{if(state.compare.size>=4){toast("Comparison limit","You can compare up to 4 parts.");return}state.compare.add(id)}save("kpx_compare",[...state.compare]);renderProducts()}
@@ -196,7 +225,7 @@ function showCompare(){
  if(!arr.length){toast("No comparison items","Use the compare icon on a product card.");return}
  openModal("Compare parts",`<div style="overflow:auto"><table class="compare-table"><thead><tr><th>Attribute</th>${arr.map(p=>`<th>${esc(p.name)}<br><small>${esc(p.sku)}</small></th>`).join("")}</tr></thead><tbody>
  <tr><td>Image</td>${arr.map(p=>`<td><img src="${IMG[p.img]}" style="width:150px;height:90px;object-fit:cover;border-radius:7px"></td>`).join("")}</tr>
- <tr><td>Price</td>${arr.map(p=>`<td><b>${money(priceFor(p))}</b></td>`).join("")}</tr><tr><td>Grade</td>${arr.map(p=>`<td>${p.grade}</td>`).join("")}</tr><tr><td>Fitment</td>${arr.map(p=>`<td>${p.machine} ${p.model}<br>${p.engine}</td>`).join("")}</tr><tr><td>Stock</td>${arr.map(p=>`<td>${stockLabel(p)}</td>`).join("")}</tr><tr><td>Weight</td>${arr.map(p=>`<td>${p.weight} kg</td>`).join("")}</tr><tr><td>MOQ</td>${arr.map(p=>`<td>${p.moq}</td>`).join("")}</tr></tbody></table></div>`);
+ <tr><td>Price</td>${arr.map(p=>`<td><b>${money(priceFor(p))}</b></td>`).join("")}</tr><tr><td>Grade</td>${arr.map(p=>`<td>${p.grade}</td>`).join("")}</tr><tr><td>Fitment</td>${arr.map(p=>`<td>${p.machine} ${p.model}<br>${p.engine}</td>`).join("")}</tr><tr><td>Stock</td>${arr.map(p=>`<td>${stockLabel(p)}</td>`).join("")}</tr><tr><td>Weight</td>${arr.map(p=>`<td>${p.weight} kg</td>`).join("")}</tr><tr><td>MOQ</td>${arr.map(p=>`<td>${moqFor(p)} (${state.account.slice(0,1).toUpperCase()+state.account.slice(1)})</td>`).join("")}</tr></tbody></table></div>`);
 }
 function showWishlist(){
  const arr=[...state.wishlist].map(id=>products.find(p=>p.id===id)).filter(Boolean);
@@ -258,9 +287,24 @@ function bind(){
  const handlePagination=e=>{const b=e.target.closest("[data-page]");if(!b||b.disabled)return;state.page=Number(b.dataset.page);renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth",block:"start"})};
  pagination.onclick=handlePagination;paginationTop.onclick=handlePagination;
  cartBtn.onclick=openDrawer;drawerClose.onclick=closeDrawer;drawerBackdrop.onclick=()=>{closeDrawer();closeMobileFilters()};
- cartItems.onclick=e=>{const b=e.target.closest("[data-cart]");if(!b)return;const id=Number(b.dataset.id),item=state.cart.find(x=>x.id===id),p=products.find(x=>x.id===id);if(!item)return;if(b.dataset.cart==="plus")item.qty++;if(b.dataset.cart==="minus")item.qty=Math.max(p.moq,item.qty-1);if(b.dataset.cart==="remove")state.cart=state.cart.filter(x=>x.id!==id);save("kpx_cart",state.cart);renderCart();updateCounts()};
- checkoutBtn.onclick=()=>{if(!state.cart.length){toast("Order list is empty");return}openModal("Quotation request prepared",`<div style="text-align:center;padding:30px 10px">${icon("i-check",48)}<h2>Quotation draft ready</h2><p style="color:var(--muted)">Reference HIK-RFQ-${Date.now().toString().slice(-8)} is ready for Hikari’s export team to validate buyer details, destination, stock, freight and documentation before proforma invoice issuance.</p><button class="btn btn-primary" onclick="closeModal()">Done</button></div>`);closeDrawer()};
- wishlistBtn.onclick=showWishlist;compareBtn.onclick=showCompare;
+ cartItems.onclick=e=>{const b=e.target.closest("[data-cart]");if(!b)return;const id=Number(b.dataset.id),item=state.cart.find(x=>x.id===id),p=products.find(x=>x.id===id);if(!item)return;if(b.dataset.cart==="plus")item.qty++;if(b.dataset.cart==="minus")item.qty=Math.max(moqFor(p),item.qty-1);if(b.dataset.cart==="remove")state.cart=state.cart.filter(x=>x.id!==id);save("kpx_cart",state.cart);renderCart();updateCounts()};
+ checkoutBtn.onclick=()=>{
+  if(!state.cart.length){toast("Order list is empty");return}
+  const items=state.cart.map(ci=>({ci,p:products.find(x=>x.id===ci.id)})).filter(x=>x.p);
+  const subtotal=items.reduce((s,{ci,p})=>s+priceFor(p)*ci.qty,0);
+  const dest=destCountry.value.trim()||"—";
+  const term=incoterm.value;
+  const shipping=shippingMethod.value;
+  const ref=buyerRef.value.trim()||"—";
+  const refNo=`HIK-RFQ-${Date.now().toString().slice(-8)}`;
+  const mode=state.account==="retail"?"Retail / Workshop":state.account==="b2b"?"B2B Distributor":"Export";
+  closeDrawer();
+  openModal("Quotation request prepared",`<div style="max-width:620px;margin:auto"><div style="text-align:center;margin-bottom:16px">${icon("i-check",42)}</div><h2 style="margin:0 0 4px">Quotation draft ready</h2><p style="color:var(--muted);font-size:11px;margin:0 0 18px">Reference <b>${refNo}</b> · ${mode} pricing</p><div class="rfq-confirm-grid"><div class="rfq-confirm-block"><span>Destination</span><b>${esc(dest)}</b></div><div class="rfq-confirm-block"><span>Trade term</span><b>${esc(term)}</b></div><div class="rfq-confirm-block"><span>Shipping</span><b>${esc(shipping)}</b></div><div class="rfq-confirm-block"><span>Reference</span><b>${esc(ref)}</b></div></div><div class="rfq-items-summary"><div class="rfq-sum-head">Items (${items.length})</div><div style="display:grid;gap:5px;margin-top:8px">${items.slice(0,6).map(({ci,p})=>`<div class="rfq-item-row"><span><b>${esc(p.name)}</b><small>${esc(p.sku)}</small></span><span>${ci.qty} × ${money(priceFor(p))}</span></div>`).join("")}${items.length>6?`<div class="rfq-item-row"><span><b>+${items.length-6} more items</b></span></div>`:""}</div></div><div class="rfq-total-bar"><span>Estimated quotation base</span><b>${money(subtotal+Math.max(12,subtotal*.018))}</b></div><p class="form-note" style="margin-top:12px;text-align:center">Freight, duty, and final pricing confirmed during quotation review.</p><button class="btn btn-primary btn-block" onclick="closeModal()" style="margin-top:14px">Done</button></div>`);
+ }
+ destCountry.oninput=()=>{updateRfqChecklist();collectRfqSummary()};
+  incoterm.onchange=()=>{updateRfqChecklist();collectRfqSummary()};
+  shippingMethod.onchange=collectRfqSummary;
+  wishlistBtn.onclick=showWishlist;compareBtn.onclick=showCompare;
  modalClose.onclick=closeModal;modalBackdrop.onclick=e=>{if(e.target===modalBackdrop)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();closeDrawer()}});
  garageFamily.onchange=updateGarageModel;saveMachineBtn.onclick=()=>{const g={family:garageFamily.value,model:garageModel.value};if(!state.garage.some(x=>x.family===g.family&&x.model===g.model)){state.garage.push(g);save("kpx_garage",state.garage);renderGarage();toast("Machine saved",`${g.family} ${g.model}`)}};
  garageItems.onclick=e=>{const b=e.target.closest("[data-garage]");if(!b)return;const g=state.garage[Number(b.dataset.garage)];state.query=g.model;catalogSearch.value=g.model;renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
