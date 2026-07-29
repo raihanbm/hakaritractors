@@ -135,6 +135,7 @@ function filtered(){
 function priceFor(p){return p[state.account==="retail"?"price":state.account]}
 function moqFor(p){return state.account==="retail"?Math.max(1,p.moq||1):state.account==="b2b"?(p.b2bMoq||50):(p.exportMoq||200)}
 function stockLabel(p){return p.stock==="in"?`${p.qty} ${t("in stock")}`:p.stock==="low"?`${t("Only")} ${p.qty} ${t("left")}`:t("Pre-order")}
+function openWhatsApp(){const page=location.hash.slice(1)||"home";const msg=encodeURIComponent(`Hi Hikari! I'm interested in your tractor parts catalog. I'm currently browsing: ${page}. Can you help?`);window.open(`https://wa.me/6282100000000?text=${msg}`,"_blank")}
 function productCard(p){
  const saved=state.wishlist.has(p.id), compared=state.compare.has(p.id), price=priceFor(p);
  return `<article class="product-card">
@@ -152,7 +153,7 @@ function renderProducts(){
  productGrid.classList.toggle("list-view",state.view==="list");
  resultCount.textContent=`${arr.length.toLocaleString()} ${t("parts found")} · ${t("showing")} ${arr.length?start+1:0}–${Math.min(start+state.perPage,arr.length)}`;
  pageSummary.textContent=`${t("Page")} ${state.page} ${t("of")} ${pages}`;
- renderPagination(pages); updateCounts(); updateFilterUi(arr.length);
+ renderPagination(pages); updateCounts(); updateFilterUi(arr.length); renderFilterTags();
 }
 function renderPagination(pages){
  let nums=[]; for(let p=Math.max(1,state.page-2);p<=Math.min(pages,state.page+2);p++)nums.push(p);
@@ -161,6 +162,15 @@ function renderPagination(pages){
  paginationTop.innerHTML=html;
 }
 function updateCounts(){cartCount.textContent=state.cart.reduce((a,x)=>a+x.qty,0);wishCount.textContent=state.wishlist.size;compareCount.textContent=state.compare.size}
+function searchSuggest(q){
+ const el=document.getElementById("catalogSuggestions"); if(!el)return;
+ if(!q||q.length<2){el.classList.remove("open");return;}
+ const ql=q.toLowerCase();
+ const hits=products.filter(p=>p.sku.toLowerCase().includes(ql)||p.name.toLowerCase().includes(ql)||p.model.toLowerCase().includes(ql)||p.engine.toLowerCase().includes(ql)||p.category.toLowerCase().includes(ql)).slice(0,8);
+ if(!hits.length){el.classList.remove("open");return;}
+ el.innerHTML=hits.map(p=>`<div class="search-suggestion" data-sku="${esc(p.sku)}"><span class="ss-sku">${esc(p.sku)}</span><span class="ss-name">${esc(p.name)}</span><span class="ss-price">${money(priceFor(p))}</span></div>`).join("");
+ el.classList.add("open");
+}
 function activeFilterCount(){return state.category.size+state.machine.size+state.stock.size+state.grade.size+(state.minPrice!=null?1:0)+(state.maxPrice!=null?1:0)+(document.getElementById("exportPacked")?.checked?1:0)+(document.getElementById("dangerousGoods")?.checked?1:0)}
 function updateFilterUi(total=filtered().length){
  const count=activeFilterCount();
@@ -168,6 +178,47 @@ function updateFilterUi(total=filtered().length){
  if(filterSheetCount)filterSheetCount.textContent=`${total.toLocaleString()} ${t("parts available")}`;
  if(filterApplyBtn)filterApplyBtn.textContent=`${t("Show")} ${total.toLocaleString()} ${t("parts")}`;
 }
+function saveRfqForm(){
+ const data={dest:destCountry?.value||"",term:incoterm?.value||"",ship:shippingMethod?.value||"",ref:buyerRef?.value||""};
+ try{localStorage.setItem("hikari_rfq_form",JSON.stringify(data))}catch(e){}
+}
+function loadRfqForm(){
+ try{
+  const raw=localStorage.getItem("hikari_rfq_form");
+  if(!raw)return;
+  const d=JSON.parse(raw);
+  if(destCountry&&d.dest!=null)destCountry.value=d.dest;
+  if(incoterm&&d.term!=null)incoterm.value=d.term;
+  if(shippingMethod&&d.ship!=null)shippingMethod.value=d.ship;
+  if(buyerRef&&d.ref!=null)buyerRef.value=d.ref;
+ }catch(e){}
+}
+function renderFilterTags(){ const el=document.getElementById("filterTags"); if(!el)return; const parts=[];
+ state.category.forEach(v=>parts.push({label:v,type:"category",val:v}));
+ state.machine.forEach(v=>parts.push({label:v,type:"machine",val:v}));
+ state.stock.forEach(v=>parts.push({label:v==="in"?"Ready stock":v==="low"?"Limited stock":"Pre-order",type:"stock",val:v}));
+ state.grade.forEach(v=>parts.push({label:v,type:"grade",val:v}));
+ if(state.minPrice!=null)parts.push({label:"Min $"+state.minPrice,type:"minPrice",val:null});
+ if(state.maxPrice!=null)parts.push({label:"Max $"+state.maxPrice,type:"maxPrice",val:null});
+ if(document.getElementById("exportPacked")?.checked)parts.push({label:"Export packed",type:"exportPacked",val:null});
+ if(document.getElementById("dangerousGoods")?.checked)parts.push({label:"Exclude regulated",type:"dangerousGoods",val:null});
+ if(state.query.trim())parts.push({label:"Search: "+state.query,type:"query",val:null});
+ el.innerHTML=parts.map((p,i)=>`<span class="filter-tag" data-tag="${i}"><strong>${esc(p.label)}</strong><button data-tag-remove="${i}" aria-label="Remove filter" tabindex="-1">✕</button></span>`).join("")||"";
+}
+function removeTag(i){
+ const tags=[];
+ state.category.forEach(v=>tags.push({type:"category",val:v,do:()=>state.category.delete(v)}));
+ state.machine.forEach(v=>tags.push({type:"machine",val:v,do:()=>state.machine.delete(v)}));
+ state.stock.forEach(v=>tags.push({type:"stock",val:v,do:()=>state.stock.delete(v)}));
+ state.grade.forEach(v=>tags.push({type:"grade",val:v,do:()=>state.grade.delete(v)}));
+ if(state.minPrice!=null)tags.push({type:"minPrice",val:null,do:()=>{state.minPrice=null;minPrice.value=""}});
+ if(state.maxPrice!=null)tags.push({type:"maxPrice",val:null,do:()=>{state.maxPrice=null;maxPrice.value=""}});
+ if(document.getElementById("exportPacked")?.checked)tags.push({type:"exportPacked",val:null,do:()=>{document.getElementById("exportPacked").checked=false;document.getElementById("exportPacked").dispatchEvent(new Event("change",{bubbles:true}))}});
+ if(document.getElementById("dangerousGoods")?.checked)tags.push({type:"dangerousGoods",val:null,do:()=>{document.getElementById("dangerousGoods").checked=false;document.getElementById("dangerousGoods").dispatchEvent(new Event("change",{bubbles:true}))}});
+ if(state.query.trim())tags.push({type:"query",val:null,do:()=>{state.query="";catalogSearch.value=""}});
+ const t=tags[i]; if(t){t.do();renderProducts()}
+}
+
 function addCart(id){
  const p=products.find(x=>x.id===id); if(!p)return;
  const found=state.cart.find(x=>x.id===id); if(found)found.qty++; else state.cart.push({id,qty:1});
@@ -211,7 +262,8 @@ function quickView(id) {
  const ebl = p.exportPacked ? "Export packed" : "Pre-pack review", ebd = p.exportPacked ? "green" : "amber";
  const availCls = p.stock === "in" ? "green" : p.stock === "low" ? "amber" : "dark";
  const rel = products.filter(r => r.id !== p.id && (r.category === p.category || r.model === p.model || r.engine === p.engine)).slice(0, 4);
- openModal("Part detail", `<div class="quickd"><div class="quickd-top"><div class="quickd-img"><img src="${IMG[p.img]}" alt="${esc(p.name)}"><div class="quickd-img-meta"><button class="btn-icon-sm" onclick="toggleWish(${p.id})" aria-label="Save part">${icon("i-heart", 15)}</button><button class="btn-icon-sm" onclick="toggleCompare(${p.id})" aria-label="Compare">${icon("i-compare", 15)}</button></div></div><div class="quickd-info"><div class="quickd-badges"><span class="pill ${p.grade === "OEM" ? "orange" : "dark"}">${esc(p.grade)}</span><span class="pill ${availCls}">${stockLabel(p)}</span><span class="pill ${ebd}">${ebl}</span></div><h2>${esc(p.name)}</h2><div class="quickd-sku">${esc(p.sku)} <span class="dot">·</span> ${esc(p.origin)} <span class="dot">·</span> HS ${p.hs}</div><div class="quickd-price"><b>${money(priceFor(p))}</b><small>${state.account === "retail" ? "Retail unit price" : state.account === "b2b" ? "B2B unit price" : "Export unit price"}</small></div><div class="quickd-actions"><button class="btn btn-primary quickd-cart" onclick="addCart(${p.id});closeModal()">${icon("i-cart", 15)} Add to order</button><button class="btn btn-light quickd-rfq" onclick="quickdRFQ(${p.id})">${icon("i-file", 15)} Request quotation</button></div></div></div><div class="quickd-tabs"><button class="quickd-tab active" data-tab="spec">${icon("i-info", 13)} Specifications</button><button class="quickd-tab" data-tab="fitment">${icon("i-search", 13)} Fitment</button><button class="quickd-tab" data-tab="commercial">${icon("i-file", 13)} Commercial</button><button class="quickd-tab" data-tab="packing">${icon("i-box", 13)} Packing</button></div><div class="quickd-panels"><div class="quickd-panel active" data-panel="spec"><div class="qspec-grid"><div class="qspec"><span>Part type</span><b>${esc(p.category)}</b></div><div class="qspec"><span>Equipment</span><b>${esc(p.machine)}</b></div><div class="qspec"><span>Engine series</span><b>${esc(p.engine)}</b></div><div class="qspec"><span>Grade</span><b>${esc(p.grade)}</b></div><div class="qspec"><span>Weight</span><b>${p.weight} kg</b></div><div class="qspec"><span>Dimensions</span><b>${p.dims}</b></div></div></div><div class="quickd-panel" data-panel="fitment"><div class="fitment-detail"><div class="fitment-main"><span class="pill orange">Match</span><b>${esc(p.machine)} ${esc(p.model)}</b></div><p>Confirmed for model code <b>${esc(p.model)}</b>. Also listed for <b>${esc(p.alt)}</b> where applicable. Serial range and market variant must be verified before final confirmation.</p><div class="fitment-rows"><div class="fitment-row"><span>Alternate model</span><b>${esc(p.alt)}</b></div><div class="fitment-row"><span>Engine reference</span><b>${esc(p.engine)}</b></div><div class="fitment-row"><span>Confidence</span><span class="pill green">High</span></div></div></div></div><div class="quickd-panel" data-panel="commercial"><div class="qspec-grid"><div class="qspec"><span>Retail</span><b>${money(p.price)}</b></div><div class="qspec"><span>B2B</span><b>${money(p.b2b)}</b></div><div class="qspec"><span>Export</span><b>${money(p.export)}</b></div><div class="qspec"><span>MOQ (${state.account})</span><b>${moqFor(p)} unit(s)</b></div><div class="qspec"><span>Stock</span><b>${stockLabel(p)}</b></div><div class="qspec"><span>Available</span><b>${p.qty} unit(s)</b></div></div><p class="form-note" style="margin-top: 14px">Final pricing, stock, and payment terms are confirmed during quotation review.</p></div><div class="quickd-panel" data-panel="packing"><div class="qspec-grid"><div class="qspec"><span>Pack size</span><b>${p.dims}</b></div><div class="qspec"><span>Weight</span><b>${p.weight} kg</b></div><div class="qspec"><span>Export ready</span><span class="pill ${ebd}">${ebl}</span></div><div class="qspec"><span>HS code</span><b>${p.hs}</b></div><div class="qspec"><span>Lead time</span><b>${p.lead}</b></div><div class="qspec"><span>Origin</span><b>${esc(p.origin)}</b></div></div></div></div>${rel.length ? `<div class="quickd-related"><div class="quickd-related-head"><b>Related parts</b><small>Same category or equipment</small></div><div class="quickd-related-grid">${rel.map(r => `<button class="rel-part" onclick="quickView(${r.id});event.stopPropagation()"><div class="rel-img"><img src="${IMG[r.img]}" alt=""></div><div class="rel-info"><b>${esc(r.name)}</b><small>${esc(r.sku)}</small><div>${money(priceFor(r))}</div></div></button>`).join("")}</div></div>` : ""}</div>`); setTimeout(() => { document.querySelectorAll(".quickd-tab").forEach(b => b.onclick = () => { document.querySelectorAll(".quickd-tab").forEach(x => x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".quickd-panel").forEach(p => p.style.display = "none"); const panel = document.querySelector(`.quickd-panel[data-panel="${b.dataset.tab}"]`); if (panel) { panel.classList.add("active"); panel.style.display = ""; } }); }, 50);
+ trackRecentView(p.id);
+ openModal("Part detail", `<div class="quickd"><div class="quickd-top"><div class="quickd-img" onclick="showImageZoom(${p.id})"><img src="${IMG[p.img]}" alt="${esc(p.name)}" style="cursor:zoom-in"><div class="quickd-img-meta"><button class="btn-icon-sm" onclick="event.stopPropagation();toggleWish(${p.id})" aria-label="Save part">${icon("i-heart", 15)}</button><button class="btn-icon-sm" onclick="event.stopPropagation();toggleCompare(${p.id})" aria-label="Compare">${icon("i-compare", 15)}</button></div></div><div class="quickd-info"><div class="quickd-badges"><span class="pill ${p.grade === "OEM" ? "orange" : "dark"}">${esc(p.grade)}</span><span class="pill ${availCls}">${stockLabel(p)}</span><span class="pill ${ebd}">${ebl}</span></div><h2>${esc(p.name)}</h2><div class="quickd-sku">${esc(p.sku)} <span class="dot">·</span> ${esc(p.origin)} <span class="dot">·</span> HS ${p.hs}</div><div class="quickd-price"><b>${money(priceFor(p))}</b><small>${state.account === "retail" ? "Retail unit price" : state.account === "b2b" ? "B2B unit price" : "Export unit price"}</small></div><div class="quickd-actions"><button class="btn btn-primary quickd-cart" onclick="addCart(${p.id});closeModal()">${icon("i-cart", 15)} Add to order</button><button class="btn btn-light quickd-rfq" onclick="quickdRFQ(${p.id})">${icon("i-file", 15)} Request quotation</button></div></div></div><div class="quickd-tabs"><button class="quickd-tab active" data-tab="spec">${icon("i-info", 13)} Specifications</button><button class="quickd-tab" data-tab="fitment">${icon("i-search", 13)} Fitment</button><button class="quickd-tab" data-tab="commercial">${icon("i-file", 13)} Commercial</button><button class="quickd-tab" data-tab="packing">${icon("i-box", 13)} Packing</button></div><div class="quickd-panels"><div class="quickd-panel active" data-panel="spec"><div class="qspec-grid"><div class="qspec"><span>Part type</span><b>${esc(p.category)}</b></div><div class="qspec"><span>Equipment</span><b>${esc(p.machine)}</b></div><div class="qspec"><span>Engine series</span><b>${esc(p.engine)}</b></div><div class="qspec"><span>Grade</span><b>${esc(p.grade)}</b></div><div class="qspec"><span>Weight</span><b>${p.weight} kg</b></div><div class="qspec"><span>Dimensions</span><b>${p.dims}</b></div></div></div><div class="quickd-panel" data-panel="fitment"><div class="fitment-detail"><div class="fitment-main"><span class="pill orange">Match</span><b>${esc(p.machine)} ${esc(p.model)}</b></div><p>Confirmed for model code <b>${esc(p.model)}</b>. Also listed for <b>${esc(p.alt)}</b> where applicable. Serial range and market variant must be verified before final confirmation.</p><div class="fitment-rows"><div class="fitment-row"><span>Alternate model</span><b>${esc(p.alt)}</b></div><div class="fitment-row"><span>Engine reference</span><b>${esc(p.engine)}</b></div><div class="fitment-row"><span>Confidence</span><span class="pill green">High</span></div></div></div></div><div class="quickd-panel" data-panel="commercial"><div class="qspec-grid"><div class="qspec"><span>Retail</span><b>${money(p.price)}</b></div><div class="qspec"><span>B2B</span><b>${money(p.b2b)}</b></div><div class="qspec"><span>Export</span><b>${money(p.export)}</b></div><div class="qspec"><span>MOQ (${state.account})</span><b>${moqFor(p)} unit(s)</b></div><div class="qspec"><span>Stock</span><b>${stockLabel(p)}</b></div><div class="qspec"><span>Available</span><b>${p.qty} unit(s)</b></div></div><p class="form-note" style="margin-top: 14px">Final pricing, stock, and payment terms are confirmed during quotation review.</p></div><div class="quickd-panel" data-panel="packing"><div class="qspec-grid"><div class="qspec"><span>Pack size</span><b>${p.dims}</b></div><div class="qspec"><span>Weight</span><b>${p.weight} kg</b></div><div class="qspec"><span>Export ready</span><span class="pill ${ebd}">${ebl}</span></div><div class="qspec"><span>HS code</span><b>${p.hs}</b></div><div class="qspec"><span>Lead time</span><b>${p.lead}</b></div><div class="qspec"><span>Origin</span><b>${esc(p.origin)}</b></div></div></div></div>${rel.length ? `<div class="quickd-related"><div class="quickd-related-head"><b>Related parts</b><small>Same category or equipment</small></div><div class="quickd-related-grid">${rel.map(r => `<button class="rel-part" onclick="quickView(${r.id});event.stopPropagation()"><div class="rel-img"><img src="${IMG[r.img]}" alt=""></div><div class="rel-info"><b>${esc(r.name)}</b><small>${esc(r.sku)}</small><div>${money(priceFor(r))}</div></div></button>`).join("")}</div></div>` : ""}</div>`); setTimeout(() => { document.querySelectorAll(".quickd-tab").forEach(b => b.onclick = () => { document.querySelectorAll(".quickd-tab").forEach(x => x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".quickd-panel").forEach(p => p.style.display = "none"); const panel = document.querySelector(`.quickd-panel[data-panel="${b.dataset.tab}"]`); if (panel) { panel.classList.add("active"); panel.style.display = ""; } }); }, 50);
 }
 function quickdRFQ(id) {
  const p = products.find(x => x.id === id); if (!p) return;
@@ -220,6 +272,27 @@ function quickdRFQ(id) {
 }
 function toggleWish(id){state.wishlist.has(id)?state.wishlist.delete(id):state.wishlist.add(id);save("kpx_wishlist",[...state.wishlist]);renderProducts();toast(state.wishlist.has(id)?"Saved to wishlist":"Removed from wishlist")}
 function toggleCompare(id){if(state.compare.has(id))state.compare.delete(id);else{if(state.compare.size>=4){toast("Comparison limit","You can compare up to 4 parts.");return}state.compare.add(id)}save("kpx_compare",[...state.compare]);renderProducts()}
+
+function trackRecentView(id){
+ const key='hikari_recent';let arr=[];
+ try{arr=JSON.parse(localStorage.getItem(key))||[]}catch(e){}
+ arr=arr.filter(x=>x!==id);arr.unshift(id);if(arr.length>12)arr=arr.slice(0,12);
+ try{localStorage.setItem(key,JSON.stringify(arr))}catch(e){}
+ renderRecentView();
+}
+function renderRecentView(){
+ const el=document.getElementById('recentView');if(!el)return;
+ const key='hikari_recent';let ids=[];
+ try{ids=JSON.parse(localStorage.getItem(key))||[]}catch(e){}
+ if(!ids.length){el.style.display='none';return}
+ const items=ids.map(id=>products.find(p=>p.id===id)).filter(Boolean).slice(0,6);
+ el.style.display='block';
+ el.innerHTML='<div class="recent-head"><b>Recently viewed</b><small>'+items.length+' part(s)</small></div><div class="recent-grid">'+items.map(p=>'<button class="rel-part" onclick="quickView('+p.id+');event.stopPropagation()"><div class="rel-img"><img src="'+IMG[p.img]+'" alt=""></div><div class="rel-info"><b>'+esc(p.name)+'</b><small>'+esc(p.sku)+'</small><div>'+money(priceFor(p))+'</div></div></button>').join('')+'</div>';
+}
+function showImageZoom(id){
+ const p=products.find(x=>x.id===id);if(!p)return;
+ openModal(p.name+' — Image','<div style="text-align:center"><img src="'+IMG[p.img]+'" style="max-width:100%;max-height:75vh;border-radius:10px;object-fit:contain" alt="'+esc(p.name)+'"><p style="font-size:10px;color:var(--muted);margin-top:10px">'+esc(p.name)+' — '+esc(p.sku)+'</p></div>');
+}
 function showCompare(){
  const arr=[...state.compare].map(id=>products.find(p=>p.id===id)).filter(Boolean);
  if(!arr.length){toast("No comparison items","Use the compare icon on a product card.");return}
@@ -277,7 +350,7 @@ function bind(){
  uploadListBtn.onclick=()=>openModal("Bulk parts-list upload",`<div style="max-width:670px"><h2>Upload CSV / XLSX / PDF parts list</h2><p style="color:var(--muted)">Upload purchase lists with SKU, description, quantity, model and notes for quotation review. Files should be validated before processing.</p><div style="border:2px dashed #cfd5d8;border-radius:12px;padding:55px;text-align:center;background:#f7f8f9">${icon("i-file",34)}<h3>Parts list upload</h3><small>SKU · description · quantity · model · notes</small></div></div>`);
  categoryStrip.onclick=e=>{const b=e.target.closest("[data-cat]");if(!b)return;resetAll();state.category.add(b.dataset.cat);document.querySelector(`input[name=category][value="${CSS.escape(b.dataset.cat)}"]`).checked=true;renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
  document.querySelectorAll(".filters input").forEach(el=>el.addEventListener("change",()=>{state.category=new Set([...document.querySelectorAll('input[name=category]:checked')].map(x=>x.value));state.machine=new Set([...document.querySelectorAll('input[name=machine]:checked')].map(x=>x.value));state.stock=new Set([...document.querySelectorAll('input[name=stock]:checked')].map(x=>x.value));state.grade=new Set([...document.querySelectorAll('input[name=grade]:checked')].map(x=>x.value));state.minPrice=minPrice.value?Number(minPrice.value):null;state.maxPrice=maxPrice.value?Number(maxPrice.value):null;state.page=1;renderProducts()}));
- resetFilters.onclick=resetAll;catalogSearch.oninput=()=>{state.query=catalogSearch.value;state.page=1;renderProducts()};sortSelect.onchange=()=>{state.sort=sortSelect.value;state.page=1;renderProducts()};
+ resetFilters.onclick=resetAll;catalogSearch.oninput=()=>{state.query=catalogSearch.value;state.page=1;renderProducts();searchSuggest(catalogSearch.value)};catalogSearch.onkeydown=e=>{if(e.key==="Escape"||e.key==="Tab")document.getElementById("catalogSuggestions")?.classList.remove("open")};catalogSearch.onblur=()=>setTimeout(()=>document.getElementById("catalogSuggestions")?.classList.remove("open"),200);document.getElementById("catalogSuggestions").onclick=e=>{const s=e.target.closest("[data-sku]");if(s){catalogSearch.value=s.dataset.sku;state.query=s.dataset.sku;state.page=1;renderProducts();document.getElementById("catalogSuggestions").classList.remove("open")}};sortSelect.onchange=()=>{state.sort=sortSelect.value;state.page=1;renderProducts()};
  accountSelect.onchange=()=>{state.account=accountSelect.value;buyerProfile.value=state.account==="export"?"b2b":state.account;renderProducts();renderCart()};
  buyerProfile.onchange=()=>{state.account=buyerProfile.value==="retail"?"retail":"b2b";accountSelect.value=state.account;renderProducts();renderCart()};
  currencySelect.onchange=()=>{state.currency=currencySelect.value;renderProducts();renderCart()};
@@ -301,9 +374,10 @@ function bind(){
   closeDrawer();
   openModal("Quotation request prepared",`<div style="max-width:620px;margin:auto"><div style="text-align:center;margin-bottom:16px">${icon("i-check",42)}</div><h2 style="margin:0 0 4px">Quotation draft ready</h2><p style="color:var(--muted);font-size:11px;margin:0 0 18px">Reference <b>${refNo}</b> · ${mode} pricing</p><div class="rfq-confirm-grid"><div class="rfq-confirm-block"><span>Destination</span><b>${esc(dest)}</b></div><div class="rfq-confirm-block"><span>Trade term</span><b>${esc(term)}</b></div><div class="rfq-confirm-block"><span>Shipping</span><b>${esc(shipping)}</b></div><div class="rfq-confirm-block"><span>Reference</span><b>${esc(ref)}</b></div></div><div class="rfq-items-summary"><div class="rfq-sum-head">Items (${items.length})</div><div style="display:grid;gap:5px;margin-top:8px">${items.slice(0,6).map(({ci,p})=>`<div class="rfq-item-row"><span><b>${esc(p.name)}</b><small>${esc(p.sku)}</small></span><span>${ci.qty} × ${money(priceFor(p))}</span></div>`).join("")}${items.length>6?`<div class="rfq-item-row"><span><b>+${items.length-6} more items</b></span></div>`:""}</div></div><div class="rfq-total-bar"><span>Estimated quotation base</span><b>${money(subtotal+Math.max(12,subtotal*.018))}</b></div><p class="form-note" style="margin-top:12px;text-align:center">Freight, duty, and final pricing confirmed during quotation review.</p><button class="btn btn-primary btn-block" onclick="closeModal()" style="margin-top:14px">Done</button></div>`);
  }
- destCountry.oninput=()=>{updateRfqChecklist();collectRfqSummary()};
-  incoterm.onchange=()=>{updateRfqChecklist();collectRfqSummary()};
-  shippingMethod.onchange=collectRfqSummary;
+ destCountry.oninput=()=>{updateRfqChecklist();collectRfqSummary();saveRfqForm()};
+  incoterm.onchange=()=>{updateRfqChecklist();collectRfqSummary();saveRfqForm()};
+  shippingMethod.onchange=()=>{collectRfqSummary();saveRfqForm()};
+  buyerRef.oninput=saveRfqForm;
   wishlistBtn.onclick=showWishlist;compareBtn.onclick=showCompare;
  modalClose.onclick=closeModal;modalBackdrop.onclick=e=>{if(e.target===modalBackdrop)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();closeDrawer()}});
  garageFamily.onchange=updateGarageModel;saveMachineBtn.onclick=()=>{const g={family:garageFamily.value,model:garageModel.value};if(!state.garage.some(x=>x.family===g.family&&x.model===g.model)){state.garage.push(g);save("kpx_garage",state.garage);renderGarage();toast("Machine saved",`${g.family} ${g.model}`)}};
@@ -319,6 +393,8 @@ function bind(){
  clearDataBtn.onclick=e=>{e.preventDefault();["kpx_cart","kpx_wishlist","kpx_compare","kpx_garage"].forEach(k=>localStorage.removeItem(k));location.reload()};
  mobileFilterBtn.onclick=openMobileFilters;mobileFilterClose.onclick=closeMobileFilters;filterApplyBtn.onclick=closeMobileFilters;filterResetMobileBtn.onclick=()=>{resetAll();closeMobileFilters()};
  dismissCatalogNotice.onclick=()=>catalogBanner.remove();
+ filterTags.onclick=e=>{const b=e.target.closest("[data-tag-remove]");if(b)removeTag(Number(b.dataset.tagRemove));};
+ waFloat.onclick=openWhatsApp;
  syncMobileQuicknav(location.hash.slice(1)||"catalog");
 }
 function downloadCSV(){
@@ -349,4 +425,4 @@ function buildFAQs(){
  ];
  faqList.innerHTML=qs.map((q,i)=>`<div class="faq-item ${i===0?"open":""}"><button class="faq-q">${esc(q[0])}${icon("i-plus",15)}</button><div class="faq-a">${esc(q[1])}</div></div>`).join("");
 }
-setImages();renderCategories();buildFAQs();updateGarageModel();renderGarage();renderProducts();renderCart();bind();translateStatic();
+setImages();renderCategories();buildFAQs();updateGarageModel();renderGarage();renderProducts();renderCart();loadRfqForm();bind();translateStatic();
