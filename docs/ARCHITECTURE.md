@@ -1,8 +1,8 @@
 # Target Architecture
 
-## Staging foundation — current package
+## Current package
 
-Browser → static HTML/CSS/JS → local demo catalog
+Browser → static HTML/CSS/JS → catalog interface
 
 This is useful for visual approval, responsive testing, copy review, and planning the data model.
 It must not be treated as the authoritative source for prices, inventory, freight, payments, or customer identity.

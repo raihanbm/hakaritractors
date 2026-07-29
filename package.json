@@ -1,8 +1,8 @@
 {
-  "name": "hakari-tractors-catalog",
+  "name": "hikari-tractors-catalog",
   "private": true,
   "version": "0.1.0",
-  "description": "Hakari Tractors Indonesia static staging foundation before backend and commerce integration.",
+  "description": "Hikari Tractors Indonesia export-ready tractor spare parts catalog.",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "check": "node scripts/verify.mjs"

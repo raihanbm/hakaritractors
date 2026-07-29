@@ -12,7 +12,7 @@ const state = {
   page:1, perPage:24, query:"", category:new Set(), machine:new Set(), stock:new Set(), grade:new Set(),
   minPrice:null,maxPrice:null,sort:"featured",account:"retail",currency:"USD",view:"grid",
   cart:load("kpx_cart",[]), wishlist:new Set(load("kpx_wishlist",[])), compare:new Set(load("kpx_compare",[])),
-  garage:load("kpx_garage",[{family:"Tractor",model:"L4508"},{family:"Engine",model:"V2403"}])
+  garage:load("kpx_garage",[])
 };
 const rates={USD:1,IDR:16300,EUR:.92,SGD:1.35,AUD:1.52};
 const symbols={USD:"$",IDR:"Rp ",EUR:"€",SGD:"S$",AUD:"A$"};
@@ -57,7 +57,7 @@ function makeProducts(count=1200){
    const grade=grades[i%grades.length];
    const prefix=c.split(/[\s&]/).filter(Boolean).map(s=>s[0]).join("").slice(0,3).toUpperCase();
    arr.push({
-     id:i,sku:`KPX-${prefix}-${String(i).padStart(5,"0")}`,name:names[i%names.length],category:c,machine,model,alt,
+     id:i,sku:`HIK-${prefix}-${String(i).padStart(5,"0")}`,name:names[i%names.length],category:c,machine,model,alt,
      engine:["D722","D1105","V1505","V2203","V2403","V3307","V3800"][(i*5)%7],
      grade,origin:i%5===0?"Japan":i%3===0?"Thailand":"Indonesia",
      price:base,b2b:base*.91,export:base*.87,moq:grade==="OEM"?1:(i%5+2),stock:stockVal,qty,
@@ -146,8 +146,8 @@ function openModal(title,html){modalTitle.textContent=title;modalBody.innerHTML=
 function closeModal(){modalBackdrop.classList.remove("open");document.body.style.overflow=""}
 function quickView(id){
  const p=products.find(x=>x.id===id);if(!p)return;
- openModal("Part detail",`<div class="quick-grid"><div class="quick-image"><img src="${IMG[p.img]}" alt="${esc(p.name)}"></div><div class="quick-info"><span class="pill orange">${esc(p.grade)}</span><div class="sku" style="margin-top:10px">${esc(p.sku)} · ${esc(p.origin)}</div><h2>${esc(p.name)}</h2><p style="font-size:10px;color:var(--muted)">Demo product record designed to show the data depth required for an export parts catalog.</p><div class="quick-price">${money(priceFor(p))}</div><div class="spec-grid"><div class="spec"><span>Fitment</span><b>${esc(p.model)} / ${esc(p.alt)}</b></div><div class="spec"><span>Engine</span><b>${esc(p.engine)}</b></div><div class="spec"><span>Availability</span><b>${stockLabel(p)}</b></div><div class="spec"><span>Lead time</span><b>${p.lead}</b></div><div class="spec"><span>Net weight</span><b>${p.weight} kg</b></div><div class="spec"><span>Pack size</span><b>${p.dims}</b></div><div class="spec"><span>HS placeholder</span><b>${p.hs}</b></div><div class="spec"><span>MOQ</span><b>${p.moq} unit(s)</b></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px"><button class="btn btn-primary" onclick="addCart(${p.id});closeModal()">Add to order</button><button class="btn btn-light" onclick="toggleWish(${p.id})">Save part</button></div></div></div>
- <div class="tabs"><button class="active">Compatibility</button><button>Commercial</button><button>Packing</button><button>Documents</button></div><div class="tab-content"><b>Fitment note:</b> compatibility shown in this prototype is illustrative. A production system should validate machine model, engine code, serial range, superseded part numbers and market variant before confirming supply.</div>`);
+ openModal("Part detail",`<div class="quick-grid"><div class="quick-image"><img src="${IMG[p.img]}" alt="${esc(p.name)}"></div><div class="quick-info"><span class="pill orange">${esc(p.grade)}</span><div class="sku" style="margin-top:10px">${esc(p.sku)} · ${esc(p.origin)}</div><h2>${esc(p.name)}</h2><p style="font-size:10px;color:var(--muted)">Product record includes fitment, packing and commercial data for export quotation review.</p><div class="quick-price">${money(priceFor(p))}</div><div class="spec-grid"><div class="spec"><span>Fitment</span><b>${esc(p.model)} / ${esc(p.alt)}</b></div><div class="spec"><span>Engine</span><b>${esc(p.engine)}</b></div><div class="spec"><span>Availability</span><b>${stockLabel(p)}</b></div><div class="spec"><span>Lead time</span><b>${p.lead}</b></div><div class="spec"><span>Net weight</span><b>${p.weight} kg</b></div><div class="spec"><span>Pack size</span><b>${p.dims}</b></div><div class="spec"><span>HS review</span><b>${p.hs}</b></div><div class="spec"><span>MOQ</span><b>${p.moq} unit(s)</b></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px"><button class="btn btn-primary" onclick="addCart(${p.id});closeModal()">Add to order</button><button class="btn btn-light" onclick="toggleWish(${p.id})">Save part</button></div></div></div>
+ <div class="tabs"><button class="active">Compatibility</button><button>Commercial</button><button>Packing</button><button>Documents</button></div><div class="tab-content"><b>Fitment note:</b> compatibility must be validated by machine model, engine code, serial range, superseded part numbers and market variant before confirming supply.</div>`);
 }
 function toggleWish(id){state.wishlist.has(id)?state.wishlist.delete(id):state.wishlist.add(id);save("kpx_wishlist",[...state.wishlist]);renderProducts();toast(state.wishlist.has(id)?"Saved to wishlist":"Removed from wishlist")}
 function toggleCompare(id){if(state.compare.has(id))state.compare.delete(id);else{if(state.compare.size>=4){toast("Comparison limit","You can compare up to 4 parts.");return}state.compare.add(id)}save("kpx_compare",[...state.compare]);renderProducts()}
@@ -169,14 +169,39 @@ function resetAll(){
 window.resetAll=resetAll;window.addCart=addCart;window.closeModal=closeModal;window.toggleWish=toggleWish;
 function updateGarageModel(){const fam=garageFamily.value;garageModel.innerHTML=familyModels[fam].map(x=>`<option>${x}</option>`).join("")}
 function renderGarage(){
- garageItems.innerHTML=state.garage.map((g,i)=>`<button class="machine-chip" data-garage="${i}"><span class="machine-icon">${icon("i-truck",17)}</span><span><b>${esc(g.family)} ${esc(g.model)}</b><small>Use as fitment context</small></span></button>`).join("");
- garageCount.textContent=`${state.garage.length} machine${state.garage.length===1?"":"s"} saved locally`;
+ const garageBox=document.querySelector(".garage");
+ garageBox.classList.toggle("has-items",state.garage.length>0);
+ garageItems.innerHTML=state.garage.map((g,i)=>`<button class="machine-chip" data-garage="${i}"><span class="machine-icon">${icon("i-truck",17)}</span><span><b>${esc(g.family)} ${esc(g.model)}</b><small>Use as fitment shortcut</small></span></button>`).join("");
+ garageCount.textContent=`${state.garage.length} saved`;
+}
+const exportPanels={
+ process:`<div class="route"><div class="route-node"><div class="route-icon">${icon("i-search",16)}</div><b>Part match</b><small>Fitment check</small></div><div class="route-node"><div class="route-icon">${icon("i-file",16)}</div><b>Proforma</b><small>Price validity</small></div><div class="route-node"><div class="route-icon">${icon("i-box",16)}</div><b>Packing</b><small>Weight & volume</small></div><div class="route-node"><div class="route-icon">${icon("i-truck",16)}</div><b>Dispatch</b><small>Air / sea / courier</small></div><div class="route-node"><div class="route-icon">${icon("i-globe",16)}</div><b>Delivery</b><small>Destination support</small></div></div><table class="incoterm-table"><thead><tr><th>Step</th><th>Seller scope</th><th>Best for</th><th>Status</th></tr></thead><tbody><tr><td><b>Match</b></td><td>Model, engine and serial checked</td><td>Wrong-part prevention</td><td><span class="pill green">Required</span></td></tr><tr><td><b>Quote</b></td><td>Price, MOQ and validity issued</td><td>B2B approval</td><td><span class="pill amber">Manual</span></td></tr><tr><td><b>Pack</b></td><td>Carton weight and volume recorded</td><td>Freight quote</td><td><span class="pill dark">Ops</span></td></tr></tbody></table>`,
+ incoterm:`<table class="incoterm-table"><thead><tr><th>Term</th><th>Seller scope</th><th>Best for</th><th>Quote status</th></tr></thead><tbody><tr><td><b>EXW Jakarta</b></td><td>Goods packed at warehouse</td><td>Buyer-appointed forwarder</td><td><span class="pill green">Instant base</span></td></tr><tr><td><b>FOB Tanjung Priok</b></td><td>Export clearance + port delivery</td><td>Sea freight consolidation</td><td><span class="pill amber">Manual freight</span></td></tr><tr><td><b>CIF Main Port</b></td><td>Ocean freight + insurance</td><td>Distributor replenishment</td><td><span class="pill amber">Rate request</span></td></tr><tr><td><b>DAP / DDP</b></td><td>Door delivery; duty depends on term</td><td>Workshop / retail buyer</td><td><span class="pill dark">Compliance review</span></td></tr></tbody></table>`,
+ documents:`<table class="incoterm-table"><thead><tr><th>Document</th><th>Purpose</th><th>Needed for</th><th>Status</th></tr></thead><tbody><tr><td><b>Proforma invoice</b></td><td>Price, validity, payment reference</td><td>Buyer approval</td><td><span class="pill green">Included</span></td></tr><tr><td><b>Packing list</b></td><td>Carton count, gross/net weight</td><td>Freight & customs</td><td><span class="pill amber">After pack</span></td></tr><tr><td><b>HS / origin</b></td><td>Classification and origin fields</td><td>Import clearance</td><td><span class="pill dark">Verify</span></td></tr></tbody></table>`,
+ consolidation:`<table class="incoterm-table"><thead><tr><th>Mode</th><th>How it works</th><th>Best for</th><th>Status</th></tr></thead><tbody><tr><td><b>Mixed carton</b></td><td>Many small SKUs packed together</td><td>Service kits</td><td><span class="pill green">Fast</span></td></tr><tr><td><b>Pallet build</b></td><td>Cartons grouped for sea freight</td><td>Distributor restock</td><td><span class="pill amber">Quoted</span></td></tr><tr><td><b>Split shipment</b></td><td>Ready stock ships first</td><td>Urgent repair</td><td><span class="pill dark">Manual</span></td></tr></tbody></table>`
+};
+function renderExportPanel(tab="process"){
+ const content=document.getElementById("exportContent");
+ if(!content)return;
+ content.innerHTML=exportPanels[tab]||exportPanels.process;
+ document.querySelectorAll("[data-export-tab]").forEach(b=>b.classList.toggle("active",b.dataset.exportTab===tab));
+}
+function syncMobileQuicknav(forcedId){
+ const links=[...document.querySelectorAll(".mobile-quicknav a")];
+ if(!links.length)return;
+ const sections=links.map(a=>document.querySelector(a.getAttribute("href"))).filter(Boolean);
+ const y=scrollY+110;
+ let active=forcedId||sections[0]?.id;
+ if(!forcedId)sections.forEach(s=>{if(s.offsetTop<=y)active=s.id});
+ links.forEach(a=>a.classList.toggle("active",a.getAttribute("href")===`#${active}`));
+ const current=links.find(a=>a.classList.contains("active"));
+ current?.scrollIntoView({block:"nearest",inline:"center"});
 }
 function bind(){
- document.querySelectorAll("[data-search-mode]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-search-mode]").forEach(x=>x.classList.remove("active"));b.classList.add("active");heroSearch.placeholder=b.dataset.searchMode==="part"?"Try: oil filter, V2403, KPX-FLT-00018":b.dataset.searchMode==="model"?"Try: L4508, M7040, U50-5": "Try: D1105, V2403, V3800"});
+ document.querySelectorAll("[data-search-mode]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-search-mode]").forEach(x=>x.classList.remove("active"));b.classList.add("active");heroSearch.placeholder=b.dataset.searchMode==="part"?"Try: oil filter, V2403, HIK-FLT-00018":b.dataset.searchMode==="model"?"Try: L4508, M7040, U50-5": "Try: D1105, V2403, V3800"});
  const doHeroSearch=()=>{state.query=heroSearch.value.trim();catalogSearch.value=state.query;state.page=1;renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
  heroSearchBtn.onclick=doHeroSearch;heroSearch.onkeydown=e=>{if(e.key==="Enter")doHeroSearch()};browseBtn.onclick=()=>document.querySelector("#catalog").scrollIntoView({behavior:"smooth"});
- uploadListBtn.onclick=()=>openModal("Bulk parts-list upload",`<div style="max-width:670px"><h2>Upload CSV / XLSX / PDF parts list</h2><p style="color:var(--muted)">A production version should upload directly to private object storage using short-lived signed URLs, scan files, enforce size and file-type rules, and process rows asynchronously. This static prototype does not upload files.</p><div style="border:2px dashed #cfd5d8;border-radius:12px;padding:55px;text-align:center;background:#f7f8f9">${icon("i-file",34)}<h3>Drop zone preview</h3><small>SKU · description · quantity · model · notes</small></div></div>`);
+ uploadListBtn.onclick=()=>openModal("Bulk parts-list upload",`<div style="max-width:670px"><h2>Upload CSV / XLSX / PDF parts list</h2><p style="color:var(--muted)">Upload purchase lists with SKU, description, quantity, model and notes for quotation review. Files should be validated before processing.</p><div style="border:2px dashed #cfd5d8;border-radius:12px;padding:55px;text-align:center;background:#f7f8f9">${icon("i-file",34)}<h3>Parts list upload</h3><small>SKU · description · quantity · model · notes</small></div></div>`);
  categoryStrip.onclick=e=>{const b=e.target.closest("[data-cat]");if(!b)return;resetAll();state.category.add(b.dataset.cat);document.querySelector(`input[name=category][value="${CSS.escape(b.dataset.cat)}"]`).checked=true;renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
  document.querySelectorAll(".filters input").forEach(el=>el.addEventListener("change",()=>{state.category=new Set([...document.querySelectorAll('input[name=category]:checked')].map(x=>x.value));state.machine=new Set([...document.querySelectorAll('input[name=machine]:checked')].map(x=>x.value));state.stock=new Set([...document.querySelectorAll('input[name=stock]:checked')].map(x=>x.value));state.grade=new Set([...document.querySelectorAll('input[name=grade]:checked')].map(x=>x.value));state.minPrice=minPrice.value?Number(minPrice.value):null;state.maxPrice=maxPrice.value?Number(maxPrice.value):null;state.page=1;renderProducts()}));
  resetFilters.onclick=resetAll;catalogSearch.oninput=()=>{state.query=catalogSearch.value;state.page=1;renderProducts()};sortSelect.onchange=()=>{state.sort=sortSelect.value;state.page=1;renderProducts()};
@@ -188,45 +213,49 @@ function bind(){
  pagination.onclick=e=>{const b=e.target.closest("[data-page]");if(!b||b.disabled)return;state.page=Number(b.dataset.page);renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth",block:"start"})};
  cartBtn.onclick=openDrawer;drawerClose.onclick=closeDrawer;drawerBackdrop.onclick=closeDrawer;
  cartItems.onclick=e=>{const b=e.target.closest("[data-cart]");if(!b)return;const id=Number(b.dataset.id),item=state.cart.find(x=>x.id===id),p=products.find(x=>x.id===id);if(!item)return;if(b.dataset.cart==="plus")item.qty++;if(b.dataset.cart==="minus")item.qty=Math.max(p.moq,item.qty-1);if(b.dataset.cart==="remove")state.cart=state.cart.filter(x=>x.id!==id);save("kpx_cart",state.cart);renderCart();updateCounts()};
- checkoutBtn.onclick=()=>{if(!state.cart.length){toast("Order list is empty");return}openModal("Demo quotation created",`<div style="text-align:center;padding:30px 10px">${icon("i-check",48)}<h2>Quotation draft ready</h2><p style="color:var(--muted)">Reference KPX-RFQ-${Date.now().toString().slice(-8)} has been generated locally. A production system would validate the buyer, destination, price, stock, export restrictions and freight before issuing a signed proforma invoice.</p><button class="btn btn-primary" onclick="closeModal()">Done</button></div>`);closeDrawer()};
+ checkoutBtn.onclick=()=>{if(!state.cart.length){toast("Order list is empty");return}openModal("Quotation request prepared",`<div style="text-align:center;padding:30px 10px">${icon("i-check",48)}<h2>Quotation draft ready</h2><p style="color:var(--muted)">Reference HIK-RFQ-${Date.now().toString().slice(-8)} is ready for Hikari’s export team to validate buyer details, destination, stock, freight and documentation before proforma invoice issuance.</p><button class="btn btn-primary" onclick="closeModal()">Done</button></div>`);closeDrawer()};
  wishlistBtn.onclick=showWishlist;compareBtn.onclick=showCompare;
  modalClose.onclick=closeModal;modalBackdrop.onclick=e=>{if(e.target===modalBackdrop)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();closeDrawer()}});
  garageFamily.onchange=updateGarageModel;saveMachineBtn.onclick=()=>{const g={family:garageFamily.value,model:garageModel.value};if(!state.garage.some(x=>x.family===g.family&&x.model===g.model)){state.garage.push(g);save("kpx_garage",state.garage);renderGarage();toast("Machine saved",`${g.family} ${g.model}`)}};
  garageItems.onclick=e=>{const b=e.target.closest("[data-garage]");if(!b)return;const g=state.garage[Number(b.dataset.garage)];state.query=g.model;catalogSearch.value=g.model;renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
+ document.querySelectorAll("[data-export-tab]").forEach(b=>b.onclick=()=>renderExportPanel(b.dataset.exportTab));
+ document.querySelectorAll(".mobile-quicknav a").forEach(a=>a.onclick=()=>syncMobileQuicknav(a.getAttribute("href").slice(1)));
+ addEventListener("scroll",()=>syncMobileQuicknav(),{passive:true});addEventListener("hashchange",()=>syncMobileQuicknav(location.hash.slice(1)));
  document.querySelectorAll(".faq-q").forEach(b=>b.onclick=()=>b.parentElement.classList.toggle("open"));
- contactForm.onsubmit=e=>{e.preventDefault();const fd=new FormData(contactForm);openModal("Demo RFQ",`<h2>Thank you, ${esc(fd.get("name"))}</h2><p>Your enquiry for <b>${esc(fd.get("country"))}</b> has been prepared locally. No information was sent because this is a static prototype.</p><div class="spec"><span>Request summary</span><b>${esc(fd.get("message"))}</b></div>`);contactForm.reset()};
+ contactForm.onsubmit=e=>{e.preventDefault();const fd=new FormData(contactForm);openModal("Quotation request",`<h2>Thank you, ${esc(fd.get("name"))}</h2><p>Your enquiry for <b>${esc(fd.get("country"))}</b> is ready for export quotation review.</p><div class="spec"><span>Request summary</span><b>${esc(fd.get("message"))}</b></div>`);contactForm.reset()};
  downloadSampleBtn.onclick=downloadCSV;
  securityBtn.onclick=securityFooterBtn.onclick=e=>{e.preventDefault();showSecurity()};
  creditsBtn.onclick=e=>{e.preventDefault();showCredits()};
  clearDataBtn.onclick=e=>{e.preventDefault();["kpx_cart","kpx_wishlist","kpx_compare","kpx_garage"].forEach(k=>localStorage.removeItem(k));location.reload()};
  mobileFilterBtn.onclick=()=>{filtersPanel.classList.toggle("mobile-open");drawerBackdrop.classList.toggle("open")};
- dismissDemo.onclick=()=>demoBanner.remove();
+ dismissCatalogNotice.onclick=()=>catalogBanner.remove();
+ syncMobileQuicknav(location.hash.slice(1)||"catalog");
 }
 function downloadCSV(){
- const rows=[["sku","description","quantity","model","buyer_note"],["KPX-FLT-00018","Engine Oil Filter","12","V2403","B2B export quote"],["KPX-GS-00044","Full Gasket Set","3","D1105","Confirm serial range"]];
- const blob=new Blob([rows.map(r=>r.join(",")).join("\\n")],{type:"text/csv"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="KPX_bulk_order_template.csv";a.click();URL.revokeObjectURL(a.href)
+ const rows=[["sku","description","quantity","model","buyer_note"],["HIK-FLT-00018","Engine Oil Filter","12","V2403","B2B export quote"],["HIK-GS-00044","Full Gasket Set","3","D1105","Confirm serial range"]];
+ const blob=new Blob([rows.map(r=>r.join(",")).join("\n")],{type:"text/csv"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="Hikari_bulk_order_template.csv";a.click();URL.revokeObjectURL(a.href)
 }
 function showSecurity(){
- openModal("Production security architecture",`<div style="max-width:820px"><h2>What must change before launch</h2><p>This single-file prototype intentionally contains no authentication, payment, private API keys or live inventory. A production implementation should use a secure backend and treat the browser as untrusted.</p>
+ openModal("Trade compliance and platform security",`<div style="max-width:820px"><h2>Operational safeguards</h2><p>Export quotations should be validated through secure account, pricing, stock, freight and documentation workflows before invoice issuance.</p>
  <div class="spec-grid"><div class="spec"><span>Identity</span><b>Passkeys / MFA, secure sessions, role-based access</b></div><div class="spec"><span>Catalog</span><b>Server-side validation, versioned price lists, audit history</b></div><div class="spec"><span>Payments</span><b>Hosted provider fields; never store raw card data</b></div><div class="spec"><span>Uploads</span><b>Signed URLs, malware scanning, file limits, quarantine</b></div><div class="spec"><span>APIs</span><b>Rate limits, CSRF protection, schema validation, idempotency</b></div><div class="spec"><span>Operations</span><b>Backups, alerts, WAF/CDN, secrets manager, log retention</b></div></div>
  <h3>Recommended service boundaries</h3><p>Catalog/Search · Pricing & Contracts · Inventory · Cart/RFQ · Order Management · Freight Quotes · Documents · Customer Accounts · CMS/PIM · Analytics. Keep price calculation, stock reservation, customs fields and payment confirmation server-authoritative.</p>
  <h3>Large-catalog strategy</h3><p>Use a PIM or normalized product database, object storage plus image CDN, background image processing, faceted search index, cursor pagination, cached model-fitment tables and event-driven synchronization with ERP/WMS.</p></div>`);
 }
 function showCredits(){
- openModal("Image credits",`<p>Images are embedded so the demo works as one offline HTML file.</p><table class="compare-table"><tr><th>Image</th><th>Source / license</th></tr>
+ openModal("Media attribution",`<p>Image sources and license notes for catalog media review.</p><table class="compare-table"><tr><th>Image</th><th>Source / license</th></tr>
  <tr><td>Kubota tractor 7, C and D</td><td>Love Krittaya · Wikimedia Commons · released to the public domain.</td></tr>
  <tr><td>Kubota engine at Agritechnica 2023</td><td>Matti Blume · Wikimedia Commons · CC BY-SA.</td></tr>
  <tr><td>Piston and cylinder-head images</td><td>Dana60Cummins · Wikimedia Commons · CC BY-SA 3.0.</td></tr></table>
- <p style="font-size:10px;color:var(--muted)">This prototype includes attribution for demonstration. Review each source license and your intended commercial use before publishing.</p>`);
+ <p style="font-size:10px;color:var(--muted)">Review each source license and intended commercial use before publishing.</p>`);
 }
 function buildFAQs(){
  const qs=[
- ["Are the prices final export prices?","No. Prices in this prototype are illustrative and exclude freight, destination tax, duty, banking fees and any destination-specific compliance cost."],
+ ["Are the prices final export prices?","No. Final export pricing is confirmed after stock, freight, destination tax, duty, banking fees and destination-specific compliance costs are reviewed."],
  ["Can retail and B2B customers use the same catalog?","Yes. The same product records can expose different price tiers, MOQ rules, credit terms and quotation workflows based on the authenticated customer account."],
  ["How should fitment be confirmed?","Use equipment family, exact model, engine code, serial range, market variant and superseded part numbers. High-risk assemblies should require manual approval before shipment."],
- ["Can thousands of products be managed in one HTML file?","This prototype can filter 1,200 generated records locally, but production should use a database, search index, PIM, image CDN and server-side APIs."],
+ ["Can large product catalogs be managed at scale?","Yes. A production catalog should use a database, search index, PIM, image CDN and server-side APIs for reliable inventory and pricing operations."],
  ["How are export documents handled?","The system should generate controlled commercial documents from validated order, packing, country-of-origin and classification data. HS codes and regulatory requirements need professional review."],
- ["Is this an official Kubota website?","No. It is an independent catalog prototype. Brand names and trademarks belong to their respective owners."]
+ ["Is Hikari Tractors affiliated with OEM brands?","Hikari Tractors Indonesia is an independent supplier. Brand names and trademarks belong to their respective owners."]
  ];
  faqList.innerHTML=qs.map((q,i)=>`<div class="faq-item ${i===0?"open":""}"><button class="faq-q">${esc(q[0])}${icon("i-plus",15)}</button><div class="faq-a">${esc(q[1])}</div></div>`).join("");
 }

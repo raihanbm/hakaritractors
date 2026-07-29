@@ -1,17 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- STAGING FOUNDATION: catalog/order/payment data remains demo-only until backend integration. -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f15a24">
 <meta name="color-scheme" content="light">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta name="description" content="Hakari Tractors Indonesia — compact export-ready tractor spare parts catalog prototype for retail, workshop, fleet and B2B buyers.">
+<meta name="description" content="Hikari Tractors Indonesia — export-ready tractor spare parts catalog for retail, workshop, fleet and B2B buyers.">
 <meta name="robots" content="noindex,nofollow">
-<meta name="application-name" content="Hakari Tractors Indonesia">
+<meta name="application-name" content="Hikari Tractors Indonesia">
 <link rel="manifest" href="site.webmanifest">
-<title>Hakari Tractors Indonesia — Parts Catalog</title>
+<title>Hikari Tractors Indonesia — Parts Catalog</title>
 <link rel="icon" href="assets/images/favicon.png" type="image/png">
 <link rel="stylesheet" href="assets/css/main.css">
 </head>
@@ -41,18 +40,26 @@
 
 <header class="site-header">
   <div class="wrap nav">
-    <a class="brand" href="#home" aria-label="Hakari Tractors home"><span class="brand-mark"><img src="assets/images/hakari-logo.png" alt="" aria-hidden="true"></span><span class="brand-copy"><b>HAKARI TRACTORS INDONESIA</b><small>Indonesia · Global Supply</small></span></a>
+    <a class="brand" href="#home" aria-label="Hikari Tractors home"><span class="brand-mark"><img src="assets/images/hikari-logo.png" alt="" aria-hidden="true"></span><span class="brand-copy"><b>HIKARI TRACTORS INDONESIA</b><small>Indonesia · Global Supply</small></span></a>
     <nav class="nav-links" aria-label="Main navigation">
       <a href="#catalog">Parts Catalog</a><a href="#model-finder">Model Finder</a><a href="#export">Export</a><a href="#b2b">B2B</a><a href="#support">Support</a>
     </nav>
     <div class="nav-actions">
-      <select id="currencySelect" class="icon-btn desktop-only" aria-label="Currency"><option>USD</option><option>IDR</option><option>EUR</option><option>SGD</option><option>AUD</option></select>
+      <select id="currencySelect" class="currency-select" aria-label="Currency"><option>USD</option><option>IDR</option><option>EUR</option><option>SGD</option><option>AUD</option></select>
       <button class="square-btn hide-phone" id="wishlistBtn" aria-label="Wishlist"><svg width="18" height="18"><use href="#i-heart"/></svg><span class="badge-count" id="wishCount">0</span></button>
       <button class="square-btn hide-phone" id="compareBtn" aria-label="Compare"><svg width="18" height="18"><use href="#i-compare"/></svg><span class="badge-count" id="compareCount">0</span></button>
       <button class="icon-btn" id="cartBtn"><svg width="18" height="18"><use href="#i-cart"/></svg><span class="desktop-only">Order / RFQ</span><span class="badge-count" id="cartCount">0</span></button>
     </div>
   </div>
 </header>
+
+<nav class="mobile-quicknav" aria-label="Mobile quick navigation">
+  <a href="#catalog">Catalog</a>
+  <a href="#model-finder">Models</a>
+  <a href="#export">Export</a>
+  <a href="#b2b">B2B</a>
+  <a href="#support">Support</a>
+</nav>
 
 <main id="home">
 <section class="hero">
@@ -62,24 +69,24 @@
       <div class="eyebrow">Parts intelligence for global buyers</div>
       <h1>Find the exact part.<br><span>Ship it worldwide.</span></h1>
       <p class="hero-copy">A compact export catalog built for farmers, workshops, fleet operators and distributors. Search by SKU, machine model or engine series, compare price tiers, and request freight-ready quotations in one flow.</p>
-      <div class="hero-pills"><span>1,200 demo SKUs</span><span>Retail + B2B tiers</span><span>EXW / FOB / CIF / DDP</span><span>Mixed-carton RFQ</span><span>Fitment-first search</span></div>
+      <div class="hero-pills"><span>1,200 SKUs</span><span>Retail + B2B tiers</span><span>EXW / FOB / CIF / DDP</span><span>Mixed-carton RFQ</span><span>Fitment-first search</span></div>
     </div>
     <div class="search-console">
-      <div class="console-head"><b>Precision Parts Lookup</b><span>DEMO CATALOG · DATA IS ILLUSTRATIVE</span></div>
+      <div class="console-head"><b>Precision Parts Lookup</b><span>CATALOG REVIEW · EXPORT READY</span></div>
       <div class="search-tabs"><button class="active" data-search-mode="part">Part / Keyword</button><button data-search-mode="model">Machine Model</button><button data-search-mode="engine">Engine Series</button></div>
-      <div class="big-search"><input id="heroSearch" placeholder="Try: oil filter, V2403, L4508, KPX-FLT-00018"><button id="heroSearchBtn" aria-label="Search"><svg width="20" height="20"><use href="#i-search"/></svg></button></div>
+      <div class="big-search"><input id="heroSearch" placeholder="Try: oil filter, V2403, L4508, HIK-FLT-00018"><button id="heroSearchBtn" aria-label="Search"><svg width="20" height="20"><use href="#i-search"/></svg></button></div>
       <div class="console-selects">
         <div class="field"><label>Equipment family</label><select id="heroFamily"><option value="">All equipment</option><option>Tractor</option><option>Excavator</option><option>Engine</option><option>Combine</option><option>RTV</option></select></div>
         <div class="field"><label>Buyer profile</label><select id="buyerProfile"><option value="retail">Retail / Workshop</option><option value="b2b">B2B Distributor</option><option value="fleet">Fleet Account</option></select></div>
       </div>
       <div class="console-actions"><button class="btn btn-primary" id="browseBtn"><svg width="17" height="17"><use href="#i-grid"/></svg>Browse catalog</button><button class="btn btn-light" id="uploadListBtn"><svg width="17" height="17"><use href="#i-file"/></svg>Upload parts list</button></div>
-      <div class="console-note"><svg width="15" height="15"><use href="#i-shield"/></svg><span>Prototype only. Production pricing, stock, tax, shipping and payment must be validated by a secure server-side system.</span></div>
+      <div class="console-note"><svg width="15" height="15"><use href="#i-shield"/></svg><span>Export pricing, stock, tax, freight and payment terms are confirmed by Hikari’s sales team before invoicing.</span></div>
     </div>
   </div>
 </section>
 
 <section class="stats-bar"><div class="wrap stats-grid">
-  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-box"/></svg></div><div><b>1,200+</b><small>searchable demo SKUs</small></div></div>
+  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-box"/></svg></div><div><b>1,200+</b><small>searchable SKUs</small></div></div>
   <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-truck"/></svg></div><div><b>35+</b><small>destination markets</small></div></div>
   <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-globe"/></svg></div><div><b>5</b><small>Incoterm workflows</small></div></div>
   <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-shield"/></svg></div><div><b>3</b><small>buyer pricing levels</small></div></div>
@@ -95,7 +102,7 @@
 
 <section class="section" id="catalog">
 <div class="wrap">
-  <div class="section-head"><div><span class="kicker">Searchable product database</span><h2>Parts Catalog</h2></div><p id="catalogContext">Filter by category, machine, availability, origin and export packaging. The front end handles 1,200 demo products without a framework.</p></div>
+  <div class="section-head"><div><span class="kicker">Searchable product database</span><h2>Parts Catalog</h2></div><p id="catalogContext">Filter by category, machine, availability, origin and export packaging across a structured tractor parts catalog.</p></div>
   <div class="catalog-shell">
     <aside class="filters" id="filtersPanel">
       <div class="filters-head"><b>Filters</b><button id="resetFilters">Reset all</button></div>
@@ -114,7 +121,7 @@
         <select id="sortSelect" class="sort-select"><option value="featured">Featured</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="stock">Availability</option><option value="name">Name A–Z</option></select>
         <div class="view-toggle"><button id="gridView" class="active" aria-label="Grid view"><svg width="16" height="16"><use href="#i-grid"/></svg></button><button id="listView" aria-label="List view"><svg width="16" height="16"><use href="#i-list"/></svg></button></div>
       </div>
-      <div class="result-meta"><span id="resultCount">Loading products…</span><span>Prices exclude freight, duty and destination tax · demo rates</span></div>
+      <div class="result-meta"><span id="resultCount">Loading products…</span><span>Prices exclude freight, duty and destination tax</span></div>
       <div class="product-grid" id="productGrid"></div>
       <div class="pagination" id="pagination"></div>
     </div>
@@ -130,7 +137,7 @@
       <div class="finder-steps"><div class="finder-step"><span>01</span><b>Select equipment family</b></div><div class="finder-step"><span>02</span><b>Add model / engine code</b></div><div class="finder-step"><span>03</span><b>Browse verified fitment</b></div></div>
       <div class="console-selects"><div class="field"><label>Family</label><select id="garageFamily"><option>Tractor</option><option>Excavator</option><option>Engine</option><option>Combine</option></select></div><div class="field"><label>Model</label><select id="garageModel"></select></div></div>
       <button class="btn btn-primary" id="saveMachineBtn" style="margin-top:10px"><svg width="16" height="16"><use href="#i-plus"/></svg>Add to My Garage</button>
-      <div class="garage"><div class="garage-head"><b>My Garage</b><small id="garageCount">2 machines saved locally</small></div><div class="garage-items" id="garageItems"></div></div>
+      <div class="garage"><div class="garage-head"><b>Saved Models</b><small id="garageCount">0 saved</small></div><div class="garage-items" id="garageItems"></div></div>
     </div>
     <div class="model-media"><img id="modelImage" alt="Kubota tractor for model finder"><div class="media-label"><b>Fitment-first catalog</b><br><span>Model · engine · serial-range ready</span></div></div>
   </div>
@@ -140,8 +147,8 @@
   <div class="section-head"><div><span class="kicker">Quote-to-shipment workflow</span><h2>Built for export, not just checkout</h2></div><p>The order drawer captures commercial terms, destination and buyer type before quotation, so freight and packing can be calculated correctly.</p></div>
   <div class="export-grid">
     <div class="export-board">
-      <div class="export-tabs"><button class="active">Export process</button><button>Incoterm guide</button><button>Documents</button><button>Consolidation</button></div>
-      <div class="route">
+      <div class="export-tabs"><button class="active" data-export-tab="process">Export process</button><button data-export-tab="incoterm">Incoterm guide</button><button data-export-tab="documents">Documents</button><button data-export-tab="consolidation">Consolidation</button></div>
+      <div id="exportContent"><div class="route">
         <div class="route-node"><div class="route-icon"><svg width="16" height="16"><use href="#i-search"/></svg></div><b>Part match</b><small>Fitment check</small></div>
         <div class="route-node"><div class="route-icon"><svg width="16" height="16"><use href="#i-file"/></svg></div><b>Proforma</b><small>Price validity</small></div>
         <div class="route-node"><div class="route-icon"><svg width="16" height="16"><use href="#i-box"/></svg></div><b>Packing</b><small>Weight & volume</small></div>
@@ -153,11 +160,11 @@
         <tr><td><b>FOB Tanjung Priok</b></td><td>Export clearance + port delivery</td><td>Sea freight consolidations</td><td><span class="pill amber">Manual freight</span></td></tr>
         <tr><td><b>CIF Main Port</b></td><td>Ocean freight + insurance</td><td>Distributor replenishment</td><td><span class="pill amber">Rate request</span></td></tr>
         <tr><td><b>DAP / DDP</b></td><td>Door delivery; duty depends on term</td><td>Workshop / retail buyer</td><td><span class="pill dark">Compliance review</span></td></tr>
-      </tbody></table>
+      </tbody></table></div>
     </div>
     <div class="export-side">
-      <div class="side-card orange"><h3>Mixed-carton B2B orders</h3><p>Combine filters, seals, bearings and maintenance kits into a single commercial quotation with carton-level packing data.</p><div class="metric-row"><div class="metric"><b>10+</b><small>SKU mix</small></div><div class="metric"><b>3%</b><small>tier demo</small></div><div class="metric"><b>48h</b><small>RFQ target</small></div></div></div>
-      <div class="side-card"><h3>Commercial document pack</h3><p>Prototype flow includes proforma invoice, packing list, product origin field, HS-code placeholder and shipment notes. Final classifications require professional verification.</p><button class="btn btn-light btn-sm" id="downloadSampleBtn" style="margin-top:14px"><svg width="15" height="15"><use href="#i-download"/></svg>Download sample CSV</button></div>
+      <div class="side-card orange"><h3>Mixed-carton B2B orders</h3><p>Combine filters, seals, bearings and maintenance kits into a single commercial quotation with carton-level packing data.</p><div class="metric-row"><div class="metric"><b>10+</b><small>SKU mix</small></div><div class="metric"><b>3%</b><small>tier option</small></div><div class="metric"><b>48h</b><small>RFQ target</small></div></div></div>
+      <div class="side-card"><h3>Commercial document pack</h3><p>Prepare proforma invoices, packing lists, origin fields, HS-code notes and shipment references for export review.</p><button class="btn btn-light btn-sm" id="downloadSampleBtn" style="margin-top:14px"><svg width="15" height="15"><use href="#i-download"/></svg>Download order CSV</button></div>
     </div>
   </div>
 </div></section>
@@ -167,7 +174,7 @@
   <div class="service-grid">
     <div class="service"><div class="service-icon"><svg width="20" height="20"><use href="#i-user"/></svg></div><h3>Retail & workshop</h3><p>Simple quantity ordering, visible stock state, fitment details, saved favorites and courier-oriented enquiry.</p><a href="#catalog">Browse retail catalog →</a></div>
     <div class="service"><div class="service-icon"><svg width="20" height="20"><use href="#i-box"/></svg></div><h3>Distributor B2B</h3><p>MOQ, price tiers, mixed cartons, RFQ validity, proforma references and account-level commercial terms.</p><a href="#catalog">Switch to B2B price →</a></div>
-    <div class="service"><div class="service-icon"><svg width="20" height="20"><use href="#i-truck"/></svg></div><h3>Fleet replenishment</h3><p>Saved machines, maintenance-kit bundles, repeat order lists and destination-aware shipping requests.</p><a href="#model-finder">Open My Garage →</a></div>
+    <div class="service"><div class="service-icon"><svg width="20" height="20"><use href="#i-truck"/></svg></div><h3>Fleet replenishment</h3><p>Saved machines, maintenance-kit bundles, repeat order lists and destination-aware shipping requests.</p><a href="#model-finder">Open Saved Models →</a></div>
     <div class="service"><div class="service-icon"><svg width="20" height="20"><use href="#i-shield"/></svg></div><h3>Secure production path</h3><p>Server-authoritative prices, role-based access, audit logs, rate limits, signed uploads and payment-provider tokenization.</p><a href="#" id="securityBtn">Read architecture notes →</a></div>
   </div>
 </div></section>
@@ -183,10 +190,10 @@
   <div class="faq-contact">
     <div class="faq-panel"><div id="faqList"></div></div>
     <form class="contact-panel" id="contactForm">
-      <h3 style="margin:0 0 5px">Request a parts quotation</h3><p style="font-size:10px;color:var(--muted);margin:0 0 14px">Use this demo form to preview the RFQ flow. It does not send data.</p>
+      <h3 style="margin:0 0 5px">Request a parts quotation</h3><p style="font-size:10px;color:var(--muted);margin:0 0 14px">Share your parts list, destination and buyer type for export quotation review.</p>
       <div class="contact-grid"><div class="field"><label>Name / company</label><input required name="name"></div><div class="field"><label>Email</label><input required type="email" name="email"></div><div class="field"><label>Country</label><input required name="country"></div><div class="field"><label>Buyer type</label><select name="type"><option>Retail / workshop</option><option>B2B distributor</option><option>Fleet operator</option></select></div></div>
       <div class="field" style="margin-top:9px"><label>Parts, model or engine details</label><textarea required name="message" placeholder="Example: V2403 service kit, 10 sets, destination Surabaya / Singapore / Manila..."></textarea></div>
-      <button class="btn btn-primary btn-block" type="submit" style="margin-top:10px">Create demo RFQ</button><div class="form-note">Never collect payment-card details or sensitive identity documents in an unprotected contact form.</div>
+      <button class="btn btn-primary btn-block" type="submit" style="margin-top:10px">Create RFQ</button><div class="form-note">Do not include payment-card details or sensitive identity documents in this form.</div>
     </form>
   </div>
 </div></section>
@@ -194,12 +201,12 @@
 
 <footer class="footer"><div class="wrap">
   <div class="footer-grid">
-    <div><a class="brand" href="#home"><span class="brand-mark"><img src="assets/images/hakari-logo.png" alt="" aria-hidden="true"></span><span class="brand-copy"><b style="color:white">HAKARI TRACTORS INDONESIA</b><small>Independent catalog prototype</small></span></a><p style="max-width:460px;margin-top:15px">A professional front-end concept for an Indonesian spare-parts exporter. Kubota is a trademark of its respective owner. This prototype is not an official Kubota website and does not claim affiliation.</p></div>
+    <div><a class="brand" href="#home"><span class="brand-mark"><img src="assets/images/hikari-logo.png" alt="" aria-hidden="true"></span><span class="brand-copy"><b style="color:white">HIKARI TRACTORS INDONESIA</b><small>Tractor Parts · Export Supply</small></span></a><p style="max-width:460px;margin-top:15px">Hikari Tractors Indonesia supplies tractor spare parts, export packing support and quotation assistance for workshops, fleets and distributors.</p></div>
     <div><h4>Catalog</h4><a href="#catalog">All parts</a><a href="#model-finder">Model finder</a><a href="#catalog">Maintenance kits</a><a href="#catalog">Engine components</a></div>
     <div><h4>Export</h4><a href="#export">Shipment process</a><a href="#export">Incoterms</a><a href="#export">Packing</a><a href="#support">Request quote</a></div>
-    <div><h4>Prototype</h4><a href="#" id="creditsBtn">Image credits</a><a href="#" id="securityFooterBtn">Security notes</a><a href="#support">Contact</a><a href="#" id="clearDataBtn">Clear local demo data</a></div>
+    <div><h4>Company</h4><a href="#support">Contact</a><a href="#" id="securityFooterBtn">Trade compliance</a><a href="#" id="creditsBtn">Media attribution</a><a href="#" id="clearDataBtn">Reset saved data</a></div>
   </div>
-  <div class="footer-bottom"><span>© 2026 KPX prototype · Product data, prices, fitment and stock are illustrative.</span><span>Offline-ready single HTML · No framework · LocalStorage demo</span></div>
+  <div class="footer-bottom"><span>© 2026 Hikari Tractors Indonesia. All rights reserved.</span><span>Export terms, availability and fitment are confirmed during quotation.</span></div>
 </div></footer>
 
 <div class="drawer-backdrop" id="drawerBackdrop"></div>
@@ -209,13 +216,13 @@
   <div class="drawer-foot">
     <div class="drawer-form"><div class="field"><label>Destination country</label><input id="destCountry" placeholder="e.g. Philippines"></div><div class="field"><label>Trade term</label><select id="incoterm"><option>EXW Jakarta</option><option>FOB Tanjung Priok</option><option>CIF Main Port</option><option>DAP Address</option><option>DDP Address</option></select></div><div class="field"><label>Shipping</label><select id="shippingMethod"><option>Quote best method</option><option>Courier</option><option>Air cargo</option><option>Sea LCL</option><option>Sea FCL</option></select></div><div class="field"><label>Reference</label><input id="buyerRef" placeholder="PO / project ref"></div></div>
     <div class="totals"><div class="total-row"><span>Merchandise</span><b id="subtotalText">$0.00</b></div><div class="total-row"><span>Estimated packing</span><b id="packingText">$0.00</b></div><div class="total-row"><span>Freight & destination charges</span><b>Quoted separately</b></div><div class="total-row grand"><span>Quotation base</span><b id="grandText">$0.00</b></div></div>
-    <button class="btn btn-primary btn-block" id="checkoutBtn" style="margin-top:11px">Generate demo quotation</button>
+    <button class="btn btn-primary btn-block" id="checkoutBtn" style="margin-top:11px">Generate quotation</button>
   </div>
 </aside>
 
 <div class="modal-backdrop" id="modalBackdrop"><div class="modal"><div class="modal-head"><h3 id="modalTitle">Details</h3><button class="drawer-close" id="modalClose"><svg width="17" height="17"><use href="#i-close"/></svg></button></div><div class="modal-body" id="modalBody"></div></div></div>
 <div class="toast-stack" id="toastStack"></div>
-<div class="demo-banner" id="demoBanner"><button id="dismissDemo">×</button><b>Interactive prototype</b><br>Prices, stock, fitment and shipping are demo data.</div>
+<div class="catalog-banner" id="catalogBanner"><button id="dismissCatalogNotice">×</button><b>Catalog notice</b><br>Final pricing, stock and shipping are confirmed during quotation.</div>
 
 <script src="assets/js/app.js" defer></script>
 </body>

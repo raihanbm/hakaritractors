@@ -1,7 +1,7 @@
 # Image Credits
 
-The images were extracted from the uploaded prototype and converted to WebP.
-The prototype itself identifies these sources:
+The images were extracted from the supplied catalog package and converted to WebP.
+The package identifies these sources:
 
 - Kubota tractor images: Love Krittaya, Wikimedia Commons, public domain.
 - Kubota engine at Agritechnica 2023: Matti Blume, Wikimedia Commons, CC BY-SA.

@@ -29,4 +29,4 @@ createServer(async (req, res) => {
     res.writeHead(404, {'Content-Type':'text/plain; charset=utf-8'});
     res.end('404 — File not found');
   }
-}).listen(port, () => console.log(`KPX preview: http://localhost:${port}`));
+}).listen(port, () => console.log(`Hikari preview: http://localhost:${port}`));
