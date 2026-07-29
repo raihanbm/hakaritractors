@@ -61,3 +61,35 @@ a{color:inherit;text-decoration:none}img{max-width:100%;display:block}.wrap{widt
 @media(max-width:880px){.filters{display:flex!important;position:fixed!important;z-index:150!important;left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;max-height:min(82vh,680px)!important;inset:auto 0 0 0!important;border-radius:20px 20px 0 0!important;border:0!important;box-shadow:0 -18px 60px rgba(5,9,12,.28)!important;overflow:auto!important;transform:translateY(108%)!important;transition:transform .25s ease!important;pointer-events:none!important}.filters.mobile-open{transform:translateY(0)!important;pointer-events:auto!important}.filters-grip{display:block!important;position:sticky;top:0;margin:8px auto 0;width:42px;height:4px;border-radius:99px;background:#d6dce0;z-index:2}.filters-head{position:sticky;top:0;z-index:3;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);padding:12px 14px 10px!important;border-bottom:1px solid var(--line)!important}.filters-head b{font-size:15px!important}.filters-head small{font-size:10px!important}.filter-close{display:grid!important;place-items:center;width:34px;height:34px;border:1px solid var(--line)!important;background:#fff!important;border-radius:10px;color:#31383f}.filters-head #resetFilters{margin-left:auto}.filter-group{padding:12px 14px!important}.filter-title{font-size:9px!important}.filter-group .check{min-height:31px;margin:5px 0;padding:0 8px;border:1px solid #eef1f3;border-radius:9px;background:#fafbfb}.filter-group .check:has(input:checked){border-color:rgba(241,90,36,.38);background:#fff7f3;color:#172027;font-weight:850}.range-row input{height:38px!important}.filter-sheet-actions{position:sticky;bottom:0;z-index:4;display:grid!important;grid-template-columns:1.2fr .8fr;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(255,255,255,.82),#fff 30%);border-top:1px solid var(--line)}.filter-sheet-actions .btn{height:42px}.mobile-filter-btn{gap:6px!important}.mobile-filter-btn small:empty{display:none}}
 
 @media(min-width:881px){.filters-head .filter-close,.filter-sheet-actions,.filters-grip{display:none!important}.filters-head{gap:10px}.filters-head #resetFilters{margin-left:auto}}
+
+/* Mobile QA overrides: keep catalog filter as a true bottom sheet on phones. */
+@media(max-width:880px){
+  .mobile-filter-btn{display:flex!important}
+  .filters{display:flex!important;position:fixed!important;left:0!important;right:0!important;top:auto!important;bottom:0!important;inset:auto 0 0 0!important;width:100%!important;max-height:min(82vh,680px)!important;transform:translateY(108%)!important;pointer-events:none!important;z-index:150!important}
+  .filters.mobile-open{transform:translateY(0)!important;pointer-events:auto!important}
+}
+
+/* Mobile filter sheet cleanup: force the sheet content into one clean vertical column. */
+@media(max-width:880px){
+  .filters{
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:flex-start!important;
+    box-sizing:border-box!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  .filters>*{width:100%!important;max-width:100%!important;box-sizing:border-box!important;flex:0 0 auto!important}
+  .filters-head{display:grid!important;grid-template-columns:minmax(0,1fr) 34px auto!important;align-items:center!important;gap:8px!important;overflow:hidden!important}
+  .filters-head>div{min-width:0!important;overflow:hidden!important}
+  .filters-head b{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .filters-head small{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .filters-head #resetFilters{margin-left:0!important;white-space:nowrap!important;min-width:max-content!important}
+  .filter-group{width:100%!important;margin:0!important;padding:11px 14px!important;border-bottom:1px solid var(--line)!important}
+  .filter-title{margin-bottom:8px!important;text-align:left!important}
+  .filter-group .check{width:100%!important;box-sizing:border-box!important;justify-content:flex-start!important;display:flex!important;align-items:center!important;gap:8px!important;overflow:hidden!important}
+  .filter-group .check input{flex:0 0 auto!important}
+  .filter-group .check span,.filter-group .check{min-width:0!important}
+  .range-row{width:100%!important;box-sizing:border-box!important}
+  .filter-sheet-actions{width:100%!important;box-sizing:border-box!important}
+}

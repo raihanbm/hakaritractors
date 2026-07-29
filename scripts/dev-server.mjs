@@ -22,7 +22,7 @@ createServer(async (req, res) => {
     const body = await readFile(path);
     res.writeHead(200, {
       'Content-Type': mime[extname(path)] || 'application/octet-stream',
-      'Cache-Control': extname(path) === '.html' ? 'no-cache' : 'public, max-age=3600'
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
     });
     res.end(body);
   } catch {

@@ -11,7 +11,8 @@ if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(html)) issues.push('index.html still co
 const refs = [...html.matchAll(/(?:src|href)="([^"#][^"]*)"/g)].map(m => m[1]);
 for (const ref of refs) {
   if (/^(https?:|mailto:|tel:|javascript:)/i.test(ref)) continue;
-  const path = join(root, ref.replace(/^\//, ''));
+  const cleanRef = ref.split('?')[0];
+  const path = join(root, cleanRef.replace(/^\//, ''));
   try { await stat(path); } catch { issues.push(`Missing local asset: ${ref}`); }
 }
 

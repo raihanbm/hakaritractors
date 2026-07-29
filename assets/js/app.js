@@ -309,8 +309,8 @@ function resetAll(){
  catalogSearch.value="";document.querySelectorAll(".filters input[type=checkbox]").forEach(x=>x.checked=false);minPrice.value="";maxPrice.value="";renderProducts()
 }
 window.resetAll=resetAll;window.addCart=addCart;window.closeModal=closeModal;window.toggleWish=toggleWish;
-function closeMobileFilters(){filtersPanel.classList.remove("mobile-open");if(!cartDrawer.classList.contains("open"))drawerBackdrop.classList.remove("open");document.body.style.overflow=""}
-function openMobileFilters(){filtersPanel.classList.add("mobile-open");drawerBackdrop.classList.add("open");document.body.style.overflow="hidden";updateFilterUi()}
+function closeMobileFilters(){filtersPanel.classList.remove("mobile-open");filtersPanel.style.setProperty("transform","translateY(108%)","important");filtersPanel.style.setProperty("pointer-events","none","important");if(!cartDrawer.classList.contains("open"))drawerBackdrop.classList.remove("open");document.body.style.overflow=""}
+function openMobileFilters(){filtersPanel.classList.add("mobile-open");filtersPanel.style.setProperty("transform","translateY(0)","important");filtersPanel.style.setProperty("pointer-events","auto","important");drawerBackdrop.classList.add("open");document.body.style.overflow="hidden";updateFilterUi()}
 function updateGarageModel(){const fam=garageFamily.value;garageModel.innerHTML=familyModels[fam].map(x=>`<option>${x}</option>`).join("")}
 function renderGarage(){
  const garageBox=document.querySelector(".garage");
