@@ -48,7 +48,11 @@ Object.assign(ID_TEXT,{"parts available":"suku cadang tersedia","Show":"Tampilka
 // No generated/demo SKU is retained in the public catalogue.
 let categories=[];
 let products=[];
+let catalogProducts=[];
+let catalogControlUpdatedAt="";
 let sheetIndex={};
+let sheetSearchIndex={partNumbers:{},partNames:{},sheets:{}};
+let partControls={};
 const tractorModels=["L3608","L4400DT","L5018DT-NES","M9000DT","M9540DT","MX5000DT","MX5100DT"];
 const familyModels={Tractor:tractorModels};
 function buildCatalogMetadata(){
@@ -56,14 +60,39 @@ function buildCatalogMetadata(){
  products.forEach(p=>counts.set(p.category,(counts.get(p.category)||0)+1));
  categories=[...counts.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([name,count])=>({name,count,icon:"i-box"}));
 }
+function applyCatalogControl(control){
+ const controls=new Map((control?.products||[]).map(item=>[item.id,item]));
+ partControls=control?.parts||{};
+ catalogControlUpdatedAt=control?.updatedAt||catalogControlUpdatedAt;
+ products=catalogProducts.map(product=>({...product,...(controls.get(product.id)||{})})).filter(product=>!product.publishStatus||product.publishStatus==="published");
+}
+function applySheetControls(sheet){
+ if(!sheet)return sheet;
+ return {...sheet,parts:(sheet.parts||[]).map((part,index)=>{
+  const control=partControls[`${sheet.sheet_id}:${index}`],source=part.source_estimated_usd??part.estimated_usd;
+  return {...part,source_estimated_usd:source,estimated_usd:control?.price??source,admin_stock:control?.stock,admin_publish_status:control?.publishStatus};
+ })};
+}
+async function refreshCatalogControl(){
+ try{
+  const control=await fetch("assets/data/catalog-control-state.json",{cache:"no-store"}).then(r=>r.ok?r.json():null);
+  if(!control||control.updatedAt===catalogControlUpdatedAt)return;
+  applyCatalogControl(control);buildCatalogMetadata();renderCategories();renderProducts();renderCart();
+  if(window.currentSheet)renderExplodedSheet(applySheetControls(window.currentSheet));
+ }catch{}
+}
 async function loadDriveCatalog(){
  try{
-  const [catalog,index]=await Promise.all([
+  const [catalog,index,search,control]=await Promise.all([
    fetch("assets/data/drive-catalog.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error(`catalog ${r.status}`);return r.json()}),
-   fetch("assets/data/sheets-index.json",{cache:"no-store"}).then(r=>r.ok?r.json():{})
+   fetch("assets/data/sheets-index.json",{cache:"no-store"}).then(r=>r.ok?r.json():{}),
+   fetch("assets/data/sheets-search.json",{cache:"no-store"}).then(r=>r.ok?r.json():{partNumbers:{},partNames:{},sheets:{}}),
+   fetch("assets/data/catalog-control-state.json",{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null)
   ]);
   sheetIndex=index||{};
-  products=Array.isArray(catalog.products)?catalog.products:[];
+  sheetSearchIndex=search||{partNumbers:{},partNames:{},sheets:{}};
+  catalogProducts=Array.isArray(catalog.products)?catalog.products:[];
+  applyCatalogControl(control);
   buildCatalogMetadata(); renderCategories(); renderProducts(); renderCart();
  }catch(error){
   productGrid.innerHTML=`<div style="grid-column:1/-1;background:white;border:1px solid var(--line);border-radius:12px;padding:60px;text-align:center"><h3>Catalog unavailable</h3><p style="color:var(--muted)">Please retry shortly or contact Hikari for a parts quotation.</p></div>`;
@@ -85,10 +114,21 @@ function renderCategories(){
  categoryChecks.innerHTML=!state.selectedModel?`<p class="filter-note">Select a Hikari tractor above before opening its assemblies.</p>`:[...scopedCounts.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([name,count])=>`<label class="check"><input type="checkbox" name="category" value="${esc(name)}"> ${esc(name)} <span style="margin-left:auto;color:#9aa1a6">${count}</span></label>`).join("");
  bindCategoryFilters();
 }
+function searchToken(value){return String(value||"").toLowerCase().replace(/[^a-z0-9]/g,"")}
+function hasSearchQuery(){return state.query.trim().length>0}
+function partMatchesForSheet(sheetId,q=state.query){
+ const raw=String(q||"").toLowerCase().trim(), norm=searchToken(raw); if(!raw||!norm)return [];
+ const ids=new Set([...(sheetSearchIndex.partNumbers?.[raw]||[]),...(sheetSearchIndex.partNumbers?.[norm]||[])]);
+ const sheet=sheetSearchIndex.sheets?.[sheetId];
+ if(sheet?.matches?.some(m=>[m.part_number,m.name,m.callout].join(" ").toLowerCase().includes(raw)||searchToken([m.part_number,m.name,m.callout].join(" ")).includes(norm)))ids.add(sheetId);
+ return ids.has(sheetId)?(sheet?.matches||[]).filter(m=>[m.part_number,m.name,m.callout].join(" ").toLowerCase().includes(raw)||searchToken([m.part_number,m.name,m.callout].join(" ")).includes(norm)).slice(0,3):[];
+}
+function matchesPartSearch(p,q=state.query){return partMatchesForSheet(p.sheetId,q).length>0}
+function partMatchBadge(p){const m=partMatchesForSheet(p.sheetId)[0];return m?`<div class="part-match-badge">Matched sparepart: <b>${esc(m.part_number)}</b> ${esc(m.name||"")}</div>`:""}
 function filtered(){
  let arr=products.filter(p=>{
    const q=state.query.trim().toLowerCase();
-   const okq=!q||[p.sku,p.name,p.category,p.machine,p.model,p.engine,p.grade].join(" ").toLowerCase().includes(q);
+   const okq=!q||[p.sku,p.name,p.category,p.machine,p.model,p.engine,p.grade,p.diagramCode].join(" ").toLowerCase().includes(q)||matchesPartSearch(p,q);
    const okSelected=!state.selectedModel||p.model===state.selectedModel;
    const okc=!state.category.size||state.category.has(p.category);
    const okm=!state.machine.size||state.machine.has(p.machine);
@@ -115,12 +155,12 @@ function productCard(p){
  const saved=state.wishlist.has(p.id), compared=state.compare.has(p.id), price=priceFor(p);
  return `<article class="product-card">
   <button class="product-img" data-action="quick" data-id="${p.id}" aria-label="Open ${esc(p.name)} diagram"><img loading="lazy" src="${imgFor(p)}" alt="${esc(p.name)} diagram"></button>
-  <div class="product-body"><div class="sku">${esc(p.diagramCode)} · ${esc(p.category)}</div><div class="product-name">${esc(p.name.replace(/\s*##\s*.*/,""))}</div><div class="fitment">${esc(p.model)} · ${p.partCount||0} orderable parts</div>
+  <div class="product-body"><div class="sku">${esc(p.diagramCode)} · ${esc(p.category)}</div><div class="product-name">${esc(p.name.replace(/\s*##\s*.*/,""))}</div><div class="fitment">${esc(p.model)} · ${p.partCount||0} orderable parts</div>${partMatchBadge(p)}
   <div class="price-box"><div class="price-main"><div><small>SPAREPART ROWS</small><br><b>${p.partCount||0} parts</b></div><small>Open diagram to choose part</small></div></div>
   <div class="product-actions"><button class="btn btn-primary" data-action="quick" data-id="${p.id}">${icon("i-search",14)} Open diagram</button></div></div></article>`;
 }
 function renderProducts(){
- if(!state.selectedModel){
+ if(!state.selectedModel&&!hasSearchQuery()){
   productGrid.innerHTML=`<div style="grid-column:1/-1;background:white;border:1px solid var(--line);border-radius:12px;padding:60px;text-align:center"><h3>Select your Hikari tractor first</h3><p style="color:var(--muted)">Assemblies and diagrams stay locked to one tractor model. Choose a model above to continue.</p></div>`;
   resultCount.textContent="Select a tractor model to open assemblies"; pagination.innerHTML=""; paginationTop.innerHTML=""; updateFilterUi(0); return;
  }
@@ -143,9 +183,9 @@ function searchSuggest(q){
  const el=document.getElementById("catalogSuggestions"); if(!el)return;
  if(!q||q.length<2){el.classList.remove("open");return;}
  const ql=q.toLowerCase();
- const hits=products.filter(p=>p.sku.toLowerCase().includes(ql)||p.name.toLowerCase().includes(ql)||p.model.toLowerCase().includes(ql)||p.engine.toLowerCase().includes(ql)||p.category.toLowerCase().includes(ql)).slice(0,8);
+ const hits=products.filter(p=>[p.sku,p.name,p.model,p.engine,p.category,p.diagramCode].join(" ").toLowerCase().includes(ql)||matchesPartSearch(p,q)).slice(0,8);
  if(!hits.length){el.classList.remove("open");return;}
- el.innerHTML=hits.map(p=>`<div class="search-suggestion" data-sku="${esc(p.sku)}"><span class="ss-sku">${esc(p.sku)}</span><span class="ss-name">${esc(p.name)}</span><span class="ss-price">${money(priceFor(p))}</span></div>`).join("");
+ el.innerHTML=hits.map(p=>{const m=partMatchesForSheet(p.sheetId,q)[0];return `<div class="search-suggestion" data-sku="${esc(m?.part_number||p.sku)}" data-query="${esc(m?.part_number||p.sku)}"><span class="ss-sku">${esc(m?.part_number||p.sku)}</span><span class="ss-name">${esc(m?`${m.name} · in ${p.name}`:p.name)}</span><span class="ss-price">${esc(p.model)}</span></div>`}).join("");
  el.classList.add("open");
 }
 function activeFilterCount(){return state.category.size+state.machine.size+state.stock.size+state.grade.size+(state.minPrice!=null?1:0)+(state.maxPrice!=null?1:0)+(document.getElementById("exportPacked")?.checked?1:0)+(document.getElementById("dangerousGoods")?.checked?1:0)}
@@ -205,9 +245,9 @@ function addPartToCart(sheetId,index){
  const sheet=window.currentSheet;if(!sheet||sheet.sheet_id!==sheetId)return;
  const part=sheet.parts[index];if(!part)return;
  const lineId=`${sheetId}:${index}`;
- const line={id:lineId,sku:part.part_number,name:part.name,price:part.estimated_usd||0,moq:1,img:sheet.preview_image,meta:`${sheet.model_code} · ${sheet.diagram_code} · No. ${part.callout} · Qty ${part.quantity}${part.notes?` · ${part.notes}`:""}`};
+ const line={id:lineId,sku:part.part_number,name:part.name,price:part.estimated_usd||0,moq:1,img:sheet.preview_image,meta:`${sheet.model_code} · ${sheet.diagram_code} · No. ${part.callout} · Kebutuhan per set: ${part.quantity} pcs${part.notes?` · ${part.notes}`:""}`};
  const found=state.cart.find(x=>x.id===lineId); if(found)found.qty++; else state.cart.push({id:lineId,qty:1,line});
- save("kpx_cart",state.cart);updateCounts();renderCart();toast("Added sparepart to order",`${line.sku} · ${line.name}`);
+ save("kpx_cart",state.cart);updateCounts();renderCart();renderExplodedSheet(sheet);toast("Added sparepart to order",`${line.sku} · ${line.name}`);
 }
 function addCart(id){
  const p=products.find(x=>x.id===id); if(!p)return;
@@ -247,18 +287,38 @@ function openDrawer(){drawerBackdrop.classList.add("open");cartDrawer.classList.
 function closeDrawer(){drawerBackdrop.classList.remove("open");cartDrawer.classList.remove("open");document.body.style.overflow=""}
 function openModal(title,html){modalTitle.textContent=t(title);modalBody.innerHTML=html;translateStatic(modalBody);modalBackdrop.classList.add("open");document.body.style.overflow="hidden"}
 function closeModal(){modalBackdrop.classList.remove("open");document.body.style.overflow=""}
+function sheetLineId(sheetId,index){return `${sheetId}:${index}`}
+function sheetCartQuantity(sheetId,index){return state.cart.find(x=>String(x.id)===sheetLineId(sheetId,index))?.qty||0}
+function changeSheetPartQuantity(sheetId,index,delta){
+ const lineId=sheetLineId(sheetId,index), item=state.cart.find(x=>String(x.id)===lineId);
+ if(!item)return;
+ item.qty=Math.max(0,item.qty+delta);
+ if(item.qty===0)state.cart=state.cart.filter(x=>String(x.id)!==lineId);
+ save("kpx_cart",state.cart);updateCounts();renderCart();renderExplodedSheet(window.currentSheet);
+}
+function sheetCartControl(sheet,index){
+ const qty=sheetCartQuantity(sheet.sheet_id,index);
+ if(!qty)return `<button class="sheet-buy" onclick="addPartToCart('${sheet.sheet_id}',${index})">${icon("i-cart",12)} Tambah 1 pcs</button>`;
+ return `<div class="sheet-qty-control"><button onclick="changeSheetPartQuantity('${sheet.sheet_id}',${index},-1)" aria-label="Reduce quantity">−</button><b>${qty}</b><button onclick="changeSheetPartQuantity('${sheet.sheet_id}',${index},1)" aria-label="Add quantity">+</button><span>In cart</span></div>`;
+}
+function renderExplodedSheet(sheet){
+ if(!sheet)return;
+ window.currentSheet=sheet;
+ const cartTotal=sheet.parts.reduce((sum,_,index)=>sum+sheetCartQuantity(sheet.sheet_id,index),0);
+ const visibleParts=sheet.parts.filter(part=>!part.admin_publish_status||part.admin_publish_status==="published");
+ const rows=sheet.parts.map((part,index)=>part.admin_publish_status&&part.admin_publish_status!=="published"?"":`<div class="sheet-row" data-sheet-callout="${part.callout}"><button class="sheet-callout" onclick="selectSheetPart('${part.callout}',${index})">${part.callout}</button><span onclick="selectSheetPart('${part.callout}',${index})"><strong>${esc(part.part_number)}</strong><small>${esc(part.name)} · Jual satuan · kebutuhan per set: ${part.quantity} pcs${part.notes?` · ${esc(part.notes)}`:""}</small></span><em>${money(part.estimated_usd)}<small>Harga / pcs${part.admin_stock!=null?` · stok ${part.admin_stock}`:" · estimasi"}</small></em>${sheetCartControl(sheet,index)}</div>`).join("");
+ const markers=(sheet.hotspots||[]).map(h=>`<button class="sheet-marker" data-sheet-marker="${h.callout}" onclick="selectSheetPart('${h.callout}')" style="left:${h.x}%;top:${h.y}%" aria-label="Part callout ${h.callout}"><span>${h.callout}</span></button>`).join("");
+ openModal(`${sheet.model_code} · ${sheet.title}`,`<div class="sheet-viewer"><div class="sheet-intro"><b>${sheet.diagram_code} · ${sheet.category_label||sheet.category_slug.replaceAll("-"," ")} · ${sheet.page_count||1} PDF page${(sheet.page_count||1)===1?"":"s"}</b><span>Pilih nomor pada gambar lalu tambah sparepart per pcs ke keranjang. Harga dan stok mengikuti control panel; item tanpa override tetap estimasi.</span></div><div class="sheet-layout"><div class="sheet-canvas"><img src="${sheet.full_image||sheet.preview_image}" alt="${esc(sheet.title)} exploded diagram">${markers}</div><div class="sheet-parts"><h3>Orderable spareparts (${visibleParts.length}) <small class="sheet-cart-summary">Sheet cart · ${cartTotal} item</small></h3>${rows||'<p class="sheet-empty">No parsed sparepart rows yet. Use RFQ with source PDF.</p>'}</div></div></div>`);
+ window.selectSheetPart=(callout,index)=>{document.querySelectorAll("[data-sheet-marker],[data-sheet-callout]").forEach(el=>el.classList.toggle("active",el.dataset.sheetMarker===callout||el.dataset.sheetCallout===callout));const row=document.querySelector(`[data-sheet-callout="${callout}"]`);row?.scrollIntoView({block:"nearest",behavior:"smooth"})};
+ if(sheet.parts[0])window.selectSheetPart(sheet.parts[0].callout,0);
+}
 async function openExplodedSheet(p){
  const entry=sheetIndex[p.sheetId];
  if(!entry){toast("Diagram unavailable");return}
  const response=await fetch(entry.path,{cache:"no-store"});
  if(!response.ok){toast("Diagram unavailable");return}
- const sheet=await response.json();
- window.currentSheet=sheet;
- const rows=sheet.parts.map((part,index)=>`<div class="sheet-row" data-sheet-callout="${part.callout}"><button class="sheet-callout" onclick="selectSheetPart('${part.callout}',${index})">${part.callout}</button><span onclick="selectSheetPart('${part.callout}',${index})"><strong>${esc(part.part_number)}</strong><small>${esc(part.name)} · Qty ${part.quantity}${part.notes?` · ${esc(part.notes)}`:""}</small></span><em>~${money(part.estimated_usd)}<small>estimated</small></em><button class="sheet-buy" onclick="addPartToCart('${sheet.sheet_id}',${index})">${icon("i-cart",12)} Checkout part</button></div>`).join("");
- const markers=(sheet.hotspots||[]).map(h=>`<button class="sheet-marker" data-sheet-marker="${h.callout}" onclick="selectSheetPart('${h.callout}')" style="left:${h.x}%;top:${h.y}%" aria-label="Part callout ${h.callout}"><span>${h.callout}</span></button>`).join("");
- openModal(`${sheet.model_code} · ${sheet.title}`,`<div class="sheet-viewer"><div class="sheet-intro"><b>${sheet.diagram_code} · ${sheet.category_label||sheet.category_slug.replaceAll("-"," ")}</b><span>Pilih nomor pada gambar lalu checkout sparepart kecil di kanan. Harga masih estimasi dan final saat RFQ.</span></div><div class="sheet-layout"><div class="sheet-canvas"><img src="${sheet.full_image||sheet.preview_image}" alt="${esc(sheet.title)} exploded diagram">${markers}</div><div class="sheet-parts"><h3>Orderable spareparts (${sheet.parts.length})</h3>${rows||'<p class="sheet-empty">No parsed sparepart rows yet. Use RFQ with source PDF.</p>'}</div></div></div>`);
- window.selectSheetPart=(callout,index)=>{document.querySelectorAll("[data-sheet-marker],[data-sheet-callout]").forEach(el=>el.classList.toggle("active",el.dataset.sheetMarker===callout||el.dataset.sheetCallout===callout));const row=document.querySelector(`[data-sheet-callout="${callout}"]`);row?.scrollIntoView({block:"nearest",behavior:"smooth"})};
- if(sheet.parts[0])window.selectSheetPart(sheet.parts[0].callout,0);
+ const sheet=applySheetControls(await response.json());
+ renderExplodedSheet(sheet);
 }
 function quickView(id) {
  const p = products.find(x => x.id === id); if (!p) return;
@@ -447,5 +507,6 @@ function buildFAQs(){
 }
 if(matchMedia("(max-width:560px)").matches)state.view="list";
 setImages();buildFAQs();updateGarageModel();renderGarage();renderCart();loadRfqForm();bind();loadDriveCatalog();
+setInterval(refreshCatalogControl,10000);
 gridView.classList.toggle("active",state.view==="grid");listView.classList.toggle("active",state.view==="list");
 translateStatic();
