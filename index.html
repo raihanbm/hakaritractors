@@ -13,6 +13,7 @@
 <title>Hikari Tractors Indonesia — Parts Catalog</title>
 <link rel="icon" href="assets/images/favicon.png" type="image/png">
 <link rel="stylesheet" href="assets/css/main.css?v=visual-polish-8">
+<link rel="stylesheet" href="assets/css/exploded-sheet.css?v=1">
 </head>
 <body>
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
@@ -71,14 +72,14 @@
       <div class="eyebrow">Parts intelligence for global buyers</div>
       <h1>Find the exact part.<br><span>Ship it worldwide.</span></h1>
       <p class="hero-copy">A compact export catalog built for farmers, workshops, fleet operators and distributors. Search by SKU, machine model or engine series, compare price tiers, and request freight-ready quotations in one flow.</p>
-      <div class="hero-pills"><span>1,200 SKUs</span><span>Retail + B2B tiers</span><span>EXW / FOB / CIF / DDP</span><span>Mixed-carton RFQ</span><span>Fitment-first search</span></div>
+      <div class="hero-pills"><span>Drive-sourced catalog</span><span>Indicative USD estimates</span><span>RFQ confirmation required</span><span>7 Hikari models</span><span>Fitment-first search</span></div>
     </div>
     <div class="search-console">
       <div class="console-head"><b>Precision Parts Lookup</b><span>CATALOG REVIEW · EXPORT READY</span></div>
-      <div class="search-tabs"><button class="active" data-search-mode="part">Part / Keyword</button><button data-search-mode="model">Machine Model</button><button data-search-mode="engine">Engine Series</button></div>
-      <div class="big-search"><input id="heroSearch" placeholder="Try: oil filter, V2403, L4508, HIK-FLT-00018"><button id="heroSearchBtn" aria-label="Search"><svg width="20" height="20"><use href="#i-search"/></svg></button></div>
+      <div class="search-tabs"><button class="active" data-search-mode="part">Part / Keyword</button><button data-search-mode="model">Tractor Model</button></div>
+      <div class="big-search"><input id="heroSearch" placeholder="Choose a model or search a part number"><button id="heroSearchBtn" aria-label="Search"><svg width="20" height="20"><use href="#i-search"/></svg></button></div>
       <div class="console-selects">
-        <div class="field"><label>Equipment family</label><select id="heroFamily"><option value="">All equipment</option><option>Tractor</option><option>Excavator</option><option>Engine</option><option>Combine</option><option>RTV</option></select></div>
+        <div class="field"><label>Tractor family</label><select id="heroFamily"><option>Hikari Tractor</option></select></div>
         <div class="field"><label>Buyer profile</label><select id="buyerProfile"><option value="retail">Retail / Workshop</option><option value="b2b">B2B Distributor</option><option value="fleet">Fleet Account</option></select></div>
       </div>
       <div class="console-actions"><button class="btn btn-primary" id="browseBtn"><svg width="17" height="17"><use href="#i-grid"/></svg>Browse catalog</button><button class="btn btn-light" id="uploadListBtn"><svg width="17" height="17"><use href="#i-file"/></svg>Upload parts list</button></div>
@@ -88,7 +89,7 @@
 </section>
 
 <section class="stats-bar"><div class="wrap stats-grid">
-  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-box"/></svg></div><div><b>1,200+</b><small>searchable SKUs</small></div></div>
+  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-box"/></svg></div><div><b>531</b><small>Drive-derived catalog codes</small></div></div>
   <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-truck"/></svg></div><div><b>35+</b><small>destination markets</small></div></div>
   <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-globe"/></svg></div><div><b>5</b><small>Incoterm workflows</small></div></div>
   <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-shield"/></svg></div><div><b>3</b><small>buyer pricing levels</small></div></div>
@@ -97,7 +98,7 @@
 
 <section class="section white">
 <div class="wrap">
-  <div class="section-head"><div><span class="kicker">Shop by system</span><h2>Compact navigation for a deep catalog</h2></div><p>Product families are grouped by the way technicians actually diagnose and service equipment, not only by generic e-commerce labels.</p></div>
+  <div class="section-head"><div><span class="kicker">Start with your tractor</span><h2>Browse by tractor model</h2></div><p>Choose your Hikari tractor first. Then open only the part systems verified for that model—simple, fast, and built to prevent wrong-part orders.</p></div>
   <div class="category-strip" id="categoryStrip"></div>
 </div>
 </section>
@@ -108,9 +109,9 @@
   <div class="catalog-shell">
     <aside class="filters" id="filtersPanel" aria-label="Catalog filters">
       <div class="filters-grip" aria-hidden="true"></div>
-      <div class="filters-head"><div><b>Filters</b><small id="filterSheetCount">1,200 parts available</small></div><button id="mobileFilterClose" class="filter-close" aria-label="Close filters"><svg width="16" height="16"><use href="#i-close"/></svg></button><button id="resetFilters">Reset all</button></div>
+      <div class="filters-head"><div><b>Filters</b><small id="filterSheetCount">Loading Drive catalog…</small></div><button id="mobileFilterClose" class="filter-close" aria-label="Close filters"><svg width="16" height="16"><use href="#i-close"/></svg></button><button id="resetFilters">Reset all</button></div>
       <div class="filter-group"><div class="filter-title">Category</div><div id="categoryChecks"></div></div>
-      <div class="filter-group"><div class="filter-title">Equipment</div><label class="check"><input type="checkbox" name="machine" value="Tractor"> Tractor</label><label class="check"><input type="checkbox" name="machine" value="Excavator"> Excavator</label><label class="check"><input type="checkbox" name="machine" value="Engine"> Industrial engine</label><label class="check"><input type="checkbox" name="machine" value="Combine"> Combine / harvester</label></div>
+      <div class="filter-group"><div class="filter-title">Catalog scope</div><p class="filter-note">All parts shown are matched to Hikari tractor models. Choose a model above to narrow fitment.</p></div>
       <div class="filter-group"><div class="filter-title">Availability</div><label class="check"><input type="checkbox" name="stock" value="in"> Ready stock</label><label class="check"><input type="checkbox" name="stock" value="low"> Limited stock</label><label class="check"><input type="checkbox" name="stock" value="out"> Pre-order</label></div>
       <div class="filter-group"><div class="filter-title">Part class</div><label class="check"><input type="checkbox" name="grade" value="OEM"> OEM / Genuine class</label><label class="check"><input type="checkbox" name="grade" value="Aftermarket"> Aftermarket</label><label class="check"><input type="checkbox" name="grade" value="Reman"> Remanufactured</label></div>
       <div class="filter-group"><div class="filter-title">USD price range</div><div class="range-row"><input type="number" id="minPrice" placeholder="Min"><span>—</span><input type="number" id="maxPrice" placeholder="Max"></div></div>
@@ -145,10 +146,10 @@
 <section class="section white" id="model-finder"><div class="wrap">
   <div class="model-finder">
     <div class="model-copy">
-      <span class="kicker">Equipment-first experience</span><h2>Save your machine. Stop guessing fitment.</h2>
-      <p>The “My Garage” pattern keeps model and engine context attached to every search, so buyers see compatible parts first and reduce costly export returns.</p>
-      <div class="finder-steps"><div class="finder-step"><span>01</span><b>Select equipment family</b></div><div class="finder-step"><span>02</span><b>Add model / engine code</b></div><div class="finder-step"><span>03</span><b>Browse verified fitment</b></div></div>
-      <div class="console-selects"><div class="field"><label>Family</label><select id="garageFamily"><option>Tractor</option><option>Excavator</option><option>Engine</option><option>Combine</option></select></div><div class="field"><label>Model</label><select id="garageModel"></select></div></div>
+      <span class="kicker">Tractor-model experience</span><h2>Save your tractor. Stop guessing fitment.</h2>
+      <p>Choose your Hikari tractor model once and keep that fitment context attached to every parts search, reducing wrong-part orders.</p>
+      <div class="finder-steps"><div class="finder-step"><span>01</span><b>Select tractor model</b></div><div class="finder-step"><span>02</span><b>Choose part system</b></div><div class="finder-step"><span>03</span><b>Browse verified parts</b></div></div>
+      <div class="console-selects"><div class="field"><label>Catalog</label><select id="garageFamily"><option value="Tractor">Hikari Tractor</option></select></div><div class="field"><label>Model</label><select id="garageModel"></select></div></div>
       <button class="btn btn-primary" id="saveMachineBtn" style="margin-top:10px"><svg width="16" height="16"><use href="#i-plus"/></svg>Add to My Garage</button>
       <div class="garage"><div class="garage-head"><b>Saved Models</b><small id="garageCount">0 saved</small></div><div class="garage-items" id="garageItems"></div></div>
     </div>
