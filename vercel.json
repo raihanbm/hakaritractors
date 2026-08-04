@@ -23,7 +23,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; img-src 'self' https://internalhikaritractors.vercel.app; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://internalhikaritractors.vercel.app; frame-src https://internalhikaritractors.vercel.app; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; img-src 'self' https://internalhikaritractors.vercel.app; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://internalhikaritractors.vercel.app https://cdnjs.cloudflare.com; frame-src https://internalhikaritractors.vercel.app; worker-src 'self' https://cdnjs.cloudflare.com; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
         }
       ]
     }
