@@ -61,17 +61,22 @@ function buildCatalogMetadata(){
  categories=[...counts.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([name,count])=>({name,count,icon:"i-box"}));
 }
 function applyCatalogControl(control){
- const controls=new Map((control?.products||[]).map(item=>[item.id,item]));
+ const factor=control?.currency==="IDR"?1/16300:1;
+ window.catalogControlCurrency=control?.currency||"USD";
+ const controls=new Map((control?.products||[]).map(item=>[item.id,{...item,price:item.price==null?item.price:item.price*factor,b2b:item.b2b==null?item.b2b:item.b2b*factor,export:item.export==null?item.export:item.export*factor}]));
  partControls=control?.parts||{};
  catalogControlUpdatedAt=control?.updatedAt||catalogControlUpdatedAt;
  products=catalogProducts.map(product=>({...product,...(controls.get(product.id)||{})})).filter(product=>!product.publishStatus||product.publishStatus==="published");
 }
 function applySheetControls(sheet){
  if(!sheet)return sheet;
- return {...sheet,parts:(sheet.parts||[]).map((part,index)=>{
-  const control=partControls[`${sheet.sheet_id}:${index}`],source=part.source_estimated_usd??part.estimated_usd;
-  return {...part,source_estimated_usd:source,estimated_usd:control?.price??source,admin_stock:control?.stock,admin_publish_status:control?.publishStatus};
- })};
+ const factor=window.catalogControlCurrency==="IDR"?1/16300:1;
+ const source=(sheet.parts||[]).map((part,index)=>{
+  const control=partControls[`${sheet.sheet_id}:${index}`],sourcePrice=part.source_estimated_usd??part.estimated_usd;
+  return {...part,source_estimated_usd:sourcePrice,estimated_usd:control?.price==null?sourcePrice:control.price*factor,admin_stock:control?.stock,admin_publish_status:control?.publishStatus,name:control?.name??part.name,part_number:control?.partNumber??part.part_number,callout:control?.callout??part.callout,quantity:control?.quantity??part.quantity,notes:control?.notes??part.notes,deleted:control?.deleted};
+ }).filter(part=>!part.deleted);
+ const custom=Object.entries(partControls).filter(([key,control])=>key.startsWith(`${sheet.sheet_id}:custom:`)&&control?.custom&&!control.deleted).map(([,control])=>({callout:control.callout??"-",part_number:control.partNumber??"",name:control.name??"Sparepart baru",quantity:control.quantity??1,notes:control.notes,estimated_usd:(control.price||0)*factor,admin_stock:control.stock,admin_publish_status:control.publishStatus}));
+ return {...sheet,parts:[...source,...custom]};
 }
 async function refreshCatalogControl(){
  try{
