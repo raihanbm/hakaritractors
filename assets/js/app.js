@@ -53,13 +53,14 @@ let catalogControlUpdatedAt="";
 let sheetIndex={};
 let sheetSearchIndex={partNumbers:{},partNames:{},sheets:{}};
 let partControls={};
+let publicPartsById=new Map();
 const tractorModels=["L3608","L4400DT","L5018DT-NES","M9000DT","M9540DT","MX5000DT","MX5100DT"];
 const familyModels={Tractor:tractorModels};
 const catalogApiBase=String(window.HIKARI_CONFIG?.catalogApiBase||"").replace(/\/$/,"");
 function catalogApi(path){return `${catalogApiBase}${path}`}
 function publicAssetUrl(mediaId,sourcePath){
  if(mediaId)return catalogApi(`/api/public-media?id=${encodeURIComponent(mediaId)}`);
- if(!sourcePath)return IMG.tractor;
+ if(!sourcePath)return "";
  if(/^https?:\/\//i.test(sourcePath))return sourcePath;
  return catalogApi(`/api/public-assets?path=${encodeURIComponent(String(sourcePath).replace(/^\/+/,""))}`);
 }
@@ -67,27 +68,29 @@ function priceInUsd(part,tier="retail_price"){
  const raw=Number(part?.[tier]??part?.retail_price??0);return part?.currency==="IDR"?raw/16300:raw;
 }
 function mapPublicCatalog(tree){
- const mappedProducts=[],mappedSheets={},numbers={},names={},sheets={};
+ const mappedProducts=[],mappedSheets={},numbers={},names={},sheets={},partMap=new Map();
  const models=Array.isArray(tree)?tree:[];
  tractorModels.splice(0,tractorModels.length,...models.map(model=>model.code).filter(Boolean));
  models.forEach(model=>(model.categories||[]).forEach(category=>(category.subcategories||[]).forEach(subcategory=>(subcategory.assemblies||[]).forEach(assembly=>{
   const parts=Array.isArray(assembly.spare_parts)?assembly.spare_parts:[];
-  const previewImage=publicAssetUrl(assembly.thumbnail_media_id,assembly.source_thumbnail_url);
-  const fullImage=publicAssetUrl(assembly.full_diagram_media_id,assembly.source_full_diagram_url||assembly.source_thumbnail_url);
+  const previewImage=publicAssetUrl(assembly.thumbnail_media_id,assembly.source_thumbnail_url)||IMG.tractor;
+  const fullImage=publicAssetUrl(assembly.full_diagram_media_id,assembly.source_full_diagram_url||assembly.source_thumbnail_url)||previewImage;
   const pdfUrl=publicAssetUrl(assembly.pdf_media_id,assembly.source_pdf_path);
   const sheetId=String(assembly.id), searchable=[];
   const mappedParts=parts.map(part=>{
    const match={part_number:part.part_number,name:part.name,callout:part.callout};searchable.push(match);
    const raw=String(part.part_number||"").toLowerCase(),norm=searchToken(raw);[raw,norm].filter(Boolean).forEach(key=>{(numbers[key]??=[]).push(sheetId)});
    const nameKey=String(part.name||"").toLowerCase();if(nameKey)(names[nameKey]??=[]).push(sheetId);
-   return {id:part.id,callout:part.callout||"-",part_number:part.part_number,name:part.name,quantity:part.quantity||1,notes:part.notes||part.location_description||"",estimated_usd:priceInUsd(part),admin_stock:Number(part.stock_quantity||0),admin_publish_status:"published",currency:part.currency||"IDR"};
+   const mapped={id:part.id,callout:part.callout||"-",part_number:part.part_number,name:part.name,quantity:part.quantity||1,notes:part.notes||part.location_description||"",estimated_usd:priceInUsd(part),b2b_usd:priceInUsd(part,"b2b_price"),export_usd:priceInUsd(part,"export_price"),admin_stock:Number(part.stock_quantity||0),admin_publish_status:"published",currency:part.currency||"IDR"};
+   if(mapped.id)partMap.set(String(mapped.id),mapped);return mapped;
   });
   sheets[sheetId]={matches:searchable};
   mappedSheets[sheetId]={data:{sheet_id:sheetId,model_code:model.code,diagram_code:assembly.code,title:assembly.title,category_label:category.name,category_slug:category.slug,page_count:Math.max(1,Number(assembly.source_page_count)||1),preview_image:previewImage,full_image:fullImage,pdf_url:pdfUrl,parts:mappedParts,hotspots:(assembly.hotspots||[]).map(h=>({id:h.id,callout:h.callout,x:Number(h.x_pct),y:Number(h.y_pct),spare_part_id:h.spare_part_id}))}};
   const stockTotal=parts.reduce((sum,part)=>sum+Number(part.stock_quantity||0),0),lowest=parts.reduce((value,part)=>{const next=priceInUsd(part);return next>0&&(!value||next<value)?next:value},0);
-  mappedProducts.push({id:sheetId,sku:assembly.code,name:assembly.title,category:category.name,machine:"Tractor",model:model.code,engine:"",grade:"Catalog",diagramCode:assembly.code,sheetId,partCount:parts.length,price:lowest,b2b:parts.length?Math.min(...parts.map(part=>priceInUsd(part,"b2b_price")).filter(Boolean)):lowest,export:parts.length?Math.min(...parts.map(part=>priceInUsd(part,"export_price")).filter(Boolean)):lowest,stock:stockTotal>8?"in":stockTotal>0?"low":"out",qty:stockTotal,featured:false,previewImage});
+  const tierMinimum=tier=>{const values=parts.map(part=>priceInUsd(part,tier)).filter(value=>value>0);return values.length?Math.min(...values):lowest};
+  mappedProducts.push({id:sheetId,sku:assembly.code,name:assembly.title,category:category.name,machine:"Tractor",model:model.code,engine:"",grade:"Catalog",diagramCode:assembly.code,sheetId,partCount:parts.length,price:lowest,b2b:tierMinimum("b2b_price"),export:tierMinimum("export_price"),stock:stockTotal>8?"in":stockTotal>0?"low":"out",qty:stockTotal,featured:false,previewImage});
  }))));
- sheetIndex=mappedSheets;sheetSearchIndex={partNumbers:numbers,partNames:names,sheets};catalogProducts=mappedProducts;products=mappedProducts;catalogControlUpdatedAt=new Date().toISOString();
+ sheetIndex=mappedSheets;sheetSearchIndex={partNumbers:numbers,partNames:names,sheets};publicPartsById=partMap;catalogProducts=mappedProducts;products=mappedProducts;catalogControlUpdatedAt=new Date().toISOString();
  return mappedProducts;
 }
 async function loadPublicCatalog(){
@@ -119,8 +122,11 @@ function applySheetControls(sheet){
  const custom=Object.entries(partControls).filter(([key,control])=>key.startsWith(`${sheet.sheet_id}:custom:`)&&control?.custom&&!control.deleted).map(([,control])=>({callout:control.callout??"-",part_number:control.partNumber??"",name:control.name??"Sparepart baru",quantity:control.quantity??1,notes:control.notes,estimated_usd:(control.price||0)*factor,admin_stock:control.stock,admin_publish_status:control.publishStatus}));
  return {...sheet,parts:[...source,...custom]};
 }
+let catalogRefreshPromise=null;
 async function refreshCatalogControl(){
- try{await loadPublicCatalog()}catch(error){console.warn("[catalog-sync]",error)}
+ if(document.hidden||catalogRefreshPromise)return catalogRefreshPromise;
+ catalogRefreshPromise=loadPublicCatalog().catch(error=>console.warn("[catalog-sync]",error)).finally(()=>{catalogRefreshPromise=null});
+ return catalogRefreshPromise;
 }
 async function loadDriveCatalog(){
  try{return await loadPublicCatalog()}
@@ -193,14 +199,14 @@ function priceFor(p){return p[state.account==="retail"?"price":state.account]}
 function moqFor(p){return state.account==="retail"?Math.max(1,p.moq||1):state.account==="b2b"?(p.b2bMoq||50):(p.exportMoq||200)}
 function stockLabel(p){return p.stock==="in"?`${p.qty} ${t("in stock")}`:p.stock==="low"?`${t("Only")} ${p.qty} ${t("left")}`:t("Pre-order")}
 function imgFor(p){return p?.previewImage||IMG[p?.img]||IMG.tractor}
-function openWhatsApp(){const page=location.hash.slice(1)||"home";const msg=encodeURIComponent(`Hi Hikari! I'm interested in your tractor parts catalog. I'm currently browsing: ${page}. Can you help?`);window.open(`https://wa.me/6282100000000?text=${msg}`,"_blank")}
+
 function productCard(p){
  const saved=state.wishlist.has(p.id), compared=state.compare.has(p.id), price=priceFor(p);
  return `<article class="product-card">
   <button class="product-img" data-action="quick" data-id="${p.id}" aria-label="Open ${esc(p.name)} diagram"><img loading="lazy" src="${imgFor(p)}" alt="${esc(p.name)} diagram"></button>
   <div class="product-body"><div class="sku">${esc(p.diagramCode)} · ${esc(p.category)}</div><div class="product-name">${esc(p.name.replace(/\s*##\s*.*/,""))}</div><div class="fitment">${esc(p.model)} · ${p.partCount||0} orderable parts</div>${partMatchBadge(p)}
   <div class="price-box"><div class="price-main"><div><small>SPAREPART ROWS</small><br><b>${p.partCount||0} parts</b></div><small>Open diagram to choose part</small></div></div>
-  <div class="product-actions"><button class="btn btn-primary" data-action="quick" data-id="${p.id}">${icon("i-search",14)} Open diagram</button></div></div></article>`;
+  <div class="product-actions"><button class="btn btn-primary" data-action="quick" data-id="${esc(p.id)}">${icon("i-search",14)} Open diagram</button><button class="btn btn-light" data-action="wish" data-id="${esc(p.id)}" aria-label="Save assembly">${icon("i-heart",14)}</button><button class="btn btn-light" data-action="compare" data-id="${esc(p.id)}" aria-label="Compare assembly">${icon("i-compare",14)}</button></div></div></article>`;
 }
 function renderProducts(){
  if(!state.selectedModel&&!hasSearchQuery()){
@@ -209,7 +215,7 @@ function renderProducts(){
  }
  const arr=filtered(), pages=Math.max(1,Math.ceil(arr.length/state.perPage)); if(state.page>pages)state.page=pages;
  const start=(state.page-1)*state.perPage, items=arr.slice(start,start+state.perPage);
- productGrid.innerHTML=items.map(productCard).join("")||`<div style="grid-column:1/-1;background:white;border:1px solid var(--line);border-radius:12px;padding:60px;text-align:center"><h3>${t("No matching parts")}</h3><p style="color:var(--muted)">${t("Try a broader model, engine or category search.")}</p><button class="btn btn-primary" onclick="resetAll()">${t("Reset filters")}</button></div>`;
+ productGrid.innerHTML=items.map(productCard).join("")||`<div style="grid-column:1/-1;background:white;border:1px solid var(--line);border-radius:12px;padding:60px;text-align:center"><h3>${t("No matching parts")}</h3><p style="color:var(--muted)">${t("Try a broader model, engine or category search.")}</p><button class="btn btn-primary" data-action="reset">${t("Reset filters")}</button></div>`;
  productGrid.classList.toggle("list-view",state.view==="list");
  resultCount.textContent=`${arr.length.toLocaleString()} ${t("parts found")} · ${t("showing")} ${arr.length?start+1:0}–${Math.min(start+state.perPage,arr.length)}`;
  pageSummary.textContent=`${t("Page")} ${state.page} ${t("of")} ${pages}`;
@@ -266,7 +272,7 @@ function renderFilterTags(){ const el=document.getElementById("filterTags"); if(
  if(document.getElementById("exportPacked")?.checked)parts.push({label:"Export packed",type:"exportPacked",val:null});
  if(document.getElementById("dangerousGoods")?.checked)parts.push({label:"Exclude regulated",type:"dangerousGoods",val:null});
  if(state.query.trim())parts.push({label:"Search: "+state.query,type:"query",val:null});
- el.innerHTML=parts.map((p,i)=>`<span class="filter-tag" data-tag="${i}"><strong>${esc(p.label)}</strong><button data-tag-remove="${i}" aria-label="Remove filter" tabindex="-1">✕</button></span>`).join("")||"";
+ el.innerHTML=parts.map((p,i)=>`<span class="filter-tag" data-tag="${i}"><strong>${esc(p.label)}</strong><button data-tag-remove="${i}" aria-label="Remove filter">✕</button></span>`).join("")||"";
 }
 function removeTag(i){
  const tags=[];
@@ -283,15 +289,19 @@ function removeTag(i){
 }
 
 function cartLine(ci){
- if(ci.line)return ci.line;
+ if(ci.line){
+  const live=ci.line.partId?publicPartsById.get(String(ci.line.partId)):null;
+  return live?{...ci.line,sku:live.part_number,name:live.name,price:sheetPartPrice(live)}:ci.line;
+ }
  const p=products.find(x=>x.id===ci.id); if(!p)return null;
  return {id:p.id,sku:p.sku,name:p.name,price:priceFor(p),moq:moqFor(p),img:imgFor(p),meta:`${p.model} · ${p.category}`};
 }
 function addPartToCart(sheetId,index){
  const sheet=window.currentSheet;if(!sheet||sheet.sheet_id!==sheetId)return;
  const part=sheet.parts[index];if(!part)return;
+ if(!part.id){toast("Live catalog required","Reload the storefront before adding this sparepart to an RFQ.");return}
  const lineId=`${sheetId}:${index}`;
- const line={id:lineId,partId:part.id,sku:part.part_number,name:part.name,price:part.estimated_usd||0,moq:1,img:sheet.preview_image,meta:`${sheet.model_code} · ${sheet.diagram_code} · No. ${part.callout} · Kebutuhan per set: ${part.quantity} pcs${part.notes?` · ${part.notes}`:""}`};
+ const line={id:lineId,partId:part.id,sku:part.part_number,name:part.name,price:sheetPartPrice(part),moq:1,img:sheet.preview_image,meta:`${sheet.model_code} · ${sheet.diagram_code} · No. ${part.callout} · Kebutuhan per set: ${part.quantity} pcs${part.notes?` · ${part.notes}`:""}`};
  const found=state.cart.find(x=>x.id===lineId); if(found)found.qty++; else state.cart.push({id:lineId,qty:1,line});
  save("kpx_cart",state.cart);updateCounts();renderCart();renderExplodedSheet(sheet);toast("Added sparepart to order",`${line.sku} · ${line.name}`);
 }
@@ -335,6 +345,10 @@ function openModal(title,html){modalTitle.textContent=t(title);modalBody.innerHT
 function closeModal(){modalBackdrop.classList.remove("open");document.body.style.overflow=""}
 function sheetLineId(sheetId,index){return `${sheetId}:${index}`}
 function sheetCartQuantity(sheetId,index){return state.cart.find(x=>String(x.id)===sheetLineId(sheetId,index))?.qty||0}
+function sheetPartPrice(part){
+ const field=state.account==="export"?"export_usd":state.account==="b2b"?"b2b_usd":"estimated_usd";
+ return Number(part?.[field])>0?Number(part[field]):Number(part?.estimated_usd)||0;
+}
 function changeSheetPartQuantity(sheetId,index,delta){
  const lineId=sheetLineId(sheetId,index), item=state.cart.find(x=>String(x.id)===lineId);
  if(!item)return;
@@ -344,43 +358,40 @@ function changeSheetPartQuantity(sheetId,index,delta){
 }
 function sheetCartControl(sheet,index){
  const qty=sheetCartQuantity(sheet.sheet_id,index);
- if(!qty)return `<button class="sheet-buy" onclick="addPartToCart('${sheet.sheet_id}',${index})">${icon("i-cart",12)} Tambah 1 pcs</button>`;
- return `<div class="sheet-qty-control"><button onclick="changeSheetPartQuantity('${sheet.sheet_id}',${index},-1)" aria-label="Reduce quantity">−</button><b>${qty}</b><button onclick="changeSheetPartQuantity('${sheet.sheet_id}',${index},1)" aria-label="Add quantity">+</button><span>In cart</span></div>`;
+ const sheetId=esc(sheet.sheet_id);
+ if(!sheet.parts[index]?.id)return `<button class="sheet-buy" disabled title="Reload live catalog to order">Live sync required</button>`;
+ if(!qty)return `<button class="sheet-buy" data-sheet-action="add" data-sheet-id="${sheetId}" data-part-index="${index}">${icon("i-cart",12)} Tambah 1 pcs</button>`;
+ return `<div class="sheet-qty-control"><button data-sheet-action="quantity" data-sheet-id="${sheetId}" data-part-index="${index}" data-delta="-1" aria-label="Reduce quantity">−</button><b>${qty}</b><button data-sheet-action="quantity" data-sheet-id="${sheetId}" data-part-index="${index}" data-delta="1" aria-label="Add quantity">+</button><span>In cart</span></div>`;
 }
 function renderExplodedSheet(sheet){
  if(!sheet)return;
  window.currentSheet=sheet;
  const cartTotal=sheet.parts.reduce((sum,_,index)=>sum+sheetCartQuantity(sheet.sheet_id,index),0);
  const visibleParts=sheet.parts.filter(part=>!part.admin_publish_status||part.admin_publish_status==="published");
- const rows=sheet.parts.map((part,index)=>part.admin_publish_status&&part.admin_publish_status!=="published"?"":`<div class="sheet-row" data-sheet-callout="${part.callout}"><button class="sheet-callout" onclick="selectSheetPart('${part.callout}',${index})">${part.callout}</button><span onclick="selectSheetPart('${part.callout}',${index})"><strong>${esc(part.part_number)}</strong><small>${esc(part.name)} · Jual satuan · kebutuhan per set: ${part.quantity} pcs${part.notes?` · ${esc(part.notes)}`:""}</small></span><em>${money(part.estimated_usd)}<small>Harga / pcs${part.admin_stock!=null?` · stok ${part.admin_stock}`:" · estimasi"}</small></em>${sheetCartControl(sheet,index)}</div>`).join("");
- const markers=(sheet.hotspots||[]).map(h=>`<button class="sheet-marker" data-sheet-marker="${h.callout}" onclick="selectSheetPart('${h.callout}')" style="left:${h.x}%;top:${h.y}%" aria-label="Part callout ${h.callout}"><span>${h.callout}</span></button>`).join("");
- const documentView=sheet.pdf_url?`<iframe class="sheet-pdf-viewer" src="${sheet.pdf_url}" title="${esc(sheet.title)} — complete PDF"></iframe>`:`<div class="sheet-canvas"><img src="${sheet.full_image||sheet.preview_image}" alt="${esc(sheet.title)} exploded diagram">${markers}</div>`;
+ const rows=sheet.parts.map((part,index)=>part.admin_publish_status&&part.admin_publish_status!=="published"?"":`<div class="sheet-row" data-sheet-callout="${esc(part.callout)}"><button class="sheet-callout" data-sheet-action="select" data-callout="${esc(part.callout)}">${esc(part.callout)}</button><span data-sheet-action="select" data-callout="${esc(part.callout)}"><strong>${esc(part.part_number)}</strong><small>${esc(part.name)} · Jual satuan · kebutuhan per set: ${Number(part.quantity)||1} pcs${part.notes?` · ${esc(part.notes)}`:""}</small></span><em>${money(sheetPartPrice(part))}<small>Harga / pcs${part.admin_stock!=null?` · stok ${Number(part.admin_stock)||0}`:" · estimasi"}</small></em>${sheetCartControl(sheet,index)}</div>`).join("");
+ const markers=(sheet.hotspots||[]).map(h=>{const x=Math.max(0,Math.min(100,Number(h.x)||0)),y=Math.max(0,Math.min(100,Number(h.y)||0)),callout=esc(h.callout);return `<button class="sheet-marker" data-sheet-marker="${callout}" data-sheet-action="select" data-callout="${callout}" style="left:${x}%;top:${y}%" aria-label="Part callout ${callout}"><span>${callout}</span></button>`}).join("");
+ const documentView=sheet.pdf_url?`<iframe class="sheet-pdf-viewer" src="${esc(sheet.pdf_url)}" title="${esc(sheet.title)} — complete PDF"></iframe>`:`<div class="sheet-canvas"><img src="${esc(sheet.full_image||sheet.preview_image||IMG.tractor)}" alt="${esc(sheet.title)} exploded diagram">${markers}</div>`;
  openModal(`${sheet.model_code} · ${sheet.title}`,`<div class="sheet-viewer"><div class="sheet-intro"><b>${sheet.diagram_code} · ${sheet.category_label||sheet.category_slug.replaceAll("-"," ")} · PDF lengkap (${sheet.page_count||1} halaman)</b><span>Lihat semua halaman PDF asli lalu pilih sparepart per pcs. Harga dan stok mengikuti control panel.</span></div><div class="sheet-layout">${documentView}<div class="sheet-parts"><h3>Orderable spareparts (${visibleParts.length}) <small class="sheet-cart-summary">Sheet cart · ${cartTotal} item</small></h3>${rows||'<p class="sheet-empty">No parsed sparepart rows yet. Use RFQ with source PDF.</p>'}</div></div></div>`);
- window.selectSheetPart=(callout,index)=>{document.querySelectorAll("[data-sheet-marker],[data-sheet-callout]").forEach(el=>el.classList.toggle("active",el.dataset.sheetMarker===callout||el.dataset.sheetCallout===callout));const row=document.querySelector(`[data-sheet-callout="${callout}"]`);row?.scrollIntoView({block:"nearest",behavior:"smooth"})};
+ window.selectSheetPart=(callout)=>{document.querySelectorAll("[data-sheet-marker],[data-sheet-callout]").forEach(el=>el.classList.toggle("active",el.dataset.sheetMarker===callout||el.dataset.sheetCallout===callout));const row=[...document.querySelectorAll("[data-sheet-callout]")].find(el=>el.dataset.sheetCallout===String(callout));row?.scrollIntoView({block:"nearest",behavior:"smooth"})};
  if(sheet.parts[0])window.selectSheetPart(sheet.parts[0].callout,0);
 }
 async function openExplodedSheet(p){
- const entry=sheetIndex[p.sheetId];
- if(!entry){toast("Diagram unavailable");return}
- let raw=entry.data;
- if(!raw){const response=await fetch(entry.path,{cache:"no-store"});if(!response.ok){toast("Diagram unavailable");return}raw=await response.json()}
- const sheet=applySheetControls(raw);
- renderExplodedSheet(sheet);
+ try{
+  const entry=sheetIndex[p.sheetId];
+  if(!entry)throw new Error("Diagram metadata is missing");
+  let raw=entry.data;
+  if(!raw){const response=await fetch(entry.path,{cache:"no-store"});if(!response.ok)throw new Error(`Diagram ${response.status}`);raw=await response.json()}
+  const sheet=applySheetControls(raw);
+  renderExplodedSheet(sheet);
+ }catch(error){console.error("[diagram]",error);toast("Diagram unavailable","Please retry or contact Hikari support.")}
 }
 function quickView(id) {
  const p = products.find(x => x.id === id); if (!p) return;
- if(p.sheetId){openExplodedSheet(p);return}
- const ebl = p.exportPacked ? "Export packed" : "Pre-pack review", ebd = p.exportPacked ? "green" : "amber";
- const availCls = p.stock === "in" ? "green" : p.stock === "low" ? "amber" : "dark";
- const rel = products.filter(r => r.id !== p.id && (r.category === p.category || r.model === p.model || r.engine === p.engine)).slice(0, 4);
  trackRecentView(p.id);
- openModal("Part detail", `<div class="quickd"><div class="quickd-top"><div class="quickd-img" onclick="showImageZoom(${p.id})"><img src="${imgFor(p)}" alt="${esc(p.name)}" style="cursor:zoom-in"><div class="quickd-img-meta"><button class="btn-icon-sm" onclick="event.stopPropagation();showImageZoom(${p.id})" aria-label="Zoom image">${icon("i-search", 15)}</button><button class="btn-icon-sm" onclick="event.stopPropagation();toggleWish(${p.id})" aria-label="Save part">${icon("i-heart", 15)}</button><button class="btn-icon-sm" onclick="event.stopPropagation();toggleCompare(${p.id})" aria-label="Compare">${icon("i-compare", 15)}</button></div></div><div class="quickd-info"><div class="quickd-badges"><span class="pill ${p.grade === "OEM" ? "orange" : "dark"}">${esc(p.grade)}</span><span class="pill ${availCls}">${stockLabel(p)}</span><span class="pill ${ebd}">${ebl}</span></div><h2>${esc(p.name)}</h2><div class="quickd-sku">${esc(p.sku)} <span class="dot">·</span> ${esc(p.origin)} <span class="dot">·</span> HS ${p.hs}</div><div class="quickd-price"><b>${money(priceFor(p))}</b><small>${state.account === "retail" ? "Retail unit price" : state.account === "b2b" ? "B2B unit price" : "Export unit price"}</small></div><div class="quickd-actions"><button class="btn btn-primary quickd-cart" onclick="addCart(${p.id});closeModal()">${icon("i-cart", 15)} Add to order</button><button class="btn btn-light quickd-rfq" onclick="quickdRFQ(${p.id})">${icon("i-file", 15)} Request quotation</button></div></div></div><div class="quickd-tabs"><button class="quickd-tab active" data-tab="spec">${icon("i-info", 13)} Specifications</button><button class="quickd-tab" data-tab="fitment">${icon("i-search", 13)} Fitment</button><button class="quickd-tab" data-tab="commercial">${icon("i-file", 13)} Commercial</button><button class="quickd-tab" data-tab="packing">${icon("i-box", 13)} Packing</button></div><div class="quickd-panels"><div class="quickd-panel active" data-panel="spec"><div class="qspec-grid"><div class="qspec"><span>Part type</span><b>${esc(p.category)}</b></div><div class="qspec"><span>Equipment</span><b>${esc(p.machine)}</b></div><div class="qspec"><span>Engine series</span><b>${esc(p.engine)}</b></div><div class="qspec"><span>Grade</span><b>${esc(p.grade)}</b></div><div class="qspec"><span>Weight</span><b>${p.weight} kg</b></div><div class="qspec"><span>Dimensions</span><b>${p.dims}</b></div></div></div><div class="quickd-panel" data-panel="fitment"><div class="fitment-detail"><div class="fitment-main"><span class="pill orange">Match</span><b>${esc(p.machine)} ${esc(p.model)}</b></div><p>Confirmed for model code <b>${esc(p.model)}</b>. Also listed for <b>${esc(p.alt)}</b> where applicable. Serial range and market variant must be verified before final confirmation.</p><div class="fitment-rows"><div class="fitment-row"><span>Alternate model</span><b>${esc(p.alt)}</b></div><div class="fitment-row"><span>Engine reference</span><b>${esc(p.engine)}</b></div><div class="fitment-row"><span>Confidence</span><span class="pill green">High</span></div></div></div></div><div class="quickd-panel" data-panel="commercial"><div class="qspec-grid"><div class="qspec"><span>Retail</span><b>${money(p.price)}</b></div><div class="qspec"><span>B2B</span><b>${money(p.b2b)}</b></div><div class="qspec"><span>Export</span><b>${money(p.export)}</b></div><div class="qspec"><span>MOQ (${state.account})</span><b>${moqFor(p)} unit(s)</b></div><div class="qspec"><span>Stock</span><b>${stockLabel(p)}</b></div><div class="qspec"><span>Available</span><b>${p.qty} unit(s)</b></div></div><p class="form-note" style="margin-top: 14px">Final pricing, stock, and payment terms are confirmed during quotation review.</p></div><div class="quickd-panel" data-panel="packing"><div class="qspec-grid"><div class="qspec"><span>Pack size</span><b>${p.dims}</b></div><div class="qspec"><span>Weight</span><b>${p.weight} kg</b></div><div class="qspec"><span>Export ready</span><span class="pill ${ebd}">${ebl}</span></div><div class="qspec"><span>HS code</span><b>${p.hs}</b></div><div class="qspec"><span>Lead time</span><b>${p.lead}</b></div><div class="qspec"><span>Origin</span><b>${esc(p.origin)}</b></div></div></div></div>${rel.length ? `<div class="quickd-related"><div class="quickd-related-head"><b>Related parts</b><small>Same category or equipment</small></div><div class="quickd-related-grid">${rel.map(r => `<button class="rel-part" onclick="quickView(${r.id});event.stopPropagation()"><div class="rel-img"><img src="${imgFor(r)}" alt=""></div><div class="rel-info"><b>${esc(r.name)}</b><small>${esc(r.sku)}</small><div>${money(priceFor(r))}</div></div></button>`).join("")}</div></div>` : ""}</div>`); setTimeout(() => { document.querySelectorAll(".quickd-tab").forEach(b => b.onclick = () => { document.querySelectorAll(".quickd-tab").forEach(x => x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".quickd-panel").forEach(p => p.style.display = "none"); const panel = document.querySelector(`.quickd-panel[data-panel="${b.dataset.tab}"]`); if (panel) { panel.classList.add("active"); panel.style.display = ""; } }); }, 50);
+ if(p.sheetId){openExplodedSheet(p);return}
+ openModal("Part detail",`<div class="quickd"><img src="${esc(imgFor(p))}" alt="${esc(p.name)}"><h2>${esc(p.name)}</h2><p>${esc(p.sku)}</p><button class="btn btn-primary" data-modal-action="add-cart" data-id="${esc(p.id)}">${icon("i-cart",15)} Add to order</button></div>`);
 }
-function quickdRFQ(id) {
- const p = products.find(x => x.id === id); if (!p) return;
- closeModal(); openDrawer();
- setTimeout(() => { const ta = document.querySelector("#destCountry"); if (ta) ta.value = p.name; document.querySelector("#buyerRef")?.focus(); }, 200);
-}
+
 function toggleWish(id){state.wishlist.has(id)?state.wishlist.delete(id):state.wishlist.add(id);save("kpx_wishlist",[...state.wishlist]);renderProducts();toast(state.wishlist.has(id)?"Saved to wishlist":"Removed from wishlist")}
 function toggleCompare(id){if(state.compare.has(id))state.compare.delete(id);else{if(state.compare.size>=4){toast("Comparison limit","You can compare up to 4 parts.");return}state.compare.add(id)}save("kpx_compare",[...state.compare]);renderProducts()}
 
@@ -397,7 +408,7 @@ function renderRecentView(){
  try{ids=JSON.parse(localStorage.getItem(key))||[]}catch(e){}
  if(!ids.length){nodes.forEach(el=>el.style.display='none');return}
  const items=ids.map(id=>products.find(p=>p.id===id)).filter(Boolean).slice(0,6);
- const html='<div class="recent-head"><b>Recently viewed</b><small>'+items.length+' part(s)</small></div><div class="recent-grid">'+items.map(p=>'<button class="rel-part" onclick="quickView('+p.id+');event.stopPropagation()"><div class="rel-img"><img src="'+imgFor(p)+'" alt=""></div><div class="rel-info"><b>'+esc(p.name)+'</b><small>'+esc(p.sku)+'</small><div>'+money(priceFor(p))+'</div></div></button>').join('')+'</div>';
+ const html='<div class="recent-head"><b>Recently viewed</b><small>'+items.length+' part(s)</small></div><div class="recent-grid">'+items.map(p=>'<button class="rel-part" data-ui-action="quick" data-id="'+esc(p.id)+'"><div class="rel-img"><img src="'+esc(imgFor(p))+'" alt=""></div><div class="rel-info"><b>'+esc(p.name)+'</b><small>'+esc(p.sku)+'</small><div>'+money(priceFor(p))+'</div></div></button>').join('')+'</div>';
  nodes.forEach(el=>{el.style.display='block';el.innerHTML=html});
 }
 function renderActionStrips(){
@@ -408,23 +419,20 @@ function renderActionStrips(){
   const comp=[...state.compare].map(id=>products.find(p=>p.id===id)).filter(Boolean).slice(0,4);
   const has=items.length||comp.length;
   saved.style.display=has?'block':'none';
-  saved.innerHTML=has?'<div class="strip-head"><b>Saved & compare</b><span><button onclick="showWishlist()">Saved '+items.length+'</button><button onclick="showCompare()">Compare '+comp.length+'</button></span></div><div class="strip-scroll">'+items.map(p=>'<button class="mini-part" onclick="quickView('+p.id+')"><img src="'+imgFor(p)+'" alt=""><span><b>'+esc(p.name)+'</b><small>Saved · '+esc(p.sku)+'</small></span></button>').join('')+comp.map(p=>'<button class="mini-part mini-compare" onclick="quickView('+p.id+')"><img src="'+imgFor(p)+'" alt=""><span><b>'+esc(p.name)+'</b><small>Compare · '+money(priceFor(p))+'</small></span></button>').join('')+'</div>':'';
+  saved.innerHTML=has?'<div class="strip-head"><b>Saved & compare</b><span><button data-ui-action="show-wishlist">Saved '+items.length+'</button><button data-ui-action="show-compare">Compare '+comp.length+'</button></span></div><div class="strip-scroll">'+items.map(p=>'<button class="mini-part" data-ui-action="quick" data-id="'+esc(p.id)+'"><img src="'+esc(imgFor(p))+'" alt=""><span><b>'+esc(p.name)+'</b><small>Saved · '+esc(p.sku)+'</small></span></button>').join('')+comp.map(p=>'<button class="mini-part mini-compare" data-ui-action="quick" data-id="'+esc(p.id)+'"><img src="'+esc(imgFor(p))+'" alt=""><span><b>'+esc(p.name)+'</b><small>Compare · '+money(priceFor(p))+'</small></span></button>').join('')+'</div>':'';
  }
 }
-function showImageZoom(id){
- const p=products.find(x=>x.id===id);if(!p)return;
- openModal(p.name+' — Image','<div style="text-align:center"><img src="'+imgFor(p)+'" style="max-width:100%;max-height:75vh;border-radius:10px;object-fit:contain" alt="'+esc(p.name)+'"><p style="font-size:10px;color:var(--muted);margin-top:10px">'+esc(p.name)+' — '+esc(p.sku)+'</p></div>');
-}
+
 function showCompare(){
  const arr=[...state.compare].map(id=>products.find(p=>p.id===id)).filter(Boolean);
  if(!arr.length){toast("No comparison items","Use the compare icon on a product card.");return}
- openModal("Compare parts",`<div class="compare-modal"><div class="compare-mobile-cards">${arr.map(p=>`<article class="compare-card"><img src="${imgFor(p)}" alt=""><div><b>${esc(p.name)}</b><small>${esc(p.sku)}</small></div><dl><dt>Price</dt><dd>${money(priceFor(p))}</dd><dt>MOQ</dt><dd>${moqFor(p)}</dd><dt>Stock</dt><dd>${stockLabel(p)}</dd><dt>Fitment</dt><dd>${esc(p.machine)} ${esc(p.model)}</dd></dl><button class="btn btn-primary btn-sm" onclick="addCart(${p.id})">Add to RFQ</button></article>`).join("")}</div><div class="compare-table-wrap"><table class="compare-table"><thead><tr><th>Attribute</th>${arr.map(p=>`<th>${esc(p.name)}<br><small>${esc(p.sku)}</small></th>`).join("")}</tr></thead><tbody>
+ openModal("Compare parts",`<div class="compare-modal"><div class="compare-mobile-cards">${arr.map(p=>`<article class="compare-card"><img src="${esc(imgFor(p))}" alt=""><div><b>${esc(p.name)}</b><small>${esc(p.sku)}</small></div><dl><dt>Price</dt><dd>${money(priceFor(p))}</dd><dt>MOQ</dt><dd>${moqFor(p)}</dd><dt>Stock</dt><dd>${stockLabel(p)}</dd><dt>Fitment</dt><dd>${esc(p.machine)} ${esc(p.model)}</dd></dl><button class="btn btn-primary btn-sm" data-modal-action="add-cart" data-id="${esc(p.id)}">Add to RFQ</button></article>`).join("")}</div><div class="compare-table-wrap"><table class="compare-table"><thead><tr><th>Attribute</th>${arr.map(p=>`<th>${esc(p.name)}<br><small>${esc(p.sku)}</small></th>`).join("")}</tr></thead><tbody>
  <tr><td>Image</td>${arr.map(p=>`<td><img src="${imgFor(p)}" style="width:150px;height:90px;object-fit:cover;border-radius:7px"></td>`).join("")}</tr>
- <tr><td>Price</td>${arr.map(p=>`<td><b>${money(priceFor(p))}</b></td>`).join("")}</tr><tr><td>Grade</td>${arr.map(p=>`<td>${p.grade}</td>`).join("")}</tr><tr><td>Fitment</td>${arr.map(p=>`<td>${p.machine} ${p.model}<br>${p.engine}</td>`).join("")}</tr><tr><td>Stock</td>${arr.map(p=>`<td>${stockLabel(p)}</td>`).join("")}</tr><tr><td>Weight</td>${arr.map(p=>`<td>${p.weight} kg</td>`).join("")}</tr><tr><td>MOQ</td>${arr.map(p=>`<td>${moqFor(p)} (${state.account.slice(0,1).toUpperCase()+state.account.slice(1)})</td>`).join("")}</tr></tbody></table></div><button class="btn btn-primary btn-block compare-rfq" onclick="addComparedToCart()">Add compared parts to RFQ</button></div>`);
+ <tr><td>Price</td>${arr.map(p=>`<td><b>${money(priceFor(p))}</b></td>`).join("")}</tr><tr><td>Grade</td>${arr.map(p=>`<td>${esc(p.grade)}</td>`).join("")}</tr><tr><td>Fitment</td>${arr.map(p=>`<td>${esc(p.machine)} ${esc(p.model)}<br>${esc(p.engine)}</td>`).join("")}</tr><tr><td>Stock</td>${arr.map(p=>`<td>${stockLabel(p)}</td>`).join("")}</tr><tr><td>MOQ</td>${arr.map(p=>`<td>${moqFor(p)} (${state.account.slice(0,1).toUpperCase()+state.account.slice(1)})</td>`).join("")}</tr></tbody></table></div><button class="btn btn-primary btn-block compare-rfq" data-modal-action="add-compared">Add compared parts to RFQ</button></div>`);
 }
 function showWishlist(){
  const arr=[...state.wishlist].map(id=>products.find(p=>p.id===id)).filter(Boolean);
- openModal("Saved parts",arr.length?`<div class="saved-modal"><div class="saved-list">${arr.map(p=>`<button class="saved-row" onclick="quickView(${p.id})"><img src="${imgFor(p)}" alt=""><span><b>${esc(p.name)}</b><small>${esc(p.sku)} · ${money(priceFor(p))}</small></span><em>${stockLabel(p)}</em></button>`).join("")}</div><button class="btn btn-primary btn-block" onclick="addSavedToCart()">Add saved parts to RFQ</button></div>`:`<p>No saved products yet.</p>`);
+ openModal("Saved parts",arr.length?`<div class="saved-modal"><div class="saved-list">${arr.map(p=>`<button class="saved-row" data-modal-action="quick" data-id="${esc(p.id)}"><img src="${esc(imgFor(p))}" alt=""><span><b>${esc(p.name)}</b><small>${esc(p.sku)} · ${money(priceFor(p))}</small></span><em>${stockLabel(p)}</em></button>`).join("")}</div><button class="btn btn-primary btn-block" data-modal-action="add-saved">Add saved parts to RFQ</button></div>`:`<p>No saved products yet.</p>`);
 }
 function addSavedToCart(){[...state.wishlist].forEach(addCart);renderCart();toast("Saved parts added","Wishlist moved into RFQ list")}
 function addComparedToCart(){[...state.compare].forEach(addCart);renderCart();toast("Compared parts added","Compare queue moved into RFQ list")}
@@ -474,7 +482,7 @@ function bind(){
  document.querySelectorAll("[data-search-mode]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-search-mode]").forEach(x=>x.classList.remove("active"));b.classList.add("active");heroSearch.placeholder=t(b.dataset.searchMode==="part"?"Try: oil filter, V2403, HIK-FLT-00018":b.dataset.searchMode==="model"?"Try: L4508, M7040, U50-5": "Try: D1105, V2403, V3800")});
  const doHeroSearch=()=>{state.query=heroSearch.value.trim();catalogSearch.value=state.query;state.page=1;renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
  heroSearchBtn.onclick=doHeroSearch;heroSearch.onkeydown=e=>{if(e.key==="Enter")doHeroSearch()};browseBtn.onclick=()=>document.querySelector("#catalog").scrollIntoView({behavior:"smooth"});
- uploadListBtn.onclick=()=>openModal("Bulk parts-list upload",`<div style="max-width:670px"><h2>Upload CSV / XLSX / PDF parts list</h2><p style="color:var(--muted)">Upload purchase lists with SKU, description, quantity, model and notes for quotation review. Files should be validated before processing.</p><div style="border:2px dashed #cfd5d8;border-radius:12px;padding:55px;text-align:center;background:#f7f8f9">${icon("i-file",34)}<h3>Parts list upload</h3><small>SKU · description · quantity · model · notes</small></div></div>`);
+
  categoryStrip.onclick=e=>{const b=e.target.closest("[data-model]");if(!b)return;resetAll();state.selectedModel=b.dataset.model;state.query="";catalogSearch.value="";state.page=1;renderCategories();renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
  document.querySelectorAll(".filters input").forEach(el=>el.addEventListener("change",()=>{state.category=new Set([...document.querySelectorAll('input[name=category]:checked')].map(x=>x.value));state.machine=new Set([...document.querySelectorAll('input[name=machine]:checked')].map(x=>x.value));state.stock=new Set([...document.querySelectorAll('input[name=stock]:checked')].map(x=>x.value));state.grade=new Set([...document.querySelectorAll('input[name=grade]:checked')].map(x=>x.value));state.minPrice=minPrice.value?Number(minPrice.value):null;state.maxPrice=maxPrice.value?Number(maxPrice.value):null;state.page=1;renderProducts()}));
  resetFilters.onclick=resetAll;catalogSearch.oninput=()=>{state.query=catalogSearch.value;state.page=1;renderProducts();searchSuggest(catalogSearch.value)};catalogSearch.onkeydown=e=>{if(e.key==="Escape"||e.key==="Tab")document.getElementById("catalogSuggestions")?.classList.remove("open")};catalogSearch.onblur=()=>setTimeout(()=>document.getElementById("catalogSuggestions")?.classList.remove("open"),200);document.getElementById("catalogSuggestions").onclick=e=>{const s=e.target.closest("[data-sku]");if(s){catalogSearch.value=s.dataset.sku;state.query=s.dataset.sku;state.page=1;renderProducts();document.getElementById("catalogSuggestions").classList.remove("open")}};sortSelect.onchange=()=>{state.sort=sortSelect.value;state.page=1;renderProducts()};
@@ -483,7 +491,7 @@ function bind(){
  currencySelect.onchange=()=>{state.currency=currencySelect.value;renderProducts();renderCart()};
  languageSelect.onchange=()=>{state.lang=languageSelect.value;save("hikari_lang",state.lang);renderCategories();renderProducts();renderCart();renderGarage();buildFAQs();renderExportPanel(state.exportTab||"process");translateStatic()};
  gridView.onclick=()=>{state.view="grid";gridView.classList.add("active");listView.classList.remove("active");renderProducts()};listView.onclick=()=>{state.view="list";listView.classList.add("active");gridView.classList.remove("active");renderProducts()};
- productGrid.onclick=e=>{const b=e.target.closest("[data-action]");if(!b)return;const id=b.dataset.id;({add:addCart,quick:quickView,wish:toggleWish,compare:toggleCompare})[b.dataset.action]?.(id)};
+ productGrid.onclick=e=>{const b=e.target.closest("[data-action]");if(!b)return;const id=b.dataset.id;({add:addCart,quick:quickView,wish:toggleWish,compare:toggleCompare,reset:resetAll})[b.dataset.action]?.(id)};
  const handlePagination=e=>{const b=e.target.closest("[data-page]");if(!b||b.disabled)return;state.page=Number(b.dataset.page);renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth",block:"start"})};
  pagination.onclick=handlePagination;paginationTop.onclick=handlePagination;
  cartBtn.onclick=openDrawer;drawerClose.onclick=closeDrawer;drawerBackdrop.onclick=()=>{closeDrawer();closeMobileFilters()};
@@ -511,7 +519,7 @@ function bind(){
   }catch(error){toast("RFQ not submitted",error instanceof Error?error.message:"Please retry shortly.");return}
   finally{checkoutBtn.disabled=false;checkoutBtn.textContent="Generate quotation"}
   closeDrawer();
-  openModal("Quotation request prepared",`<div style="max-width:620px;margin:auto"><div style="text-align:center;margin-bottom:16px">${icon("i-check",42)}</div><h2 style="margin:0 0 4px">Quotation draft ready</h2><p style="color:var(--muted);font-size:11px;margin:0 0 18px">Reference <b>${refNo}</b> · ${mode} pricing</p><div class="rfq-confirm-grid"><div class="rfq-confirm-block"><span>Destination</span><b>${esc(dest)}</b></div><div class="rfq-confirm-block"><span>Trade term</span><b>${esc(term)}</b></div><div class="rfq-confirm-block"><span>Shipping</span><b>${esc(shipping)}</b></div><div class="rfq-confirm-block"><span>Reference</span><b>${esc(ref)}</b></div></div><div class="rfq-items-summary"><div class="rfq-sum-head">Items (${items.length})</div><div style="display:grid;gap:5px;margin-top:8px">${items.slice(0,6).map(({ci,line})=>`<div class="rfq-item-row"><span><b>${esc(line.name)}</b><small>${esc(line.sku)} · ${esc(line.meta)}</small></span><span>${ci.qty} × ${money(line.price)}</span></div>`).join("")}${items.length>6?`<div class="rfq-item-row"><span><b>+${items.length-6} more items</b></span></div>`:""}</div></div><div class="rfq-total-bar"><span>Estimated quotation base</span><b>${money(subtotal+Math.max(12,subtotal*.018))}</b></div><p class="form-note" style="margin-top:12px;text-align:center">Freight, duty, and final pricing confirmed during quotation review.</p><button class="btn btn-primary btn-block" onclick="closeModal()" style="margin-top:14px">Done</button></div>`);
+  openModal("Quotation request prepared",`<div style="max-width:620px;margin:auto"><div style="text-align:center;margin-bottom:16px">${icon("i-check",42)}</div><h2 style="margin:0 0 4px">Quotation draft ready</h2><p style="color:var(--muted);font-size:11px;margin:0 0 18px">Reference <b>${refNo}</b> · ${mode} pricing</p><div class="rfq-confirm-grid"><div class="rfq-confirm-block"><span>Destination</span><b>${esc(dest)}</b></div><div class="rfq-confirm-block"><span>Trade term</span><b>${esc(term)}</b></div><div class="rfq-confirm-block"><span>Shipping</span><b>${esc(shipping)}</b></div><div class="rfq-confirm-block"><span>Reference</span><b>${esc(ref)}</b></div></div><div class="rfq-items-summary"><div class="rfq-sum-head">Items (${items.length})</div><div style="display:grid;gap:5px;margin-top:8px">${items.slice(0,6).map(({ci,line})=>`<div class="rfq-item-row"><span><b>${esc(line.name)}</b><small>${esc(line.sku)} · ${esc(line.meta)}</small></span><span>${ci.qty} × ${money(line.price)}</span></div>`).join("")}${items.length>6?`<div class="rfq-item-row"><span><b>+${items.length-6} more items</b></span></div>`:""}</div></div><div class="rfq-total-bar"><span>Estimated quotation base</span><b>${money(subtotal+Math.max(12,subtotal*.018))}</b></div><p class="form-note" style="margin-top:12px;text-align:center">Freight, duty, and final pricing confirmed during quotation review.</p><button class="btn btn-primary btn-block" data-modal-action="close" style="margin-top:14px">Done</button></div>`);
  }
  rfqBuyerName.oninput=saveRfqForm;rfqBuyerEmail.oninput=saveRfqForm;rfqBuyerPhone.oninput=saveRfqForm;
  destCountry.oninput=()=>{updateRfqChecklist();collectRfqSummary();saveRfqForm()};
@@ -520,12 +528,37 @@ function bind(){
   buyerRef.oninput=saveRfqForm;
   wishlistBtn.onclick=showWishlist;compareBtn.onclick=showCompare;
  modalClose.onclick=closeModal;modalBackdrop.onclick=e=>{if(e.target===modalBackdrop)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();closeDrawer()}});
+ modalBody.addEventListener("click",e=>{
+  const control=e.target.closest("[data-sheet-action],[data-modal-action]");if(!control)return;
+  const action=control.dataset.sheetAction||control.dataset.modalAction;
+  if(action==="add")addPartToCart(control.dataset.sheetId,Number(control.dataset.partIndex));
+  if(action==="quantity")changeSheetPartQuantity(control.dataset.sheetId,Number(control.dataset.partIndex),Number(control.dataset.delta));
+  if(action==="select")window.selectSheetPart?.(control.dataset.callout);
+  if(action==="close")closeModal();
+  if(action==="reset")resetAll();
+  if(action==="quick")quickView(control.dataset.id);
+  if(action==="add-cart")addCart(control.dataset.id);
+  if(action==="wishlist")toggleWish(control.dataset.id);
+  if(action==="compare")toggleCompare(control.dataset.id);
+  if(action==="show-wishlist")showWishlist();
+  if(action==="show-compare")showCompare();
+  if(action==="add-saved")addSavedToCart();
+  if(action==="add-compared")addComparedToCart();
+
+ });
+ document.addEventListener("click",e=>{
+  const control=e.target.closest("[data-ui-action]");if(!control)return;
+  const action=control.dataset.uiAction;
+  if(action==="quick")quickView(control.dataset.id);
+  if(action==="show-wishlist")showWishlist();
+  if(action==="show-compare")showCompare();
+ });
  garageFamily.onchange=updateGarageModel;saveMachineBtn.onclick=()=>{const g={family:garageFamily.value,model:garageModel.value};if(!state.garage.some(x=>x.family===g.family&&x.model===g.model)){state.garage.push(g);save("kpx_garage",state.garage);renderGarage();toast("Machine saved",`${g.family} ${g.model}`)}};
- garageItems.onclick=e=>{const b=e.target.closest("[data-garage]");if(!b)return;const g=state.garage[Number(b.dataset.garage)];state.query=g.model;catalogSearch.value=g.model;renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
+ garageItems.onclick=e=>{const b=e.target.closest("[data-garage]");if(!b)return;const g=state.garage[Number(b.dataset.garage)];state.selectedModel=g.model;state.query="";catalogSearch.value="";state.page=1;renderCategories();renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
  document.querySelectorAll("[data-export-tab]").forEach(b=>b.onclick=()=>renderExportPanel(b.dataset.exportTab));
  document.querySelectorAll(".mobile-quicknav a").forEach(a=>a.onclick=()=>syncMobileQuicknav(a.getAttribute("href").slice(1)));
  addEventListener("scroll",()=>syncMobileQuicknav(),{passive:true});addEventListener("hashchange",()=>syncMobileQuicknav(location.hash.slice(1)));
- document.querySelectorAll(".faq-q").forEach(b=>b.onclick=()=>b.parentElement.classList.toggle("open"));
+ faqList.onclick=e=>{const b=e.target.closest(".faq-q");if(b)b.parentElement.classList.toggle("open")};
  contactForm.onsubmit=async e=>{
   e.preventDefault();const fd=new FormData(contactForm),button=contactForm.querySelector('button[type="submit"]');button.disabled=true;button.textContent="Submitting RFQ…";
   try{const response=await fetch(catalogApi("/api/public-orders"),{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({buyerName:fd.get("name"),buyerEmail:fd.get("email"),destination:fd.get("country"),accountType:String(fd.get("type")||"").toLowerCase().includes("b2b")?"b2b":"retail",message:fd.get("message"),items:[]})});const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||"RFQ submission failed");openModal("Quotation request submitted",`<h2>Thank you, ${esc(fd.get("name"))}</h2><p>Your enquiry for <b>${esc(fd.get("country"))}</b> has been recorded for quotation review.</p><div class="spec"><span>Reference</span><b>${esc(result.data.reference)}</b></div>`);contactForm.reset()}catch(error){toast("RFQ not submitted",error instanceof Error?error.message:"Please retry shortly.")}finally{button.disabled=false;button.textContent="Create RFQ"}
@@ -533,11 +566,11 @@ function bind(){
  downloadSampleBtn.onclick=downloadCSV;
  securityBtn.onclick=securityFooterBtn.onclick=e=>{e.preventDefault();showSecurity()};
  creditsBtn.onclick=e=>{e.preventDefault();showCredits()};
- clearDataBtn.onclick=e=>{e.preventDefault();["kpx_cart","kpx_wishlist","kpx_compare","kpx_garage"].forEach(k=>localStorage.removeItem(k));location.reload()};
+ clearDataBtn.onclick=e=>{e.preventDefault();["kpx_cart","kpx_wishlist","kpx_compare","kpx_garage","hikari_rfq_form","hikari_recent","hikari_lang"].forEach(k=>localStorage.removeItem(k));location.reload()};
  mobileFilterBtn.onclick=openMobileFilters;mobileFilterClose.onclick=closeMobileFilters;filterApplyBtn.onclick=closeMobileFilters;filterResetMobileBtn.onclick=()=>{resetAll();closeMobileFilters()};
  dismissCatalogNotice.onclick=()=>catalogBanner.remove();
  filterTags.onclick=e=>{const b=e.target.closest("[data-tag-remove]");if(b)removeTag(Number(b.dataset.tagRemove));};
- waFloat.onclick=openWhatsApp;
+
  syncMobileQuicknav(location.hash.slice(1)||"catalog");
 }
 function downloadCSV(){
@@ -570,6 +603,7 @@ function buildFAQs(){
 }
 if(matchMedia("(max-width:560px)").matches)state.view="list";
 setImages();buildFAQs();updateGarageModel();renderGarage();renderCart();loadRfqForm();bind();loadDriveCatalog();
-setInterval(refreshCatalogControl,10000);
+setInterval(refreshCatalogControl,300000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshCatalogControl()});
 gridView.classList.toggle("active",state.view==="grid");listView.classList.toggle("active",state.view==="list");
 translateStatic();

@@ -5,5 +5,6 @@ deployment:
     - /bin/mkdir -p "$DEPLOYPATH"
     - /bin/cp -R assets "$DEPLOYPATH"
     - /bin/cp index.html "$DEPLOYPATH"
+    - /bin/cp .htaccess "$DEPLOYPATH"
     - /bin/cp robots.txt "$DEPLOYPATH"
     - /bin/cp site.webmanifest "$DEPLOYPATH"

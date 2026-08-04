@@ -11,5 +11,7 @@ test('public exploded rows consume Internal Hikari price, stock, and publication
   assert.match(app, /control\?\.custom/);
   assert.match(app, /admin_stock:control\?\.stock/);
   assert.match(app, /admin_publish_status!=="published"/);
-  assert.match(app, /setInterval\(refreshCatalogControl,10000\)/);
+  assert.match(app, /setInterval\(refreshCatalogControl,300000\)/);
+  assert.match(app, /visibilitychange/);
+  assert.match(app, /catalogRefreshPromise/);
 });
