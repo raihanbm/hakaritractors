@@ -12,7 +12,7 @@ const state = {
   page:1, perPage:24, query:"", selectedModel:null, category:new Set(), machine:new Set(), stock:new Set(), grade:new Set(),
   minPrice:null,maxPrice:null,sort:"featured",account:"retail",currency:"USD",lang:load("hikari_lang","en"),view:"grid",
   cart:load("kpx_cart",[]), wishlist:new Set(load("kpx_wishlist",[])), compare:new Set(load("kpx_compare",[])),
-  garage:load("kpx_garage",[])
+  garage:load("kpx_garage",[]), flowStage:1
 };
 const rates={USD:1,IDR:16300,EUR:.92,SGD:1.35,AUD:1.52};
 const symbols={USD:"$",IDR:"Rp ",EUR:"€",SGD:"S$",AUD:"A$"};
@@ -174,6 +174,15 @@ function partMatchesForSheet(sheetId,q=state.query){
 }
 function matchesPartSearch(p,q=state.query){return partMatchesForSheet(p.sheetId,q).length>0}
 function partMatchBadge(p){const m=partMatchesForSheet(p.sheetId)[0];return m?`<div class="part-match-badge">Matched sparepart: <b>${esc(m.part_number)}</b> ${esc(m.name||"")}</div>`:""}
+function currentCatalogFlowStage(){return state.cart.length?4:(state.selectedModel||hasSearchQuery()?2:1)}
+function updateCatalogFlow(stage=currentCatalogFlowStage()){
+ state.flowStage=Math.max(1,Math.min(4,Number(stage)||1));
+ document.querySelectorAll("[data-flow-step]").forEach(el=>{
+  const step=Number(el.dataset.flowStep);
+  el.classList.toggle("active",step===state.flowStage);
+  el.classList.toggle("done",step<state.flowStage);
+ });
+}
 function filtered(){
  let arr=products.filter(p=>{
    const q=state.query.trim().toLowerCase();
@@ -201,14 +210,14 @@ function stockLabel(p){return p.stock==="in"?`${p.qty} ${t("in stock")}`:p.stock
 function imgFor(p){return p?.previewImage||IMG[p?.img]||IMG.tractor}
 
 function productCard(p){
- const saved=state.wishlist.has(p.id), compared=state.compare.has(p.id), price=priceFor(p);
+ const saved=state.wishlist.has(p.id), compared=state.compare.has(p.id);
  return `<article class="product-card">
   <button class="product-img" data-action="quick" data-id="${p.id}" aria-label="Open ${esc(p.name)} diagram"><img loading="lazy" src="${imgFor(p)}" alt="${esc(p.name)} diagram"></button>
   <div class="product-body">
+   <div class="assembly-card-head"><span class="assembly-code">${esc(p.diagramCode)}</span><span>${esc(p.model)}</span></div>
    <h3 class="product-name">${esc(p.name.replace(/\s*##\s*.*/,""))}</h3>
-   <div class="product-meta">${esc(p.diagramCode)} · ${esc(p.category)}</div>
-   <div class="product-model">${esc(p.model)}</div>${partMatchBadge(p)}
-   <div class="product-parts"><span>${p.partCount||0} ${t("parts available")}</span></div>
+   <div class="assembly-fitment"><b>${esc(p.model)}</b><span>${esc(p.category)}</span></div>${partMatchBadge(p)}
+   <div class="assembly-card-foot"><span><b>${p.partCount||0}</b> ${t("parts available")}</span><span>Exploded diagram</span></div>
    <div class="product-actions">
     <button class="btn btn-primary btn-block btn-sm" data-action="quick" data-id="${esc(p.id)}">${icon("i-search",15)} Open Diagram</button>
     <div class="product-toolbar">${[
@@ -313,7 +322,7 @@ function addPartToCart(sheetId,index){
  const lineId=`${sheetId}:${index}`;
  const line={id:lineId,partId:part.id,sku:part.part_number,name:part.name,price:sheetPartPrice(part),moq:1,img:sheet.preview_image,meta:`${sheet.model_code} · ${sheet.diagram_code} · No. ${part.callout} · Kebutuhan per set: ${part.quantity} pcs${part.notes?` · ${part.notes}`:""}`};
  const found=state.cart.find(x=>String(x.id)===String(lineId)); if(found)found.qty++; else state.cart.push({id:lineId,qty:1,line});
- save("kpx_cart",state.cart);updateCounts();renderCart();renderExplodedSheet(sheet);toast("Added sparepart to order",`${line.sku} · ${line.name}`);
+ save("kpx_cart",state.cart);updateCatalogFlow(4);updateCounts();renderCart();renderExplodedSheet(sheet);toast("Added sparepart to order",`${line.sku} · ${line.name}`);
 }
 function addCart(id){
  const p=products.find(x=>String(x.id)===String(id)); if(!p)return;
@@ -349,10 +358,10 @@ function collectRfqSummary(){
  rfqIncotermLabel.textContent=incoterm?.value||"";
  rfqShippingLabel.textContent=shippingMethod?.value||"";
 }
-function openDrawer(){drawerBackdrop.classList.add("open");cartDrawer.classList.add("open");document.body.style.overflow="hidden";renderCart()}
+function openDrawer(){if(state.cart.length)updateCatalogFlow(4);drawerBackdrop.classList.add("open");cartDrawer.classList.add("open");document.body.style.overflow="hidden";renderCart()}
 function closeDrawer(){drawerBackdrop.classList.remove("open");cartDrawer.classList.remove("open");document.body.style.overflow=""}
 function openModal(title,html){modalTitle.textContent=t(title);modalBody.innerHTML=html;translateStatic(modalBody);modalBackdrop.classList.add("open");document.body.style.overflow="hidden"}
-function closeModal(){modalBackdrop.classList.remove("open");document.body.style.overflow=""}
+function closeModal(){modalBackdrop.classList.remove("open");document.body.style.overflow="";updateCatalogFlow()}
 function sheetLineId(sheetId,index){return `${sheetId}:${index}`}
 function sheetCartQuantity(sheetId,index){return state.cart.find(x=>String(x.id)===sheetLineId(sheetId,index))?.qty||0}
 function sheetPartPrice(part){
@@ -364,7 +373,7 @@ function changeSheetPartQuantity(sheetId,index,delta){
  if(!item)return;
  item.qty=Math.max(0,item.qty+delta);
  if(item.qty===0)state.cart=state.cart.filter(x=>String(x.id)!==lineId);
- save("kpx_cart",state.cart);updateCounts();renderCart();renderExplodedSheet(window.currentSheet);
+ save("kpx_cart",state.cart);updateCatalogFlow();updateCounts();renderCart();renderExplodedSheet(window.currentSheet);
 }
 function sheetCartControl(sheet,index){
  const qty=sheetCartQuantity(sheet.sheet_id,index);
@@ -394,14 +403,14 @@ async function openExplodedSheet(p){
   let raw=entry.data;
   if(!raw){const response=await fetch(entry.path,{cache:"no-store"});if(!response.ok)throw new Error(`Diagram ${response.status}`);raw=await response.json()}
   const sheet=applySheetControls(raw);
-  renderExplodedSheet(sheet);
- }catch(error){console.error("[diagram]",error);toast("Diagram unavailable","Please retry or contact Hikari support.")}
+  renderExplodedSheet(sheet);return true;
+ }catch(error){console.error("[diagram]",error);updateCatalogFlow();toast("Diagram unavailable","Please retry or contact Hikari support.");return false}
 }
-function quickView(id) {
+async function quickView(id) {
  const p = products.find(x => String(x.id) === String(id)); if (!p) { console.warn("[quickView] product not found for id:", id, "products length:", products.length); return; }
  trackRecentView(p.id);
- if(p.sheetId){openExplodedSheet(p);return}
- openModal("Part detail",`<div class="quickd"><img src="${esc(imgFor(p))}" alt="${esc(p.name)}"><h2>${esc(p.name)}</h2><p>${esc(p.sku)}</p><button class="btn btn-primary" data-modal-action="add-cart" data-id="${esc(p.id)}">${icon("i-cart",15)} Add to order</button></div>`);
+ if(p.sheetId){if(await openExplodedSheet(p))updateCatalogFlow(3);return}
+ openModal("Part detail",`<div class="quickd"><img src="${esc(imgFor(p))}" alt="${esc(p.name)}"><h2>${esc(p.name)}</h2><p>${esc(p.sku)}</p><button class="btn btn-primary" data-modal-action="add-cart" data-id="${esc(p.id)}">${icon("i-cart",15)} Add to order</button></div>`);updateCatalogFlow(3);
 }
 
 function toggleWish(id){state.wishlist.has(id)?state.wishlist.delete(id):state.wishlist.add(id);save("kpx_wishlist",[...state.wishlist]);renderProducts();toast(state.wishlist.has(id)?"Saved to wishlist":"Removed from wishlist")}
@@ -492,10 +501,10 @@ function bindCategoryFilters(){
 }
 function bind(){
  document.querySelectorAll("[data-search-mode]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-search-mode]").forEach(x=>x.classList.remove("active"));b.classList.add("active");heroSearch.placeholder=t(b.dataset.searchMode==="part"?"Try: oil filter, V2403, HIK-FLT-00018":b.dataset.searchMode==="model"?"Try: L4508, M7040, U50-5": "Try: D1105, V2403, V3800")});
- const doHeroSearch=()=>{state.query=heroSearch.value.trim();catalogSearch.value=state.query;state.page=1;renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
+ const doHeroSearch=()=>{state.query=heroSearch.value.trim();catalogSearch.value=state.query;state.page=1;updateCatalogFlow(2);renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
  heroSearchBtn.onclick=doHeroSearch;heroSearch.onkeydown=e=>{if(e.key==="Enter")doHeroSearch()};browseBtn.onclick=()=>document.querySelector("#catalog").scrollIntoView({behavior:"smooth"});
 
- categoryStrip.onclick=e=>{const b=e.target.closest("[data-model]");if(!b)return;resetAll();state.selectedModel=b.dataset.model;state.query="";catalogSearch.value="";state.page=1;renderCategories();renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
+ categoryStrip.onclick=e=>{const b=e.target.closest("[data-model]");if(!b)return;resetAll();state.selectedModel=b.dataset.model;state.query="";catalogSearch.value="";state.page=1;updateCatalogFlow(2);renderCategories();renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
  document.querySelectorAll(".filters input").forEach(el=>el.addEventListener("change",()=>{state.category=new Set([...document.querySelectorAll('input[name=category]:checked')].map(x=>x.value));state.machine=new Set([...document.querySelectorAll('input[name=machine]:checked')].map(x=>x.value));state.stock=new Set([...document.querySelectorAll('input[name=stock]:checked')].map(x=>x.value));state.grade=new Set([...document.querySelectorAll('input[name=grade]:checked')].map(x=>x.value));state.minPrice=minPrice.value?Number(minPrice.value):null;state.maxPrice=maxPrice.value?Number(maxPrice.value):null;state.page=1;renderProducts()}));
  resetFilters.onclick=resetAll;catalogSearch.oninput=()=>{state.query=catalogSearch.value;state.page=1;renderProducts();searchSuggest(catalogSearch.value)};catalogSearch.onkeydown=e=>{if(e.key==="Escape"||e.key==="Tab")document.getElementById("catalogSuggestions")?.classList.remove("open")};catalogSearch.onblur=()=>setTimeout(()=>document.getElementById("catalogSuggestions")?.classList.remove("open"),200);document.getElementById("catalogSuggestions").onclick=e=>{const s=e.target.closest("[data-sku]");if(s){catalogSearch.value=s.dataset.sku;state.query=s.dataset.sku;state.page=1;renderProducts();document.getElementById("catalogSuggestions").classList.remove("open")}};sortSelect.onchange=()=>{state.sort=sortSelect.value;state.page=1;renderProducts()};
  accountSelect.onchange=()=>{state.account=accountSelect.value;buyerProfile.value=state.account==="export"?"b2b":state.account;renderProducts();renderCart()};
@@ -507,7 +516,7 @@ function bind(){
  const handlePagination=e=>{const b=e.target.closest("[data-page]");if(!b||b.disabled)return;state.page=Number(b.dataset.page);renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth",block:"start"})};
  pagination.onclick=handlePagination;paginationTop.onclick=handlePagination;
  cartBtn.onclick=openDrawer;drawerClose.onclick=closeDrawer;drawerBackdrop.onclick=()=>{closeDrawer();closeMobileFilters()};
- cartItems.onclick=e=>{const b=e.target.closest("[data-cart]");if(!b)return;const id=b.dataset.id,item=state.cart.find(x=>String(x.id)===id);if(!item)return;if(b.dataset.cart==="plus")item.qty++;if(b.dataset.cart==="minus")item.qty=Math.max(1,item.qty-1);if(b.dataset.cart==="remove")state.cart=state.cart.filter(x=>String(x.id)!==id);save("kpx_cart",state.cart);renderCart();updateCounts()};
+ cartItems.onclick=e=>{const b=e.target.closest("[data-cart]");if(!b)return;const id=b.dataset.id,item=state.cart.find(x=>String(x.id)===id);if(!item)return;if(b.dataset.cart==="plus")item.qty++;if(b.dataset.cart==="minus")item.qty=Math.max(1,item.qty-1);if(b.dataset.cart==="remove")state.cart=state.cart.filter(x=>String(x.id)!==id);save("kpx_cart",state.cart);updateCatalogFlow();renderCart();updateCounts()};
  checkoutBtn.onclick=async()=>{
   if(!state.cart.length){toast("Order list is empty");return}
   const items=state.cart.map(ci=>({ci,line:cartLine(ci)})).filter(x=>x.line);
@@ -527,7 +536,7 @@ function bind(){
    const response=await fetch(catalogApi("/api/public-orders"),{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({buyerName,buyerEmail,buyerPhone,destination:dest,incoterm:term,shippingMethod:shipping,buyerReference:ref,accountType:state.account,items:orderLines})});
    const result=await response.json().catch(()=>({}));
    if(!response.ok)throw new Error(result.error||"RFQ submission failed");
-   refNo=result.data.reference;state.cart=[];save("kpx_cart",state.cart);updateCounts();renderCart();
+   refNo=result.data.reference;state.cart=[];save("kpx_cart",state.cart);updateCatalogFlow();updateCounts();renderCart();
   }catch(error){toast("RFQ not submitted",error instanceof Error?error.message:"Please retry shortly.");return}
   finally{checkoutBtn.disabled=false;checkoutBtn.textContent="Generate quotation"}
   closeDrawer();
@@ -566,7 +575,7 @@ function bind(){
   if(action==="show-compare")showCompare();
  });
  garageFamily.onchange=updateGarageModel;saveMachineBtn.onclick=()=>{const g={family:garageFamily.value,model:garageModel.value};if(!state.garage.some(x=>x.family===g.family&&x.model===g.model)){state.garage.push(g);save("kpx_garage",state.garage);renderGarage();toast("Machine saved",`${g.family} ${g.model}`)}};
- garageItems.onclick=e=>{const b=e.target.closest("[data-garage]");if(!b)return;const g=state.garage[Number(b.dataset.garage)];state.selectedModel=g.model;state.query="";catalogSearch.value="";state.page=1;renderCategories();renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
+ garageItems.onclick=e=>{const b=e.target.closest("[data-garage]");if(!b)return;const g=state.garage[Number(b.dataset.garage)];state.selectedModel=g.model;state.query="";catalogSearch.value="";state.page=1;updateCatalogFlow(2);renderCategories();renderProducts();document.querySelector("#catalog").scrollIntoView({behavior:"smooth"})};
  document.querySelectorAll("[data-export-tab]").forEach(b=>b.onclick=()=>renderExportPanel(b.dataset.exportTab));
  document.querySelectorAll(".mobile-quicknav a").forEach(a=>a.onclick=()=>syncMobileQuicknav(a.getAttribute("href").slice(1)));
  addEventListener("scroll",()=>syncMobileQuicknav(),{passive:true});addEventListener("hashchange",()=>syncMobileQuicknav(location.hash.slice(1)));
@@ -614,7 +623,7 @@ function buildFAQs(){
  faqList.innerHTML=qs.map((q,i)=>`<div class="faq-item ${i===0?"open":""}"><button class="faq-q">${esc(q[0])}${icon("i-plus",15)}</button><div class="faq-a">${esc(q[1])}</div></div>`).join("");
 }
 if(matchMedia("(max-width:560px)").matches)state.view="list";
-setImages();buildFAQs();updateGarageModel();renderGarage();renderCart();loadRfqForm();bind();loadDriveCatalog();
+setImages();buildFAQs();updateGarageModel();renderGarage();renderCart();loadRfqForm();bind();updateCatalogFlow();loadDriveCatalog();
 setInterval(refreshCatalogControl,300000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshCatalogControl()});
 gridView.classList.toggle("active",state.view==="grid");listView.classList.toggle("active",state.view==="list");

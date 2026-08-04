@@ -2,12 +2,15 @@ import { spawn } from "node:child_process";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 
-const chrome = "C:/Program Files/Google/Chrome/Application/chrome.exe";
-const root = "C:/Users/JOMOK/Downloads/hikari-storefront-redesign-proof/qa";
-const url = "https://hakaritractors.vercel.app/?responsive-qa=storefront-v3-2";
+const chrome = process.env.QA_CHROME || "C:/Program Files/Google/Chrome/Application/chrome.exe";
+const root = process.env.QA_OUTPUT || "C:/Users/JOMOK/Downloads/hikari-storefront-redesign-proof/qa";
+const url = process.env.QA_URL || "https://hakaritractors.vercel.app/?responsive-qa=marketplace-v1";
+const scrollTarget = process.env.QA_SCROLL_TO || "";
 const allSizes = [[1920,1080],[1440,900],[1366,768],[1024,768],[768,1024],[390,844]];
 const sizes = process.env.QA_ONE ? [[1366,768]] : allSizes;
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const ALLOW_API_FALLBACK = process.env.QA_ALLOW_API_FALLBACK === "1";
+
 await mkdir(root, { recursive: true });
 
 async function connect(port) {
@@ -70,15 +73,15 @@ async function run(width, height, index) {
     await call("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width <= 520 });
     await call("Page.navigate", { url });
     await delay(1800);
-    await call("Runtime.evaluate", { expression: "loadDriveCatalog().then(()=>document.querySelector('[data-model=\\\"L3608\\\"]')?.click()).catch(e=>console.error(e))" });
+    await call("Runtime.evaluate", { expression: "loadDriveCatalog().then(()=>document.querySelector('[data-model=\"L3608\"]')?.click()).catch(e=>console.error(e))" });
     for (let i = 0; i < 40; i++) {
       const rendered = await call("Runtime.evaluate", { expression: "document.querySelectorAll('.product-card').length", returnByValue: true });
       if ((rendered.result?.value || 0) > 0) break;
       await delay(500);
     }
-    await call("Runtime.evaluate", { expression: "window.scrollTo(0,0)" });
+    await call("Runtime.evaluate", { expression: scrollTarget ? `document.querySelector(${JSON.stringify(scrollTarget)})?.scrollIntoView({block:'start'})` : "window.scrollTo(0,0)" });
     await delay(250);
-    const expression = `(()=>{const q=s=>document.querySelector(s),cs=s=>getComputedStyle(q(s)),visible=e=>!!e&&getComputedStyle(e).display!=='none'&&e.getBoundingClientRect().width>0;const clipped=[...document.querySelectorAll('button,a,.product-name,.product-meta,.toolbar-result,.cat-card b')].filter(e=>e.scrollWidth>e.clientWidth+1&&getComputedStyle(e).whiteSpace!=='nowrap').map(e=>({tag:e.tagName,class:e.className,text:e.textContent.trim().slice(0,80),delta:e.scrollWidth-e.clientWidth}));return {viewport:[innerWidth,innerHeight],overflowX:document.documentElement.scrollWidth-document.documentElement.clientWidth,header:cs('.site-header').height,hero:cs('.hero').minHeight,sidebar:cs('.catalog-shell').gridTemplateColumns,grid:cs('.product-grid').gridTemplateColumns,gap:cs('.product-grid').gap,cards:document.querySelectorAll('.product-card').length,modelCards:document.querySelectorAll('[data-model]').length,toolbarVisible:visible(q('.catalog-toolbar')),filterButtonVisible:visible(q('.mobile-filter-btn')),cartVisible:visible(q('#cartBtn')),modalZ:cs('.modal-backdrop').zIndex,clipped,css:q('link[href*="main.css"]')?.href}})()`;
+    const expression = `(()=>{const q=s=>document.querySelector(s),cs=s=>getComputedStyle(q(s)),visible=e=>!!e&&getComputedStyle(e).display!=='none'&&e.getBoundingClientRect().width>0;const clipped=[...document.querySelectorAll('.product-name,.assembly-fitment span,.assembly-code,.toolbar-result,.cat-card b')].filter(e=>e.scrollWidth>e.clientWidth+1&&getComputedStyle(e).whiteSpace!=='nowrap').map(e=>({tag:e.tagName,class:e.className,text:e.textContent.trim().slice(0,80),delta:e.scrollWidth-e.clientWidth}));return {viewport:[innerWidth,innerHeight],overflowX:document.documentElement.scrollWidth-document.documentElement.clientWidth,header:cs('.site-header').height,hero:cs('.hero').minHeight,sidebar:cs('.catalog-shell').gridTemplateColumns,grid:cs('.product-grid').gridTemplateColumns,gap:cs('.product-grid').gap,cards:document.querySelectorAll('.product-card').length,modelCards:document.querySelectorAll('[data-model]').length,toolbarVisible:visible(q('.catalog-toolbar')),filterButtonVisible:visible(q('.mobile-filter-btn')),cartVisible:visible(q('#cartBtn')),modalZ:cs('.modal-backdrop').zIndex,clipped,css:[...document.querySelectorAll('link[rel="stylesheet"]')].map(link=>link.href)}})()`;
     const metrics = await call("Runtime.evaluate", { expression, returnByValue: true });
     const shot = await call("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
     await writeFile(path.join(root, `after-${width}x${height}.png`), Buffer.from(shot.data, "base64"));
@@ -92,9 +95,53 @@ async function run(width, height, index) {
 }
 
 const output = {};
+const failures = [];
 for (let i = 0; i < sizes.length; i++) {
   const [width, height] = sizes[i];
   output[`${width}x${height}`] = await run(width, height, i);
   console.log(`${width}x${height}`, JSON.stringify(output[`${width}x${height}`]));
 }
+
+// --- ASSERTIONS (fail the script, not just log) ---
+for (const [label, result] of Object.entries(output)) {
+  const [width, height] = label.split("x").map(Number);
+
+  if (result.overflowX > 0) {
+    failures.push(`${label}: horizontal overflow detected (${result.overflowX}px)`);
+  }
+  if (result.cards < 1) {
+    failures.push(`${label}: no product cards rendered (got ${result.cards})`);
+  }
+  if (result.modelCards < 1) {
+    failures.push(`${label}: no model cards rendered (got ${result.modelCards})`);
+  }
+  if (!result.toolbarVisible) {
+    failures.push(`${label}: catalog toolbar not visible`);
+  }
+  if (!result.cartVisible) {
+    failures.push(`${label}: cart button not visible`);
+  }
+
+  // Network / console errors are fatal unless ALLOW_API_FALLBACK is set
+  const apiErrors = result.consoleErrors.filter(e => e.includes("catalog-api-fallback") || e.includes("ERR_FAILED"));
+  const nonApiErrors = result.consoleErrors.filter(e => !e.includes("catalog-api-fallback") && !e.includes("ERR_FAILED"));
+  if (nonApiErrors.length > 0) {
+    failures.push(`${label}: ${nonApiErrors.length} console error(s): ${nonApiErrors.slice(0,3).join(" | ")}`);
+  }
+  const netFails = result.networkErrors.filter(e => e.includes("ERR_FAILED") || e.includes("404"));
+  if (netFails.length > 0 && !ALLOW_API_FALLBACK) {
+    failures.push(`${label}: ${netFails.length} network error(s): ${netFails.slice(0,3).join(" | ")}`);
+  }
+  if (result.clipped && result.clipped.length > 0) {
+    failures.push(`${label}: ${result.clipped.length} text element(s) clipped`);
+  }
+}
+
 await writeFile(path.join(root, "responsive-qa.json"), JSON.stringify(output, null, 2));
+
+if (failures.length > 0) {
+  console.error("\nRESPONSIVE QA FAILURES:");
+  failures.forEach(f => console.error(`  ✗ ${f}`));
+  throw new Error(`Responsive QA failed with ${failures.length} violation(s):\n${failures.join("\n")}`);
+}
+console.log("\nResponsive QA passed all viewports.");
