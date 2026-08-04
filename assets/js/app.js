@@ -303,7 +303,7 @@ function cartLine(ci){
   const live=ci.line.partId?publicPartsById.get(String(ci.line.partId)):null;
   return live?{...ci.line,sku:live.part_number,name:live.name,price:sheetPartPrice(live)}:ci.line;
  }
- const p=products.find(x=>x.id===ci.id); if(!p)return null;
+ const p=products.find(x=>String(x.id)===String(ci.id)); if(!p)return null;
  return {id:p.id,sku:p.sku,name:p.name,price:priceFor(p),moq:moqFor(p),img:imgFor(p),meta:`${p.model} · ${p.category}`};
 }
 function addPartToCart(sheetId,index){
@@ -312,12 +312,12 @@ function addPartToCart(sheetId,index){
  if(!part.id){toast("Live catalog required","Reload the storefront before adding this sparepart to an RFQ.");return}
  const lineId=`${sheetId}:${index}`;
  const line={id:lineId,partId:part.id,sku:part.part_number,name:part.name,price:sheetPartPrice(part),moq:1,img:sheet.preview_image,meta:`${sheet.model_code} · ${sheet.diagram_code} · No. ${part.callout} · Kebutuhan per set: ${part.quantity} pcs${part.notes?` · ${part.notes}`:""}`};
- const found=state.cart.find(x=>x.id===lineId); if(found)found.qty++; else state.cart.push({id:lineId,qty:1,line});
+ const found=state.cart.find(x=>String(x.id)===String(lineId)); if(found)found.qty++; else state.cart.push({id:lineId,qty:1,line});
  save("kpx_cart",state.cart);updateCounts();renderCart();renderExplodedSheet(sheet);toast("Added sparepart to order",`${line.sku} · ${line.name}`);
 }
 function addCart(id){
- const p=products.find(x=>x.id===id); if(!p)return;
- const found=state.cart.find(x=>x.id===id); if(found)found.qty++; else state.cart.push({id,qty:1});
+ const p=products.find(x=>String(x.id)===String(id)); if(!p)return;
+ const found=state.cart.find(x=>String(x.id)===String(id)); if(found)found.qty++; else state.cart.push({id,qty:1});
  save("kpx_cart",state.cart);updateCounts();renderCart();toast("Added to order",`${p.sku} · ${p.name}`)
 }
 function renderCart(){
@@ -398,7 +398,7 @@ async function openExplodedSheet(p){
  }catch(error){console.error("[diagram]",error);toast("Diagram unavailable","Please retry or contact Hikari support.")}
 }
 function quickView(id) {
- const p = products.find(x => x.id === id); if (!p) return;
+ const p = products.find(x => String(x.id) === String(id)); if (!p) { console.warn("[quickView] product not found for id:", id, "products length:", products.length); return; }
  trackRecentView(p.id);
  if(p.sheetId){openExplodedSheet(p);return}
  openModal("Part detail",`<div class="quickd"><img src="${esc(imgFor(p))}" alt="${esc(p.name)}"><h2>${esc(p.name)}</h2><p>${esc(p.sku)}</p><button class="btn btn-primary" data-modal-action="add-cart" data-id="${esc(p.id)}">${icon("i-cart",15)} Add to order</button></div>`);
@@ -419,7 +419,7 @@ function renderRecentView(){
  const key='hikari_recent';let ids=[];
  try{ids=JSON.parse(localStorage.getItem(key))||[]}catch(e){}
  if(!ids.length){nodes.forEach(el=>el.style.display='none');return}
- const items=ids.map(id=>products.find(p=>p.id===id)).filter(Boolean).slice(0,6);
+ const items=ids.map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean).slice(0,6);
  const html='<div class="recent-head"><b>Recently viewed</b><small>'+items.length+' part(s)</small></div><div class="recent-grid">'+items.map(p=>'<button class="rel-part" data-ui-action="quick" data-id="'+esc(p.id)+'"><div class="rel-img"><img src="'+esc(imgFor(p))+'" alt=""></div><div class="rel-info"><b>'+esc(p.name)+'</b><small>'+esc(p.sku)+'</small><div>'+money(priceFor(p))+'</div></div></button>').join('')+'</div>';
  nodes.forEach(el=>{el.style.display='block';el.innerHTML=html});
 }
@@ -427,8 +427,8 @@ function renderActionStrips(){
  const saved=document.getElementById('savedViewTop'), compared=document.getElementById('compareViewTop');
  if(compared){compared.style.display='none';compared.innerHTML=''}
  if(saved){
-  const items=[...state.wishlist].map(id=>products.find(p=>p.id===id)).filter(Boolean).slice(0,6);
-  const comp=[...state.compare].map(id=>products.find(p=>p.id===id)).filter(Boolean).slice(0,4);
+  const items=[...state.wishlist].map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean).slice(0,6);
+  const comp=[...state.compare].map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean).slice(0,4);
   const has=items.length||comp.length;
   saved.style.display=has?'block':'none';
   saved.innerHTML=has?'<div class="strip-head"><b>Saved & compare</b><span><button data-ui-action="show-wishlist">Saved '+items.length+'</button><button data-ui-action="show-compare">Compare '+comp.length+'</button></span></div><div class="strip-scroll">'+items.map(p=>'<button class="mini-part" data-ui-action="quick" data-id="'+esc(p.id)+'"><img src="'+esc(imgFor(p))+'" alt=""><span><b>'+esc(p.name)+'</b><small>Saved · '+esc(p.sku)+'</small></span></button>').join('')+comp.map(p=>'<button class="mini-part mini-compare" data-ui-action="quick" data-id="'+esc(p.id)+'"><img src="'+esc(imgFor(p))+'" alt=""><span><b>'+esc(p.name)+'</b><small>Compare · '+money(priceFor(p))+'</small></span></button>').join('')+'</div>':'';
@@ -436,14 +436,14 @@ function renderActionStrips(){
 }
 
 function showCompare(){
- const arr=[...state.compare].map(id=>products.find(p=>p.id===id)).filter(Boolean);
+ const arr=[...state.compare].map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);
  if(!arr.length){toast("No comparison items","Use the compare icon on a product card.");return}
  openModal("Compare parts",`<div class="compare-modal"><div class="compare-mobile-cards">${arr.map(p=>`<article class="compare-card"><img src="${esc(imgFor(p))}" alt=""><div><b>${esc(p.name)}</b><small>${esc(p.sku)}</small></div><dl><dt>Price</dt><dd>${money(priceFor(p))}</dd><dt>MOQ</dt><dd>${moqFor(p)}</dd><dt>Stock</dt><dd>${stockLabel(p)}</dd><dt>Fitment</dt><dd>${esc(p.machine)} ${esc(p.model)}</dd></dl><button class="btn btn-primary btn-sm" data-modal-action="add-cart" data-id="${esc(p.id)}">Add to RFQ</button></article>`).join("")}</div><div class="compare-table-wrap"><table class="compare-table"><thead><tr><th>Attribute</th>${arr.map(p=>`<th>${esc(p.name)}<br><small>${esc(p.sku)}</small></th>`).join("")}</tr></thead><tbody>
  <tr><td>Image</td>${arr.map(p=>`<td><img src="${imgFor(p)}" style="width:150px;height:90px;object-fit:cover;border-radius:7px"></td>`).join("")}</tr>
  <tr><td>Price</td>${arr.map(p=>`<td><b>${money(priceFor(p))}</b></td>`).join("")}</tr><tr><td>Grade</td>${arr.map(p=>`<td>${esc(p.grade)}</td>`).join("")}</tr><tr><td>Fitment</td>${arr.map(p=>`<td>${esc(p.machine)} ${esc(p.model)}<br>${esc(p.engine)}</td>`).join("")}</tr><tr><td>Stock</td>${arr.map(p=>`<td>${stockLabel(p)}</td>`).join("")}</tr><tr><td>MOQ</td>${arr.map(p=>`<td>${moqFor(p)} (${state.account.slice(0,1).toUpperCase()+state.account.slice(1)})</td>`).join("")}</tr></tbody></table></div><button class="btn btn-primary btn-block compare-rfq" data-modal-action="add-compared">Add compared parts to RFQ</button></div>`);
 }
 function showWishlist(){
- const arr=[...state.wishlist].map(id=>products.find(p=>p.id===id)).filter(Boolean);
+ const arr=[...state.wishlist].map(id=>products.find(p=>String(p.id)===String(id))).filter(Boolean);
  openModal("Saved parts",arr.length?`<div class="saved-modal"><div class="saved-list">${arr.map(p=>`<button class="saved-row" data-modal-action="quick" data-id="${esc(p.id)}"><img src="${esc(imgFor(p))}" alt=""><span><b>${esc(p.name)}</b><small>${esc(p.sku)} · ${money(priceFor(p))}</small></span><em>${stockLabel(p)}</em></button>`).join("")}</div><button class="btn btn-primary btn-block" data-modal-action="add-saved">Add saved parts to RFQ</button></div>`:`<p>No saved products yet.</p>`);
 }
 function addSavedToCart(){[...state.wishlist].forEach(addCart);renderCart();toast("Saved parts added","Wishlist moved into RFQ list")}
