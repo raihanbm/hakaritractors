@@ -7,7 +7,7 @@ const read = (path) => readFile(new URL(path, root), "utf8");
 
 test("active storefront route loads the consolidated technical-commerce stylesheet", async () => {
   const html = await read("index.html");
-  assert.match(html, /assets\/css\/main\.css\?v=storefront-v3/);
+  assert.match(html, /assets\/css\/main\.css\?v=storefront-v3-2"/);
   assert.match(html, /id="categoryStrip"/);
   assert.match(html, /id="productGrid"/);
   assert.match(html, /id="filtersPanel"/);
@@ -23,9 +23,11 @@ test("active selectors implement a visibly compact responsive catalog", async ()
   assert.match(css, /\.catalog-shell\{[^}]*grid-template-columns:220px minmax\(0,1fr\)/);
   assert.match(css, /\.product-grid\{[^}]*repeat\(4,minmax\(0,1fr\)\)[^}]*gap:10px/);
   assert.match(css, /\.product-img img\{[^}]*object-fit:contain/);
+  assert.match(css, /\.cat-card small\{[^}]*line-height:1\.1[^}]*white-space:normal/);
   assert.match(css, /@media\(max-width:1180px\)\{[\s\S]*?\.product-grid\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css, /@media\(max-width:760px\)\{[\s\S]*?\.product-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /@media\(max-width:820px\)\{[\s\S]*?\.product-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(css, /@media\(max-width:520px\)\{[\s\S]*?\.product-grid\{grid-template-columns:1fr/);
+  assert.match(css, /@media\(max-width:520px\)\{[\s\S]*?\.site-header \.brand-copy\{display:none\}/);
 });
 
 test("diagram-only stylesheet cannot override active catalog cards", async () => {
