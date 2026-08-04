@@ -12,7 +12,7 @@
 <link rel="manifest" href="site.webmanifest">
 <title>Hikari Tractors Indonesia — Parts Catalog</title>
 <link rel="icon" href="assets/images/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/main.css?v=compact-v2">
+<link rel="stylesheet" href="assets/css/main.css?v=storefront-v3">
 <link rel="stylesheet" href="assets/css/exploded-sheet.css?v=1">
 </head>
 <body>
@@ -70,9 +70,9 @@
   <div class="wrap hero-grid">
     <div>
       <div class="eyebrow">Parts intelligence for global buyers</div>
-      <h1>Find the exact part.<br><span>Ship it worldwide.</span></h1>
-      <p class="hero-copy">A compact export catalog built for farmers, workshops, fleet operators and distributors. Search by part number or tractor model, inspect the original diagrams, and request freight-ready quotations in one flow.</p>
-      <div class="hero-pills"><span>Model-specific diagrams</span><span>Indicative USD estimates</span><span>RFQ confirmation required</span><span>7 Hikari models</span><span>Fitment-first search</span></div>
+      <h1>Technical parts.<br><span>Matched by diagram.</span></h1>
+      <p class="hero-copy">Choose a tractor, open its exploded assembly, then order the exact spare-part row—built for owners, workshops, dealers, and export buyers.</p>
+      <div class="hero-pills"><span>7 tractor models</span><span>913 published diagrams</span><span>14,237 spare parts</span></div>
     </div>
     <div class="search-console">
       <div class="console-head"><b>Precision Parts Lookup</b><span>MODEL · DIAGRAM · SPAREPART</span></div>
@@ -89,11 +89,9 @@
 </section>
 
 <section class="stats-bar"><div class="wrap stats-grid">
+  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-truck"/></svg></div><div><b>7</b><small>tractor models</small></div></div>
   <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-box"/></svg></div><div><b>913</b><small>published assemblies</small></div></div>
-  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-truck"/></svg></div><div><b>35+</b><small>destination markets</small></div></div>
-  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-globe"/></svg></div><div><b>5</b><small>Incoterm workflows</small></div></div>
-  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-shield"/></svg></div><div><b>14,237</b><small>published spareparts</small></div></div>
-  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-search"/></svg></div><div><b>&lt;50 ms</b><small>local catalog filtering</small></div></div>
+  <div class="stat"><div class="stat-icon"><svg width="19" height="19"><use href="#i-search"/></svg></div><div><b>14,237</b><small>orderable spare parts</small></div></div>
 </div></section>
 
 <section class="section white">
@@ -119,12 +117,13 @@
     <div class="catalog-main">
       <div class="catalog-toolbar">
         <div class="toolbar-search"><input id="catalogSearch" placeholder="Search SKU, part name, model or engine..." autocomplete="off"><svg width="17" height="17"><use href="#i-search"/></svg><div class="search-suggestions" id="catalogSuggestions"></div></div>
+        <div class="toolbar-result"><strong id="resultCount">Loading products…</strong><small>Published catalog results</small></div>
         <button class="btn btn-light btn-sm mobile-filter-btn" id="mobileFilterBtn"><svg width="15" height="15"><use href="#i-filter"/></svg><span>Filters</span><small id="mobileFilterCount">0</small></button>
         <select id="accountSelect" class="account-select" hidden aria-hidden="true" tabindex="-1"><option value="retail">Published estimate</option></select>
         <select id="sortSelect" class="sort-select"><option value="featured">Featured</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="stock">Availability</option><option value="name">Name A–Z</option></select>
         <div class="view-toggle"><button id="gridView" class="active" aria-label="Grid view"><svg width="16" height="16"><use href="#i-grid"/></svg></button><button id="listView" aria-label="List view"><svg width="16" height="16"><use href="#i-list"/></svg></button></div>
       </div>
-      <div class="result-meta"><span id="resultCount">Loading products…</span><span>Prices exclude freight, duty and destination tax</span></div>
+      <div class="result-meta"><span>Diagram-led assembly catalog</span><span>Prices exclude freight, duty and destination tax</span></div>
       <div class="filter-tags" id="filterTags"></div>
       <div class="mobile-action-strip" id="savedViewTop" style="display:none"></div>
       <div class="mobile-action-strip" id="compareViewTop" style="display:none"></div>
@@ -239,7 +238,7 @@
 <div class="catalog-banner" id="catalogBanner"><button id="dismissCatalogNotice">×</button><b>Catalog notice</b><br>Final pricing, stock and shipping are confirmed during quotation.</div>
 <a class="wa-float" href="mailto:info@hikaritractors.com" aria-label="Email Hikari support"><div class="wa-float-tooltip"><span>Need help? Email us</span></div><div class="wa-float-icon"><svg width="22" height="22"><use href="#i-file"/></svg></div></a>
 <script src="assets/js/diagram-pdf-viewer.js" defer></script>
-<script src="assets/js/runtime-config.js?v=compact-v2" defer></script>
-<script src="assets/js/app.js?v=compact-v2" defer></script>
+<script src="assets/js/runtime-config.js?v=storefront-v3" defer></script>
+<script src="assets/js/app.js?v=storefront-v3" defer></script>
 </body>
 </html>
