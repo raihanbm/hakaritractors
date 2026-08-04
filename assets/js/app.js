@@ -204,9 +204,19 @@ function productCard(p){
  const saved=state.wishlist.has(p.id), compared=state.compare.has(p.id), price=priceFor(p);
  return `<article class="product-card">
   <button class="product-img" data-action="quick" data-id="${p.id}" aria-label="Open ${esc(p.name)} diagram"><img loading="lazy" src="${imgFor(p)}" alt="${esc(p.name)} diagram"></button>
-  <div class="product-body"><div class="sku">${esc(p.diagramCode)} · ${esc(p.category)}</div><div class="product-name">${esc(p.name.replace(/\s*##\s*.*/,""))}</div><div class="fitment">${esc(p.model)} · ${p.partCount||0} orderable parts</div>${partMatchBadge(p)}
-  <div class="price-box"><div class="price-main"><div><small>SPAREPART ROWS</small><br><b>${p.partCount||0} parts</b></div><small>Open diagram to choose part</small></div></div>
-  <div class="product-actions"><button class="btn btn-primary" data-action="quick" data-id="${esc(p.id)}">${icon("i-search",14)} Open diagram</button><button class="btn btn-light" data-action="wish" data-id="${esc(p.id)}" aria-label="Save assembly">${icon("i-heart",14)}</button><button class="btn btn-light" data-action="compare" data-id="${esc(p.id)}" aria-label="Compare assembly">${icon("i-compare",14)}</button></div></div></article>`;
+  <div class="product-body">
+   <h3 class="product-name">${esc(p.name.replace(/\s*##\s*.*/,""))}</h3>
+   <div class="product-meta">${esc(p.diagramCode)} · ${esc(p.category)}</div>
+   <div class="product-model">${esc(p.model)}</div>${partMatchBadge(p)}
+   <div class="product-parts"><span>${p.partCount||0} ${t("parts available")}</span></div>
+   <div class="product-actions">
+    <button class="btn btn-primary btn-block btn-sm" data-action="quick" data-id="${esc(p.id)}">${icon("i-search",15)} Open Diagram</button>
+    <div class="product-toolbar">${[
+     `<button class="icon-btn-sm${saved?" active":""}" data-action="wish" data-id="${esc(p.id)}" title="${t("Save assembly")}" aria-label="${t("Save assembly")}">${icon("i-heart",15)}</button>`,
+     `<button class="icon-btn-sm${compared?" active":""}" data-action="compare" data-id="${esc(p.id)}" title="${t("Compare")}" aria-label="${t("Compare assembly")}">${icon("i-compare",15)}</button>`
+    ].join("")}</div>
+   </div>
+  </div></article>`;
 }
 function renderProducts(){
  if(!state.selectedModel&&!hasSearchQuery()){

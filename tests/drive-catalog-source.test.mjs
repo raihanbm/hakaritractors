@@ -43,7 +43,7 @@ test('Main Shaft is an exploded diagram with clickable callouts and individual s
   assert.ok(app.includes('previewImage'));
   assert.ok(app.includes('addPartToCart'));
   assert.ok(app.includes('Tambah 1 pcs'));
-  assert.ok(app.includes('SPAREPART ROWS'));
+  assert.ok(app.includes('parts available'));
   assert.equal(app.includes('Google Drive source'), false);
   assert.equal(app.includes('Drive diagram'), false);
   assert.ok(app.includes('openExplodedSheet'));
