@@ -9,7 +9,7 @@
   <meta name="color-scheme" content="light">
   <link rel="manifest" href="site.webmanifest">
   <link rel="icon" href="assets/images/favicon.png" type="image/png">
-  <link rel="stylesheet" href="assets/css/main.css?v=reference-v5">
+  <link rel="stylesheet" href="assets/css/main.css?v=reference-v5-calm-motion-v4">
   <title>Hikari Tractors — Genuine Parts Storefront</title>
 </head>
 <body>
@@ -48,8 +48,8 @@
 
 <div class="topbar">
   <div class="container topbar-inner">
-    <div class="top-contact"><span><svg><use href="#i-phone"/></svg><span id="supportPhone">+66 2 123 4567</span></span><span><svg><use href="#i-mail"/></svg><span id="supportEmail">support@hikaritractors.com</span></span></div>
-    <div class="top-auth"><span><svg><use href="#i-shield"/></svg><span id="genuineLabel">Genuine Parts for Kubota Tractors</span></span><button id="langButton"><svg><use href="#i-globe"/></svg>English <svg class="tiny"><use href="#i-down"/></svg></button><button id="currencyButton">THB ฿ <svg class="tiny"><use href="#i-down"/></svg></button></div>
+    <div class="top-contact"><span><svg><use href="#i-phone"/></svg><span id="supportPhone">+62 852-8755-1869</span></span><span><svg><use href="#i-mail"/></svg><span id="supportEmail">info@hikaritractors.com</span></span></div>
+    <div class="top-auth"><span><svg><use href="#i-shield"/></svg><span id="genuineLabel">Genuine Parts for Kubota Tractors</span></span><div class="preference-control"><button id="langButton" aria-haspopup="true" aria-expanded="false"><svg><use href="#i-globe"/></svg><span id="languageLabel">English</span><svg class="tiny"><use href="#i-down"/></svg></button><div class="preference-menu" id="langMenu" role="menu"><button type="button" data-language="id" role="menuitem">Bahasa Indonesia</button><button type="button" data-language="en" role="menuitem">English</button></div></div><div class="preference-control"><button id="currencyButton" aria-haspopup="true" aria-expanded="false"><span id="currencyLabel">USD $</span><svg class="tiny"><use href="#i-down"/></svg></button><div class="preference-menu currency-menu" id="currencyMenu" role="menu"><button type="button" data-currency="IDR" role="menuitem">Rupiah (Rp)</button><button type="button" data-currency="USD" role="menuitem">US Dollar (USD)</button></div></div></div>
   </div>
 </div>
 
@@ -67,7 +67,7 @@
     </form>
     <div class="header-actions">
       <button class="account-button" id="accountButton"><svg><use href="#i-user"/></svg><span><b>My Account</b><small>Sign in / Register</small></span></button>
-      <button class="cart-button" id="cartButton"><span class="cart-icon"><svg><use href="#i-cart"/></svg><em id="cartCount">0</em></span><span><b>Cart</b><small id="cartTotal">฿0.00</small></span></button>
+      <button class="cart-button" id="cartButton"><span class="cart-icon"><svg><use href="#i-cart"/></svg><em id="cartCount">0</em></span><span><b>Cart</b><small id="cartTotal">Rp0.00</small></span></button>
     </div>
   </div>
   <div class="header-nav-wrap">
@@ -92,6 +92,7 @@
       <div id="modelStripLinks" class="model-strip-links"></div>
       <button id="viewAllModelsButton">View All Models <svg><use href="#i-chevron"/></svg></button>
     </div>
+    <div class="running-rail header-running-rail" aria-hidden="true"><span>GENUINE KUBOTA PARTS</span><i></i><span>MODEL-FIRST CATALOG</span><i></i><span>FAST RFQ SUPPORT</span><i></i><span>WORLDWIDE SHIPPING</span></div>
   </div>
 </header>
 
@@ -108,6 +109,7 @@
       <div><svg><use href="#i-truck"/></svg><span><b>Worldwide Shipping</b><small>Fast & secure delivery to your location</small></span></div>
     </div>
   </div>
+  <div class="footer-running-rail" aria-hidden="true"><div class="running-rail"><span>GENUINE PARTS</span><i></i><span>DIAGRAM BASED ORDERING</span><i></i><span>RFQ SUPPORT</span><i></i><span>INTERNATIONAL SHIPPING</span><i></i><span>HIKARI TRACTORS</span></div></div>
   <div class="footer-main">
     <div class="container footer-grid">
       <div class="footer-brand"><a class="brand footer-logo" href="#home"><img src="assets/images/hikari-logo.png" alt=""><span><b>HIKARI</b><strong>TRACTORS</strong></span></a><p>Your trusted source for genuine tractor parts. Powering performance. Delivering reliability.</p><div class="socials"><span>f</span><span>▶</span><span>●</span></div></div>
@@ -129,7 +131,7 @@
     <div class="drawer-form-grid"><label>Name / Company<input id="rfqName"></label><label>Email<input id="rfqEmail" type="email"></label><label>Destination<input id="rfqDestination"></label><label>Trade term<select id="rfqTerm"><option>Quote best method</option><option>EXW Jakarta</option><option>FOB Tanjung Priok</option><option>CIF Main Port</option><option>DAP</option><option>DDP</option></select></label></div>
     <label>Buyer note<textarea id="rfqNote" placeholder="Model, serial number, urgent requirements, delivery note..."></textarea></label>
   </div>
-  <div class="drawer-foot"><div><span>Estimated parts subtotal</span><b id="drawerSubtotal">฿0.00</b></div><button id="submitRfqButton">Submit RFQ</button><small>Final stock, fitment, freight and taxes are confirmed by our sales team.</small></div>
+  <div class="drawer-foot"><div><span>Estimated parts subtotal</span><b id="drawerSubtotal">Rp0.00</b></div><button id="submitRfqButton">Submit RFQ</button><small>Final stock, fitment, freight and taxes are confirmed by our sales team.</small></div>
 </aside>
 
 <div class="modal-backdrop" id="modalBackdrop">
@@ -138,8 +140,20 @@
 
 <div class="toast-stack" id="toastStack"></div>
 
+<div class="support-widget" id="supportWidget">
+  <button class="support-fab" id="supportFab" type="button" aria-expanded="false" aria-controls="supportPanel"><svg><use href="#i-help"/></svg><span>Need help?</span></button>
+  <section class="support-panel" id="supportPanel" aria-label="Hikari support">
+    <button class="support-close" id="supportClose" type="button" aria-label="Close support chat"><svg><use href="#i-close"/></svg></button>
+    <span class="support-presence"><i></i><span>Hikari Support Online</span></span>
+    <h3>Need help finding the right part?</h3>
+    <p>Send your tractor model, diagram code, or part number. Our team will help check fitment before you request a quote.</p>
+    <a class="support-whatsapp" id="supportWhatsappLink" target="_blank" rel="noopener"><svg><use href="#i-phone"/></svg><span>Chat via WhatsApp</span></a>
+    <a class="support-email" id="supportEmailLink"><svg><use href="#i-mail"/></svg><span>info@hikaritractors.com</span></a>
+  </section>
+</div>
+
 <script src="assets/js/runtime-config.js"></script>
 <script src="assets/js/diagram-pdf-viewer.js"></script>
-<script src="assets/js/app.js?v=reference-v5"></script>
+<script src="assets/js/app.js?v=reference-v5-ui-polish"></script>
 </body>
 </html>
