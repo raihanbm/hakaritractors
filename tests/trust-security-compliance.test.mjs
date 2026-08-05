@@ -80,11 +80,18 @@ test('RFQ client contract includes bounded fields, privacy-safe honeypot, and no
   assert.match(app, /website,/);
   assert.doesNotMatch(html, /<span>VISA<\/span>|<span>AMEX<\/span>|<span>PayPal<\/span>/i);
   assert.match(html, /Independent supplier/);
+  assert.doesNotMatch(html, /GENUINE KUBOTA PARTS|WORLDWIDE SHIPPING/i);
+  assert.doesNotMatch(app, /OFFICIAL DIAGRAM/);
+  assert.doesNotMatch(app, /ipapi\.co/);
+  const preview = read('LIVE-PREVIEW.html');
+  assert.match(preview, /name="robots" content="noindex, nofollow, noarchive"/);
 });
 
-test('deployment configuration uses transparent canonical redirect and baseline security headers', () => {
+test('deployment configuration uses transparent canonical redirect, security headers, and publishes required public documents', () => {
   const apache = read('.htaccess');
   const vercel = read('vercel.json');
+  const cpanel = read('.cpanel.yml');
+  for (const expected of ['404.html', 'sitemap.xml', 'about contact privacy-policy terms-and-conditions shipping-policy returns-and-refunds warranty help-center']) assert.ok(cpanel.includes(expected), `cPanel deploy missing ${expected}`);
   assert.match(apache, /HTTP_HOST} !\^hikaritractors\\\.com\$/);
   assert.match(apache, /https:\/\/hikaritractors\.com%\{REQUEST_URI\}/);
   for (const header of ['Content-Security-Policy', 'Strict-Transport-Security', 'X-Content-Type-Options', 'Referrer-Policy', 'Permissions-Policy', "frame-ancestors 'none'"]) assert.ok(apache.includes(header), `Apache missing ${header}`);

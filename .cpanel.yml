@@ -4,7 +4,6 @@ deployment:
     - export DEPLOYPATH=/home/hikw2587/public_html/
     - /bin/mkdir -p "$DEPLOYPATH"
     - /bin/cp -R assets "$DEPLOYPATH"
-    - /bin/cp index.html "$DEPLOYPATH"
+    - /bin/cp -R about contact privacy-policy terms-and-conditions shipping-policy returns-and-refunds warranty help-center "$DEPLOYPATH"
+    - /bin/cp index.html 404.html sitemap.xml robots.txt site.webmanifest "$DEPLOYPATH"
     - /bin/cp .htaccess "$DEPLOYPATH"
-    - /bin/cp robots.txt "$DEPLOYPATH"
-    - /bin/cp site.webmanifest "$DEPLOYPATH"
