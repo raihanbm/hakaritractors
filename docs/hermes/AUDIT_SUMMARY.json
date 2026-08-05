@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-05T06:56:46.402Z",
+  "generatedAt": "2026-08-05T09:09:04.518Z",
   "release": "reference-v5",
   "status": "PASS",
   "checks": {
@@ -24,8 +24,8 @@
     }
   },
   "inventory": {
-    "files": 3802,
-    "bytes": 550358026,
+    "files": 3878,
+    "bytes": 551922164,
     "assemblyDiagrams": 913,
     "sheetMetadataRecords": 913,
     "orderablePartRows": 14237,
