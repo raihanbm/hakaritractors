@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-05T00:20:30.078Z",
-  "release": "storefront-v4",
+  "generatedAt": "2026-08-05T05:29:32.941Z",
+  "release": "reference-v5",
   "status": "PASS",
   "checks": {
     "passed": 15,
@@ -24,8 +24,8 @@
     }
   },
   "inventory": {
-    "files": 2981,
-    "bytes": 455634777,
+    "files": 3969,
+    "bytes": 505584234,
     "assemblyDiagrams": 913,
     "sheetMetadataRecords": 913,
     "orderablePartRows": 14237,

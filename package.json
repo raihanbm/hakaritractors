@@ -1,8 +1,8 @@
 {
-  "name": "hikari-tractors-storefront-v4",
+  "name": "hikari-tractors-storefront-reference-v5",
   "private": true,
-  "version": "1.0.0",
-  "description": "Hikari Tractors model-first exploded-diagram storefront and RFQ catalog.",
+  "version": "5.0.0",
+  "description": "Hikari Tractors reference-locked marketplace storefront with exploded-diagram RFQ ordering.",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "check": "node scripts/verify.mjs",

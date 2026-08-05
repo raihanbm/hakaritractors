@@ -1,7 +1,7 @@
 (() => {
   const local = ["127.0.0.1", "localhost"].includes(location.hostname);
   window.HIKARI_CONFIG = Object.freeze({
-    catalogApiBase: local ? "" : "https://internalhikaritractors.vercel.app",
+    catalogApiBase: local ? "http://127.0.0.1:3011" : "https://internalhikaritractors.vercel.app",
     storefront: Object.freeze({
       phone: "+66 2 123 4567",
       email: "support@hikaritractors.com",
