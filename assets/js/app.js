@@ -1088,6 +1088,7 @@
   }
 
   function openModal(title, subtitle, html) {
+    $('#modal').classList.remove('systems-modal');
     $('#modalTitle').textContent = title;
     $('#modalSubtitle').textContent = subtitle || '';
     $('#modalBody').innerHTML = html;
@@ -1097,10 +1098,34 @@
   function closeModal() {
     $('#modalBackdrop').classList.remove('open');
     document.body.classList.remove('no-scroll');
+    $('#modal').classList.remove('systems-modal');
   }
   function openCategoryModal() {
-    openModal('Browse all systems', `${state.categories.length} categories`, `<div class="system-grid modal-system-grid">${state.categories.map(category => `<button class="system-card system-card--modal" data-modal-category="${esc(category.name)}">${icon(categoryIcon(category.name), 25)}<span>${esc(category.name)}</span><small>${category.count} diagrams</small></button>`).join('')}</div>`);
+    const totalDiagrams = state.categories.reduce((sum, category) => sum + Number(category.count || 0), 0);
+    openModal('System Explorer', 'Find the right tractor system before opening a diagram.', `
+      <section class="systems-explorer">
+        <div class="systems-explorer-intro"><div><span class="systems-eyebrow">HIKARI PARTS NAVIGATOR</span><h2>Browse every tractor system.</h2><p>Mulai dari nama sistem, lalu lanjut ke diagram dan suku cadang yang sesuai dengan model traktor Anda.</p></div><div class="systems-metrics" aria-label="Catalog summary"><span><b>${state.categories.length}</b><small>systems</small></span><span><b>${totalDiagrams.toLocaleString()}</b><small>diagrams</small></span></div></div>
+        <label class="systems-search" for="systemFinder">${icon('i-search', 18)}<input id="systemFinder" type="search" autocomplete="off" placeholder="Search a system: engine, hydraulic, axle…"><kbd>ESC</kbd></label>
+        <div class="systems-explorer-meta"><span id="systemFinderCount">${state.categories.length} systems available</span><span>Choose a system to open its catalog</span></div>
+        <div class="systems-explorer-grid">${state.categories.map(category => `<button class="system-explorer-card" data-modal-category="${esc(category.name)}" data-system-search="${esc(normalize(category.name))}"><span class="system-explorer-icon">${icon(categoryIcon(category.name), 24)}</span><span class="system-explorer-copy"><b>${esc(category.name)}</b><small>${Number(category.count || 0).toLocaleString()} assembly diagrams</small></span><span class="system-explorer-arrow">→</span></button>`).join('')}</div>
+        <div class="systems-empty" id="systemFinderEmpty" hidden><b>System tidak ditemukan.</b><span>Coba kata kunci lain atau lihat semua sistem.</span></div>
+      </section>`);
+    $('#modal').classList.add('systems-modal');
     $$('[data-modal-category]').forEach(button => button.onclick = () => { closeModal(); go('catalog', { category: button.dataset.modalCategory }); });
+    const finder = $('#systemFinder');
+    const resultCount = $('#systemFinderCount');
+    const empty = $('#systemFinderEmpty');
+    finder.addEventListener('input', () => {
+      const query = normalize(finder.value);
+      let visible = 0;
+      $$('.system-explorer-card').forEach(card => {
+        const matches = !query || card.dataset.systemSearch.includes(query);
+        card.hidden = !matches;
+        if (matches) visible += 1;
+      });
+      resultCount.textContent = `${visible} ${visible === 1 ? 'system' : 'systems'} ${query ? 'found' : 'available'}`;
+      empty.hidden = visible !== 0;
+    });
   }
 
   async function route() {
