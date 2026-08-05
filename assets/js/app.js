@@ -316,6 +316,7 @@
         preview_image: previewImage,
         full_image: fullImage,
         pdf_url: pdfUrl,
+        additional_media: assembly.additional_media || [],
         crop_config: assembly.crop_config || null,
         parts: mappedParts,
         hotspots: (assembly.hotspots || []).map(h => ({ id: h.id, callout: h.callout, x: Number(h.x_pct), y: Number(h.y_pct), spare_part_id: h.spare_part_id }))
@@ -349,7 +350,8 @@
         qty: stockTotal,
         featured: false,
         previewImage,
-        fullImage
+        fullImage,
+        additional_media: assembly.additional_media || []
       });
     }))));
 
