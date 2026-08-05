@@ -8,11 +8,11 @@ test('exploded-sheet rows become visible RFQ controls and support quantity updat
   assert.match(app, /function cartItemForKey/);
   assert.match(app, /function addPartToCart/);
   assert.match(app, /data-add-part/);
-  assert.match(app, /In RFQ \(\$\{inCart\.qty\}\)/);
-  assert.match(app, /class="qty-control"/);
-  assert.match(app, /data-cart-action="minus"/);
-  assert.match(app, /data-cart-action="plus"/);
-  assert.match(app, /data-cart-action="remove"/);
+  assert.match(app, /part-stepper/);
+  assert.match(app, /stepper-btn/);
+  assert.match(app, /stepper-qty/);
+  assert.match(app, /stepper-remove/);
+  assert.match(app, /data-stepper-action/);
 });
 
 test('detail view can add selected, visible and individual parts', () => {

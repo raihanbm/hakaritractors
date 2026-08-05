@@ -74,9 +74,9 @@
     return Number(product?.price) || 0;
   }
   function stockMeta(product) {
-    if (product?.stock === 'in') return { label: 'In Stock', className: 'in', color: 'green' };
-    if (product?.stock === 'low') return { label: 'Limited Stock', className: 'low', color: 'amber' };
-    return { label: 'Pre-order', className: 'out', color: 'muted' };
+    if (product?.stock === 'in') return { label: 'In Stock', css: 'in', className: 'in', color: 'green' };
+    if (product?.stock === 'low') return { label: 'Limited Stock', css: 'low', className: 'low', color: 'amber' };
+    return { label: 'Pre-order', css: 'out', className: 'out', color: 'muted' };
   }
   function categoryIcon(name = '') {
     const value = name.toLowerCase();
@@ -277,10 +277,7 @@
   async function loadCatalog() {
     try {
       if (!API_BASE) throw new Error('Catalog API is not configured');
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4000);
-      const response = await fetch(api('/api/public-catalog'), { cache: 'no-store', signal: controller.signal });
-      clearTimeout(timer);
+      const response = await fetch(api('/api/public-catalog'), { cache: 'no-store' });
       if (!response.ok) throw new Error(`Catalog API ${response.status}`);
       const payload = await response.json();
       mapPublicCatalog(payload.data || []);
@@ -315,10 +312,7 @@
     catalogRefreshPromise = (async () => {
       try {
         if (API_BASE) {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 4000);
-          const response = await fetch(api('/api/public-catalog'), { cache: 'no-store', signal: controller.signal });
-          clearTimeout(timer);
+          const response = await fetch(api('/api/public-catalog'), { cache: 'no-store' });
           if (!response.ok) throw new Error(`Catalog API ${response.status}`);
           const payload = await response.json();
           mapPublicCatalog(payload.data || []);
@@ -402,11 +396,9 @@
 
   function homeProductCard(product) {
     const stock = stockMeta(product);
-    return `<article class="assembly-card">
-      <button class="assembly-image" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}"></button>
-      <div class="assembly-info"><div><small>${esc(product.category)}</small><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><code>${esc(product.diagramCode)}</code></div><div class="assembly-price"><small>From</small><b>${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span></div></div>
-      <div class="assembly-meta"><span>${Number(product.partCount || 0)} Parts</span><span>${Number(product.pageCount || 1)} Page${Number(product.pageCount || 1) > 1 ? 's' : ''}</span><span>Updated catalog</span></div>
-      <button class="btn btn-orange" data-open-product="${esc(product.id)}">View Diagram</button>
+    return `<article class="hk-assembly-card">
+      <button class="hk-assembly-card-img" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}"></button>
+      <div class="hk-assembly-card-body"><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><div class="hk-assembly-meta"><span>${Number(product.partCount || 0)} Parts</span><span>${Number(product.pageCount || 1)} Page${Number(product.pageCount || 1) > 1 ? 's' : ''}</span></div><button class="hk-assembly-cta" data-open-product="${esc(product.id)}">View Diagram</button></div>
     </article>`;
   }
 
@@ -416,21 +408,21 @@
     const preferred = state.products.filter(product => /engine/i.test(product.category)).slice(0, 4);
     const featured = preferred.length >= 4 ? preferred : state.products.slice(0, 4);
     app.innerHTML = `
-      <section class="hero">
-        <div class="hero-bg"><img src="${HERO_IMAGE}" alt="Orange tractor in the field"></div>
-        <div class="container hero-content"><div class="hero-copy"><h1>Genuine Parts.<span>Peak Performance.</span></h1><p>High-quality tractor parts for lasting reliability and maximum productivity.</p><div class="hero-actions"><button class="btn btn-orange" data-home-browse>Browse Parts ${icon('i-chevron', 15)}</button><button class="btn btn-outline" data-home-part-search>Find by Part Number ${icon('i-search', 15)}</button></div></div></div>
-        <form class="hero-search-panel" id="heroSearchPanel">
-          <div class="hero-field">${icon('i-truck', 20)}<span><label>Model</label><select id="heroModel"><option value="">Select model</option>${state.models.map(model => `<option value="${esc(model)}">${esc(model)}</option>`).join('')}</select></span></div>
-          <div class="hero-field">${icon('i-grid', 20)}<span><label>Category</label><select id="heroCategory"><option value="">Select category</option>${state.categories.map(category => `<option value="${esc(category.name)}">${esc(category.name)}</option>`).join('')}</select></span></div>
-          <div class="hero-field">${icon('i-bolt', 20)}<span><label>Part Number</label><input id="heroPartNumber" placeholder="e.g. 1A107-04022"></span></div>
-          <div class="hero-field">${icon('i-box', 20)}<span><label>Diagram Code</label><input id="heroDiagramCode" placeholder="e.g. 1GBS1-809-10"></span></div>
-          <button type="submit">${icon('i-search', 16)}Search Parts</button>
+      <section class="hk-hero">
+        <div class="hk-hero-bg"><img src="${HERO_IMAGE}" alt="Orange tractor in the field"></div>
+        <div class="hk-container hk-hero-content"><div class="hk-hero-copy"><h1>Genuine Parts.<span>Peak Performance.</span></h1><p>High-quality tractor parts for lasting reliability and maximum productivity.</p><div class="hk-hero-actions"><button class="hk-btn hk-btn-orange" data-home-browse>Browse Parts</button><button class="hk-btn hk-btn-outline" data-home-part-search>Find by Part Number</button></div></div></div>
+        <form class="hk-hero-search" id="heroSearchPanel">
+          <div class="hk-hero-field"><span style="display:flex;flex-direction:column;min-width:0"><label>Model</label><select id="heroModel"><option value="">Select model</option>${state.models.map(model => `<option value="${esc(model)}">${esc(model)}</option>`).join('')}</select></span></div>
+          <div class="hk-hero-field"><span style="display:flex;flex-direction:column;min-width:0"><label>Category</label><select id="heroCategory"><option value="">Select category</option>${state.categories.map(category => `<option value="${esc(category.name)}">${esc(category.name)}</option>`).join('')}</select></span></div>
+          <div class="hk-hero-field"><span style="display:flex;flex-direction:column;min-width:0"><label>Part Number</label><input id="heroPartNumber" placeholder="e.g. 1A107-04022"></span></div>
+          <div class="hk-hero-field"><span style="display:flex;flex-direction:column;min-width:0"><label>Diagram Code</label><input id="heroDiagramCode" placeholder="e.g. 1GBS1-809-10"></span></div>
+          <button type="submit">Search Parts</button>
         </form>
       </section>
-      <div class="home-content">
-        <section class="page-section"><div class="container"><div class="section-headline"><div><div class="section-label">FEATURED MODELS</div></div><button class="view-all" data-all-models>View All Models ${icon('i-chevron', 13)}</button></div><div class="model-cards">${models.map(model => `<button class="model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor.webp" alt="${esc(model)} tractor"><span><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} assembly diagrams</small></span><span>›</span></button>`).join('')}</div></div></section>
-        <section class="page-section"><div class="container"><div class="section-headline"><div><div class="section-label">BROWSE BY SYSTEM</div></div><button class="view-all" data-all-categories>View All Systems ${icon('i-chevron', 13)}</button></div><div class="system-grid">${topCategories.map(category => `<button class="system-card" data-system-card="${esc(category.name)}">${icon(categoryIcon(category.name), 25)}${esc(category.name)}</button>`).join('')}</div></div></section>
-        <section class="page-section"><div class="container"><div class="section-headline"><div><div class="section-label">FEATURED ASSEMBLY DIAGRAMS</div></div><button class="view-all" data-all-diagrams>View All Diagrams ${icon('i-chevron', 13)}</button></div><div class="assembly-row">${featured.map(homeProductCard).join('')}</div></div></section>
+      <div class="hk-home-content">
+        <section class="hk-section"><div class="hk-container"><div class="hk-section-head"><div><div class="hk-section-label">FEATURED MODELS</div></div><button class="hk-view-all" data-all-models>View All Models ›</button></div><div class="hk-model-cards">${models.map(model => `<button class="hk-model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor.webp" alt="${esc(model)}"><span><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} assembly diagrams</small></span><span>›</span></button>`).join('')}</div></div></section>
+        <section class="hk-section"><div class="hk-container"><div class="hk-section-head"><div><div class="hk-section-label">BROWSE BY SYSTEM</div></div><button class="hk-view-all" data-all-categories>View All Systems ›</button></div><div class="hk-system-cards">${topCategories.map(category => `<button class="hk-system-card" data-system-card="${esc(category.name)}"><span class="hk-system-icon">${icon(categoryIcon(category.name), 26)}</span>${esc(category.name)}</button>`).join('')}</div></div></section>
+        <section class="hk-section"><div class="hk-container"><div class="hk-section-head"><div><div class="hk-section-label">FEATURED ASSEMBLY DIAGRAMS</div></div><button class="hk-view-all" data-all-diagrams>View All Diagrams ›</button></div><div class="hk-assembly-row">${featured.map(homeProductCard).join('')}</div></div></section>
       </div>`;
 
     $('#heroSearchPanel').addEventListener('submit', event => {
@@ -473,15 +465,14 @@
     const stock = stockMeta(product);
     const saved = state.wishlist.has(String(product.id));
     const matched = partMatches(product, state.query)[0];
-    const tags = index < 2 ? 'BEST SELLER' : index === 2 ? 'FEATURED' : '';
-    const models = [product.model];
-    return `<article class="product-card">
-      ${tags ? `<span class="product-card-tag">${tags}</span>` : ''}
-      <button class="product-heart ${saved ? 'active' : ''}" data-wishlist="${esc(product.id)}" aria-label="Save assembly">${icon('i-heart', 17)}</button>
-      <button class="product-card-image" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}"></button>
-      <div class="product-card-body">
-        <div class="product-info-list"><div class="product-kicker">${esc(product.category)}</div><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><div class="product-code">${esc(product.diagramCode)}</div>${matched ? `<div class="badge orange" title="Matched part">Part: ${esc(matched.part_number)}</div>` : ''}<div class="product-models">${models.map(model => `<span>${esc(model)}</span>`).join('')}</div><div class="product-data"><span>⬡ ${Number(product.partCount || 0)} Parts</span><span>▱ ${Number(product.pageCount || 1)} Page${Number(product.pageCount || 1) > 1 ? 's' : ''}</span></div></div>
-        <div class="product-action-list"><div class="product-price-row"><b>From ${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span></div><button class="btn btn-orange" data-open-product="${esc(product.id)}">View Diagram</button></div>
+    return `<article class="hk-product-card">
+      <button class="hk-product-wish ${saved ? 'active' : ''}" data-wishlist="${esc(product.id)}" aria-label="Save assembly">♥</button>
+      <button class="hk-product-card-img" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}"></button>
+      <div class="hk-product-card-body">
+        <div class="hk-product-kicker">${esc(product.category)}</div><h3>${esc(titleCase(cleanTitle(product.name)))}</h3>
+        <div class="hk-product-code">${esc(product.diagramCode)}</div>${matched ? `<div class="hk-product-kicker" style="color:var(--or)">Part: ${esc(matched.part_number)}</div>` : ''}
+        <div class="hk-product-price-row"><b>From ${money(productPrice(product))}</b><span class="hk-product-status ${stock.css}">${esc(stock.label)}</span></div>
+        <button class="hk-assembly-cta" data-open-product="${esc(product.id)}">View Diagram</button>
       </div>
     </article>`;
   }
@@ -493,13 +484,12 @@
       modelCounts.set(product.model, (modelCounts.get(product.model) || 0) + 1);
       categoryCounts.set(product.category, (categoryCounts.get(product.category) || 0) + 1);
     });
-    return `<aside class="filter-sidebar ${state.filterOpen ? 'open' : ''}" id="filterSidebar">
-      <div class="filter-group"><div class="filter-head"><b>Tractor Model</b><button data-clear-filter="model">Clear</button></div>${state.models.slice(0, 7).map(model => `<label class="filter-option"><input type="radio" name="filter-model" value="${esc(model)}" ${state.selectedModel === model ? 'checked' : ''}><span>${esc(model)}</span><em>(${modelCounts.get(model) || 0})</em></label>`).join('')}<button class="filter-more" data-models-page>Show more ${icon('i-down', 11)}</button></div>
-      <div class="filter-group"><div class="filter-head"><b>System Category</b><button data-clear-filter="category">Clear</button></div>${state.categories.slice(0, 7).map(category => `<label class="filter-option"><input type="radio" name="filter-category" value="${esc(category.name)}" ${state.selectedCategory === category.name ? 'checked' : ''}><span>${esc(category.name)}</span><em>(${categoryCounts.get(category.name) || 0})</em></label>`).join('')}<button class="filter-more" data-all-categories-filter>Show more ${icon('i-down', 11)}</button></div>
-      <div class="filter-group"><div class="filter-head"><b>Stock Status</b><button data-clear-filter="stock">Clear</button></div><label class="filter-option"><input type="checkbox" name="filter-stock" value="in" ${state.stock.has('in') ? 'checked' : ''}><span class="status">In Stock</span></label><label class="filter-option"><input type="checkbox" name="filter-stock" value="low" ${state.stock.has('low') ? 'checked' : ''}><span>🟠 Available</span></label><label class="filter-option"><input type="checkbox" name="filter-stock" value="out" ${state.stock.has('out') ? 'checked' : ''}><span>🔴 Pre-order</span></label></div>
-      <div class="filter-group"><div class="filter-head"><b>Price Range (THB)</b><button>Clear</button></div><div class="price-slider"><span></span><span></span></div><div class="price-labels"><span>฿0</span><span>฿25,000+</span></div></div>
-      <div class="filter-group"><div class="filter-head"><b>Compatibility</b><button data-clear-filter="model">Clear</button></div><input class="compat-input" id="compatInput" placeholder="Search model compatibility..."><div class="filter-chips">${state.selectedModel ? `<span>${esc(state.selectedModel)} <button data-clear-filter="model">×</button></span>` : '<span>All models</span>'}</div></div>
-      <div class="filter-group"><button class="btn btn-orange" id="applyMobileFilters" style="width:100%">Show ${rows.length} diagrams</button></div>
+    return `<aside class="hk-filter-sidebar ${state.filterOpen ? 'open' : ''}" id="filterSidebar">
+      <div class="hk-filter-group"><div class="hk-filter-head"><b>Tractor Model</b><button data-clear-filter="model">Clear</button></div>${state.models.slice(0, 7).map(model => `<label class="hk-filter-opt"><input type="radio" name="filter-model" value="${esc(model)}" ${state.selectedModel === model ? 'checked' : ''}><span>${esc(model)}</span><em>(${modelCounts.get(model) || 0})</em></label>`).join('')}<button class="hk-view-all" data-models-page>Show more</button></div>
+      <div class="hk-filter-group"><div class="hk-filter-head"><b>System Category</b><button data-clear-filter="category">Clear</button></div>${state.categories.slice(0, 7).map(category => `<label class="hk-filter-opt"><input type="radio" name="filter-category" value="${esc(category.name)}" ${state.selectedCategory === category.name ? 'checked' : ''}><span>${esc(category.name)}</span><em>(${categoryCounts.get(category.name) || 0})</em></label>`).join('')}<button class="hk-view-all" data-all-categories-filter>Show more</button></div>
+      <div class="hk-filter-group"><div class="hk-filter-head"><b>Stock Status</b><button data-clear-filter="stock">Clear</button></div><label class="hk-filter-opt"><input type="checkbox" name="filter-stock" value="in" ${state.stock.has('in') ? 'checked' : ''}><span>In Stock</span></label><label class="hk-filter-opt"><input type="checkbox" name="filter-stock" value="low" ${state.stock.has('low') ? 'checked' : ''}><span>Available</span></label><label class="hk-filter-opt"><input type="checkbox" name="filter-stock" value="out" ${state.stock.has('out') ? 'checked' : ''}><span>Pre-order</span></label></div>
+      <div class="hk-filter-group"><div class="hk-filter-head"><b>Compatibility</b><button data-clear-filter="model">Clear</button></div><input class="hk-sort-select" id="compatInput" placeholder="Search model compatibility..."><div class="hk-filter-opt">${state.selectedModel ? `<span>${esc(state.selectedModel)} <button data-clear-filter="model">×</button></span>` : '<span>All models</span>'}</div></div>
+      <div class="hk-filter-group"><button class="hk-btn hk-btn-orange" id="applyMobileFilters" style="width:100%">Show ${rows.length} diagrams</button></div>
     </aside>`;
   }
 
@@ -520,16 +510,16 @@
     const pageRows = rows.slice(start, start + PAGE_SIZE);
     const title = state.selectedCategory ? `${state.selectedCategory} Parts` : state.selectedModel ? `${state.selectedModel} Parts` : 'Tractor Parts & Assembly Diagrams';
     const context = state.selectedModel ? `Browse system diagrams and find the exact parts you need for your ${state.selectedModel}.` : 'Browse official assembly diagrams, then order exact spare parts by callout and part number.';
-    app.innerHTML = `<section class="page-section"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a>${state.selectedModel ? `<a href="${routeHash('catalog', { model: state.selectedModel })}">${esc(state.selectedModel)}</a>` : ''}${state.selectedCategory ? `<span>${esc(state.selectedCategory)}</span>` : ''}</nav>
-      <div class="catalog-title-row"><div class="catalog-title"><h1>${esc(title)} <span>${rows.length} Assembly Diagrams Found</span></h1><p>${esc(context)}</p></div><div class="help-card">${icon('i-engine', 34)}<span><b>Need help finding parts?</b><small>Our parts experts are here for you.</small></span><button data-contact>Contact Us</button></div></div>
-      <div class="catalog-layout">${filterSidebarHtml(rows)}<div class="catalog-main"><div class="catalog-toolbar"><button class="mobile-filter-trigger" id="mobileFilterTrigger">${icon('i-filter', 15)}Filters</button><span class="toolbar-label">Sort by:</span><select class="sort-select" id="catalogSort"><option value="recommended">Recommended</option><option value="parts">Most parts</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Name A–Z</option></select><div class="active-filters"><span>Active Filters:</span>${activeFilterHtml()}${activeFilterHtml() ? '<button class="clear-all" id="clearAllFilters">Clear All</button>' : ''}</div><div class="view-controls"><span>View:</span><button id="gridViewButton" class="${state.view === 'grid' ? 'active' : ''}">${icon('i-grid', 16)}</button><button id="listViewButton" class="${state.view === 'list' ? 'active' : ''}">${icon('i-list', 16)}</button></div></div>
-      <div class="assembly-grid ${state.view === 'list' ? 'product-list' : ''}">${pageRows.length ? pageRows.map(productCard).join('') : `<div class="empty-state">${icon('i-search', 48)}<div><h3>No matching diagrams</h3><p>Try a broader model, system or part-number search.</p><button class="btn btn-orange" id="emptyReset" style="margin-top:15px">Reset filters</button></div></div>`}</div>
-      <div class="catalog-results-summary">Showing ${rows.length ? start + 1 : 0} to ${Math.min(start + PAGE_SIZE, rows.length)} of ${rows.length} diagrams</div>${paginationHtml(pages)}</div></div></div></section>`;
+    app.innerHTML = `<section class="hk-catalog-page"><div class="hk-container"><nav class="hk-breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a>${state.selectedModel ? `<a href="${routeHash('catalog', { model: state.selectedModel })}">${esc(state.selectedModel)}</a>` : ''}${state.selectedCategory ? `<span>${esc(state.selectedCategory)}</span>` : ''}</nav>
+      <div class="hk-catalog-title"><div><h1>${esc(title)} <span>${rows.length} Assembly Diagrams Found</span></h1><p>${esc(context)}</p></div></div>
+      <div class="hk-catalog-layout">${filterSidebarHtml(rows)}<div class="hk-catalog-main"><div class="hk-catalog-toolbar"><button class="hk-btn" id="mobileFilterTrigger">Filters</button><span class="toolbar-label">Sort by:</span><select class="hk-sort-select" id="catalogSort"><option value="recommended">Recommended</option><option value="parts">Most parts</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Name A–Z</option></select><div class="hk-filter-chips">${activeFilterHtml()}</div></div>
+      <div class="hk-product-grid ${state.view === 'list' ? 'product-list' : ''}">${pageRows.length ? pageRows.map(productCard).join('') : `<div class="empty-state">${icon('i-search', 48)}<div><h3>No matching diagrams</h3><p>Try a broader model, system or part-number search.</p><button class="hk-btn hk-btn-orange" id="emptyReset" style="margin-top:15px">Reset filters</button></div></div>`}</div>
+      <div class="hk-parts-footer">Showing ${rows.length ? start + 1 : 0} to ${Math.min(start + PAGE_SIZE, rows.length)} of ${rows.length} diagrams</div>${paginationHtml(pages)}</div></div></div></section>`;
 
     $('#catalogSort').value = state.sort;
     $('#catalogSort').onchange = event => { state.sort = event.target.value; state.page = 1; renderCatalog(); };
-    $('#gridViewButton').onclick = () => { state.view = 'grid'; writeLocal('hikari_view', state.view); renderCatalog(); };
-    $('#listViewButton').onclick = () => { state.view = 'list'; writeLocal('hikari_view', state.view); renderCatalog(); };
+    $('#gridViewButton')?.addEventListener('click', () => { state.view = 'grid'; writeLocal('hikari_view', state.view); renderCatalog(); });
+    $('#listViewButton')?.addEventListener('click', () => { state.view = 'list'; writeLocal('hikari_view', state.view); renderCatalog(); });
     $$('[data-open-product]').forEach(button => button.onclick = () => go('diagram', { id: button.dataset.openProduct, q: state.query }));
     $$('[data-wishlist]').forEach(button => button.onclick = event => { event.stopPropagation(); toggleWishlist(button.dataset.wishlist); renderCatalog(); });
     $$('input[name="filter-model"]').forEach(input => input.onchange = () => { state.selectedModel = input.value; state.page = 1; syncCatalogHash(); });
@@ -541,7 +531,7 @@
     $('#emptyReset')?.addEventListener('click', () => { clearAllFilters(); syncCatalogHash(); });
     $('#mobileFilterTrigger').onclick = () => { state.filterOpen = true; $('#filterSidebar').classList.add('open'); $('#drawerBackdrop').classList.add('open'); document.body.classList.add('no-scroll'); };
     $('#applyMobileFilters').onclick = () => closeFilterDrawer();
-    $('[data-contact]').onclick = () => go('contact');
+    $('[data-contact]')?.addEventListener('click', () => go('contact'));
     $('[data-models-page]')?.addEventListener('click', () => go('models'));
     $('[data-all-categories-filter]')?.addEventListener('click', () => openCategoryModal());
     $$('.pagination button[data-page]').forEach(button => button.onclick = () => { state.page = Number(button.dataset.page); renderCatalog(); window.scrollTo({ top: 120, behavior: 'smooth' }); });
@@ -632,11 +622,11 @@
     const shown = parts.slice(0, state.detailVisibleParts);
     const related = state.products.filter(item => item.id !== product.id && item.model === product.model && item.category === product.category).slice(0, 5);
     const stock = stockMeta(product);
-    app.innerHTML = `<section class="detail-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a><a href="${routeHash('catalog', { model: product.model })}">${esc(product.model)}</a><a href="${routeHash('catalog', { model: product.model, category: product.category })}">${esc(product.category)}</a><span>${esc(cleanTitle(product.name))}</span></nav>
-      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><span>Page 1 / ${Number(sheet.page_count || 1)}</span><button class="btn" id="detailFullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download diagram">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print diagram">${icon('i-print', 18)}</button></div><button class="diagram-nav prev" aria-label="Previous page">${icon('i-chevron', 17)}</button><img id="diagramImage" src="${esc(sheet.full_image || sheet.preview_image || product.fullImage || product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} exploded parts diagram"><button class="diagram-nav next" aria-label="Next page">${icon('i-chevron', 17)}</button></div><div class="diagram-thumbs"><button class="diagram-thumb active"><img src="${esc(sheet.preview_image || product.previewImage || FALLBACK_IMAGE)}" alt="Diagram preview"></button>${Number(sheet.page_count || 1) > 1 ? `<button class="diagram-thumb"><img src="${esc(sheet.full_image || product.fullImage || product.previewImage || FALLBACK_IMAGE)}" alt="Parts list preview"></button>` : ''}</div></article>
-      <article class="detail-side"><div class="detail-summary"><div class="detail-summary-grid"><div><span class="official-label">OFFICIAL DIAGRAM</span><h1>${esc(titleCase(cleanTitle(sheet.title)))}</h1><div class="detail-code">Diagram Code: ${esc(sheet.diagram_code)}</div><div class="compatibility"><small>Compatible Models</small><div class="compatibility-row"><span class="badge">${esc(product.model)}</span><a href="${routeHash('catalog', { model: product.model })}">View all compatible models</a></div></div></div><div class="detail-summary-side"><div class="stock-box"><b>● ${esc(stock.label)}</b><small>${product.stock === 'out' ? 'Availability confirmed during RFQ' : 'Ships after stock verification'}</small></div><div class="help-box"><b>Need a part not listed?</b><small>Our experts can help you find it.</small><button data-contact>Request Help / RFQ</button></div></div></div><div class="detail-actions"><button class="btn" id="downloadDiagram">${icon('i-download', 15)}Download Diagram</button><button class="btn btn-orange" id="addAllVisible">${icon('i-list', 15)}Add All Visible to RFQ</button></div></div>
-      <div class="parts-tabs"><button class="active">Parts List</button><button>Compatibility</button><button>Notes</button><button>Shipping</button><button class="expand-all" id="expandParts">${icon('i-expand', 13)}Expand All</button></div><div class="parts-table-wrap"><table class="parts-table"><thead><tr><th></th><th>Callout</th><th>Part Number</th><th>Part Name</th><th>Qty</th><th>Notes / Compatibility</th><th>Stock</th><th>Action</th></tr></thead><tbody>${shown.map(({ part, index }) => partRowHtml(sheet, part, index)).join('')}</tbody></table></div><div class="parts-footer"><span>Showing 1 to ${Math.min(state.detailVisibleParts, parts.length)} of ${parts.length} parts</span>${state.detailVisibleParts < parts.length ? '<button id="viewMoreParts">View More Parts⌄</button>' : '<span>All published parts shown</span>'}</div></article></div>
-      <section class="related-section"><div class="section-headline"><div><div class="section-label">Related Assemblies for ${esc(product.category)}</div></div><button class="view-all" data-view-related>View All ${esc(product.category)} Diagrams ${icon('i-chevron', 13)}</button></div><div class="related-grid">${related.map(item => `<button class="related-card" data-open-product="${esc(item.id)}"><img src="${esc(item.previewImage || FALLBACK_IMAGE)}" alt=""><span><b>${esc(titleCase(cleanTitle(item.name)))}</b><small>Diagram Code: ${esc(item.diagramCode)}</small><span class="status">${esc(stockMeta(item).label)}</span></span></button>`).join('') || '<div class="empty-state"><p>No related assemblies found.</p></div>'}</div></section>
+    app.innerHTML = `<section class="hk-detail-page"><div class="hk-container"><nav class="hk-breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a><a href="${routeHash('catalog', { model: product.model })}">${esc(product.model)}</a><a href="${routeHash('catalog', { model: product.model, category: product.category })}">${esc(product.category)}</a><span>${esc(cleanTitle(product.name))}</span></nav>
+      <div class="hk-detail-grid"><article class="hk-diagram-stage" id="diagramPanel"><header class="hk-diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><span>Page 1 / ${Number(sheet.page_count || 1)}</span><button class="hk-btn" id="detailFullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="hk-diagram-stage-img" id="diagramStage"><div class="hk-diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download diagram">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print diagram">${icon('i-print', 18)}</button></div><button class="diagram-nav prev" aria-label="Previous page">${icon('i-chevron', 17)}</button><img id="diagramImage" src="${esc(sheet.full_image || sheet.preview_image || product.fullImage || product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} exploded parts diagram"><button class="diagram-nav next" aria-label="Next page">${icon('i-chevron', 17)}</button></div><div class="hk-diagram-thumbs"><button class="diagram-thumb active"><img src="${esc(sheet.preview_image || product.previewImage || FALLBACK_IMAGE)}" alt="Diagram preview"></button>${Number(sheet.page_count || 1) > 1 ? `<button class="hk-diagram-thumb"><img src="${esc(sheet.full_image || product.fullImage || product.previewImage || FALLBACK_IMAGE)}" alt="Parts list preview"></button>` : ''}</div></article>
+      <article class="hk-detail-side"><div class="hk-detail-summary"><div class="detail-summary-grid"><div><span class="official-label">OFFICIAL DIAGRAM</span><h1>${esc(titleCase(cleanTitle(sheet.title)))}</h1><div class="detail-code">Diagram Code: ${esc(sheet.diagram_code)}</div><div class="compatibility"><small>Compatible Models</small><div class="compatibility-row"><span class="badge">${esc(product.model)}</span><a href="${routeHash('catalog', { model: product.model })}">View all compatible models</a></div></div></div><div class="detail-summary-side"><div class="stock-box"><b>● ${esc(stock.label)}</b><small>${product.stock === 'out' ? 'Availability confirmed during RFQ' : 'Ships after stock verification'}</small></div><div class="help-box"><b>Need a part not listed?</b><small>Our experts can help you find it.</small><button data-contact>Request Help / RFQ</button></div></div></div><div class="hk-detail-actions"><button class="hk-btn" id="downloadDiagram">${icon('i-download', 15)}Download Diagram</button><button class="hk-btn hk-btn-orange" id="addAllVisible">${icon('i-list', 15)}Add All Visible to RFQ</button></div></div>
+      <div class="hk-parts-tabs"><button class="active">Parts List</button><button>Compatibility</button><button>Notes</button><button>Shipping</button><button class="expand-all" id="expandParts">${icon('i-expand', 13)}Expand All</button></div><div class="hk-parts-table-wrap"><table class="hk-parts-table"><thead><tr><th></th><th>Callout</th><th>Part Number</th><th>Part Name</th><th>Qty</th><th>Notes / Compatibility</th><th>Stock</th><th>Action</th></tr></thead><tbody>${shown.map(({ part, index }) => partRowHtml(sheet, part, index)).join('')}</tbody></table></div><div class="hk-parts-footer"><span>Showing 1 to ${Math.min(state.detailVisibleParts, parts.length)} of ${parts.length} parts</span>${state.detailVisibleParts < parts.length ? '<button id="viewMoreParts">View More Parts⌄</button>' : '<span>All published parts shown</span>'}</div></article></div>
+      <section class="hk-related-section"><div class="section-headline"><div><div class="section-label">Related Assemblies for ${esc(product.category)}</div></div><button class="view-all" data-view-related>View All ${esc(product.category)} Diagrams ${icon('i-chevron', 13)}</button></div><div class="hk-related-grid">${related.map(item => `<button class="hk-related-card" data-open-product="${esc(item.id)}"><img src="${esc(item.previewImage || FALLBACK_IMAGE)}" alt=""><span><b>${esc(titleCase(cleanTitle(item.name)))}</b><small>Diagram Code: ${esc(item.diagramCode)}</small><span class="status">${esc(stockMeta(item).label)}</span></span></button>`).join('') || '<div class="empty-state"><p>No related assemblies found.</p></div>'}</div></section>
       </div></section>`;
     bindDetailEvents(parts);
   }
@@ -647,7 +637,30 @@
     const inCart = cartItemForKey(key);
     const stock = Number(part.admin_stock || 0);
     const stockLabel = stock > 0 ? `${stock} In Stock` : 'Pre-order';
-    return `<tr class="${selected ? 'selected' : ''}" data-part-row="${index}"><td><input type="checkbox" data-select-part="${index}" ${selected ? 'checked' : ''}></td><td>${esc(part.callout)}</td><td class="part-number">${esc(part.part_number)}</td><td>${esc(part.name)}</td><td>${Number(part.quantity) || 1}</td><td>${esc(part.notes || '—')}</td><td class="part-stock">● ${esc(stockLabel)}</td><td><button class="part-add ${inCart ? 'added' : ''}" data-add-part="${index}">${inCart ? `In RFQ (${inCart.qty})` : `${icon('i-cart', 12)} Add to RFQ`}</button></td></tr>`;
+    const stockClass = stock > 0 ? 'in-stock' : 'pre-order';
+
+    let actionHtml;
+    if (inCart) {
+      actionHtml = `<div class="hk-part-stepper" data-part-stepper="${index}">
+        <button class="hk-stepper-btn" data-stepper-action="minus" data-part-index="${index}" aria-label="Decrease quantity">−</button>
+        <span class="hk-stepper-qty">${inCart.qty}</span>
+        <button class="hk-stepper-btn" data-stepper-action="plus" data-part-index="${index}" aria-label="Increase quantity">+</button>
+        <button class="hk-stepper-remove" data-stepper-action="remove" data-part-index="${index}" aria-label="Remove from RFQ" title="Remove">✕</button>
+      </div>`;
+    } else {
+      actionHtml = `<button class="hk-part-add-btn" data-add-part="${index}">${icon('i-cart', 12)} Add to RFQ</button>`;
+    }
+
+    return `<tr class="${selected ? 'selected' : ''}" data-part-row="${index}">
+      <td><input type="checkbox" data-select-part="${index}" ${selected ? 'checked' : ''}></td>
+      <td>${esc(part.callout)}</td>
+      <td class="part-number">${esc(part.part_number)}</td>
+      <td>${esc(part.name)}</td>
+      <td>${Number(part.quantity) || 1}</td>
+      <td>${esc(part.notes || '—')}</td>
+      <td class="part-stock"><span class="hk-stock-dot ${stockClass}"></span>${esc(stockLabel)}</td>
+      <td class="hk-part-action">${actionHtml}</td>
+    </tr>`;
   }
 
   function bindDetailEvents(parts) {
@@ -667,6 +680,35 @@
       input.closest('tr').classList.toggle('selected', input.checked);
     });
     $$('[data-add-part]').forEach(button => button.onclick = () => { addPartToCart(Number(button.dataset.addPart)); drawDetail(); });
+    $$('[data-stepper-action]').forEach(button => button.onclick = () => {
+      const index = Number(button.dataset.partIndex);
+      const sheet = state.currentSheet;
+      const key = partKey(sheet, index);
+      const item = cartItemForKey(key);
+      if (!item) return;
+      const action = button.dataset.stepperAction;
+
+      if (action === 'plus') {
+        item.qty += 1;
+        toast('Quantity updated', `${item.qty}× ${item.sku}`);
+      }
+      if (action === 'minus') {
+        item.qty -= 1;
+        if (item.qty <= 0) {
+          state.cart = state.cart.filter(row => row.key !== key);
+          toast('Removed from RFQ', item.sku);
+        } else {
+          toast('Quantity updated', `${item.qty}× ${item.sku}`);
+        }
+      }
+      if (action === 'remove') {
+        state.cart = state.cart.filter(row => row.key !== key);
+        toast('Removed from RFQ', item.sku);
+      }
+      writeLocal('hikari_cart_v4', state.cart);
+      updateCartUi();
+      drawDetail();
+    });
     $('#addAllVisible').onclick = () => {
       const targets = state.selectedPartKeys.size
         ? parts.filter(({ index }) => state.selectedPartKeys.has(partKey(state.currentSheet, index)))
@@ -756,7 +798,7 @@
       const item = state.cart.find(row => row.key === line.dataset.cartKey);
       if (!item) return;
       if (button.dataset.cartAction === 'plus') item.qty += 1;
-      if (button.dataset.cartAction === 'minus') item.qty = Math.max(1, item.qty - 1);
+      if (button.dataset.cartAction === 'minus') { item.qty -= 1; if (item.qty <= 0) state.cart = state.cart.filter(row => row.key !== item.key); }
       if (button.dataset.cartAction === 'remove') state.cart = state.cart.filter(row => row.key !== item.key);
       writeLocal('hikari_cart_v4', state.cart);
       updateCartUi();
@@ -810,7 +852,7 @@
     } catch (error) {
       console.warn('[rfq-draft-fallback]', error);
     }
-    openModal(submitted ? 'Quotation request submitted' : 'RFQ draft prepared', submitted ? `Reference ${reference}` : 'Live API unavailable — this draft was prepared locally', `<div class="content-card" style="border:0;padding:4px;max-width:none"><h2>${submitted ? 'Thank you — our team received your RFQ.' : 'Your RFQ draft is ready.'}</h2><p><b>Reference:</b> ${esc(reference)}</p><p><b>Buyer:</b> ${esc(name)} · ${esc(email)}<br><b>Destination:</b> ${esc(destination)} · ${esc(incoterm)}</p><div style="border:1px solid var(--line);border-radius:6px;padding:12px;white-space:pre-wrap;font-size:10px">${esc(itemSummary)}</div>${submitted ? '' : '<p style="color:#b65012">No submission was claimed. Connect the storefront to the Internal Hikari public-order API, then retry.</p>'}<button class="btn btn-orange" id="downloadRfqDraft" style="margin-top:12px">Download RFQ CSV</button></div>`);
+    openModal(submitted ? 'Quotation request submitted' : 'RFQ draft prepared', submitted ? `Reference ${reference}` : 'Live API unavailable — this draft was prepared locally', `<div class="content-card" style="border:0;padding:4px;max-width:none"><h2>${submitted ? 'Thank you — our team received your RFQ.' : 'Your RFQ draft is ready.'}</h2><p><b>Reference:</b> ${esc(reference)}</p><p><b>Buyer:</b> ${esc(name)} · ${esc(email)}<br><b>Destination:</b> ${esc(destination)} · ${esc(incoterm)}</p><div style="border:1px solid var(--line);border-radius:6px;padding:12px;white-space:pre-wrap;font-size:10px">${esc(itemSummary)}</div>${submitted ? '' : '<p style="color:#b65012">No submission was claimed. Connect the storefront to the Internal Hikari public-order API, then retry.</p>'}<button class="hk-btn hk-btn-orange" id="downloadRfqDraft" style="margin-top:12px">Download RFQ CSV</button></div>`);
     $('#downloadRfqDraft')?.addEventListener('click', () => downloadRfqCsv(rfqSnapshot, reference));
     if (submitted) {
       state.cart = [];
@@ -834,12 +876,12 @@
   }
 
   function renderModels() {
-    app.innerHTML = `<section class="content-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards" style="margin-top:20px">${state.models.map(model => `<button class="model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor.webp" alt=""><span><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} diagrams</small></span><span>›</span></button>`).join('')}</div></div></div></section>`;
+    app.innerHTML = `<section class="content-page"><div class="hk-container"><nav class="hk-breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards" style="margin-top:20px">${state.models.map(model => `<button class="model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor.webp" alt=""><span><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} diagrams</small></span><span>›</span></button>`).join('')}</div></div></div></section>`;
     $$('[data-model-card]').forEach(button => button.onclick = () => go('catalog', { model: button.dataset.modelCard }));
   }
 
   function renderRfqPage() {
-    app.innerHTML = `<section class="content-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Request a Quote</span></nav><div class="content-card"><h1>Request a Parts Quotation</h1><p>Upload or paste your parts list. Include the tractor model, serial range, destination and required quantities whenever possible.</p><div class="rfq-page-grid"><div class="rfq-upload">${icon('i-download', 54)}<div><h3>Bulk parts-list upload</h3><p>CSV, XLSX and PDF can be connected to Internal Hikari's signed upload flow.</p><button class="btn" id="downloadTemplate">Download CSV Template</button></div></div><form class="rfq-form" id="rfqPageForm"><label>Name / Company<input name="name" required></label><label>Email<input name="email" type="email" required></label><label>Destination<input name="destination" required></label><label>Buyer Type<select name="buyerType"><option>Retail / Workshop</option><option>B2B Distributor</option><option>Fleet Operator</option></select></label><label class="full">Parts, model or engine details<textarea name="message" required placeholder="Example: L3608, diagram 050101, 2× 1A021-73036, destination Jakarta..."></textarea></label><button class="btn btn-orange full" type="submit">Create RFQ</button></form></div></div></div></section>`;
+    app.innerHTML = `<section class="content-page"><div class="hk-container"><nav class="hk-breadcrumbs"><a href="#home">Home</a><span>Request a Quote</span></nav><div class="content-card"><h1>Request a Parts Quotation</h1><p>Upload or paste your parts list. Include the tractor model, serial range, destination and required quantities whenever possible.</p><div class="rfq-page-grid"><div class="rfq-upload">${icon('i-download', 54)}<div><h3>Bulk parts-list upload</h3><p>CSV, XLSX and PDF can be connected to Internal Hikari's signed upload flow.</p><button class="hk-btn" id="downloadTemplate">Download CSV Template</button></div></div><form class="rfq-form" id="rfqPageForm"><label>Name / Company<input name="name" required></label><label>Email<input name="email" type="email" required></label><label>Destination<input name="destination" required></label><label>Buyer Type<select name="buyerType"><option>Retail / Workshop</option><option>B2B Distributor</option><option>Fleet Operator</option></select></label><label class="full">Parts, model or engine details<textarea name="message" required placeholder="Example: L3608, diagram 050101, 2× 1A021-73036, destination Jakarta..."></textarea></label><button class="btn btn-orange full" type="submit">Create RFQ</button></form></div></div></div></section>`;
     $('#downloadTemplate').onclick = () => {
       const blob = new Blob(['part_number,description,quantity,tractor_model,buyer_note\n'], { type: 'text/csv' });
       const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'Hikari-bulk-order-template.csv'; link.click(); URL.revokeObjectURL(link.href);
@@ -874,12 +916,12 @@
       ]]
     };
     const [title, subtitle, tiles] = pages[name] || pages.help;
-    app.innerHTML = `<section class="content-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>${esc(title)}</span></nav><div class="content-card"><h1>${esc(title)}</h1><p>${esc(subtitle)}</p><div class="info-grid">${tiles.map(([iconName, heading, copy]) => `<div class="info-tile">${icon(iconName, 30)}<h3>${esc(heading)}</h3><p>${esc(copy)}</p></div>`).join('')}</div>${name === 'contact' ? '<button class="btn btn-orange" id="contactRfq" style="margin-top:22px">Start an RFQ</button>' : ''}</div></div></section>`;
+    app.innerHTML = `<section class="content-page"><div class="hk-container"><nav class="hk-breadcrumbs"><a href="#home">Home</a><span>${esc(title)}</span></nav><div class="content-card"><h1>${esc(title)}</h1><p>${esc(subtitle)}</p><div class="info-grid">${tiles.map(([iconName, heading, copy]) => `<div class="info-tile">${icon(iconName, 30)}<h3>${esc(heading)}</h3><p>${esc(copy)}</p></div>`).join('')}</div>${name === 'contact' ? '<button class="hk-btn hk-btn-orange" id="contactRfq" style="margin-top:22px">Start an RFQ</button>' : ''}</div></div></section>`;
     $('#contactRfq')?.addEventListener('click', () => go('rfq'));
   }
 
   function renderNotFound(title, copy = 'The requested page or diagram is not available.') {
-    app.innerHTML = `<section class="content-page"><div class="container"><div class="content-card" style="text-align:center"><h1>${esc(title)}</h1><p>${esc(copy)}</p><button class="btn btn-orange" data-back-catalog>Back to Catalog</button></div></div></section>`;
+    app.innerHTML = `<section class="content-page"><div class="hk-container"><div class="content-card" style="text-align:center"><h1>${esc(title)}</h1><p>${esc(copy)}</p><button class="hk-btn hk-btn-orange" data-back-catalog>Back to Catalog</button></div></div></section>`;
     $('[data-back-catalog]').onclick = () => go('catalog');
   }
 
@@ -951,10 +993,10 @@
     $('#browseCategoriesButton').onclick = openCategoryModal;
     $('#viewAllModelsButton').onclick = () => go('models');
     $('#modelStripLinks').addEventListener('click', event => { const button = event.target.closest('[data-header-model]'); if (button) go('catalog', { model: button.dataset.headerModel }); });
-    $('#accountButton').onclick = () => openModal('My Account', 'Account integration', '<div class="content-card" style="border:0;padding:4px"><h2>Customer account area</h2><p>Connect this button to your authentication provider and customer profile API. Cart and saved assemblies currently persist locally for guest users.</p><button class="btn btn-orange" data-modal-close>Continue as Guest</button></div>');
+    $('#accountButton').onclick = () => openModal('My Account', 'Account integration', '<div class="content-card" style="border:0;padding:4px"><h2>Customer account area</h2><p>Connect this button to your authentication provider and customer profile API. Cart and saved assemblies currently persist locally for guest users.</p><button class="hk-btn hk-btn-orange" data-modal-close>Continue as Guest</button></div>');
     $('#langButton').onclick = () => toast('Language selector', 'English is active. Add translated catalog content through the CMS.');
     $('#currencyButton').onclick = () => toast('Currency', `${CURRENCY.code} display is active. Server quotations remain authoritative.`);
-    $('#newsletterForm').onsubmit = event => { event.preventDefault(); toast('Subscription captured', 'Connect this form to your email-marketing endpoint.'); event.currentTarget.reset(); };
+    $('#newsletterForm')?.addEventListener('submit', event => { event.preventDefault(); toast('Subscription captured', 'Connect this form to your email-marketing endpoint.'); event.currentTarget.reset(); });
     document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeModal(); closeCart(); closeFilterDrawer(); $('.main-nav').classList.remove('open'); } });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && Date.now() - lastCatalogRefreshAt >= 300_000) refreshCatalogControl();
