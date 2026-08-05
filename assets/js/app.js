@@ -6,7 +6,7 @@
   const app = $('#app');
   const API_BASE = String(window.HIKARI_CONFIG?.catalogApiBase || '').replace(/\/$/, '');
   const FALLBACK_IMAGE = 'assets/images/tractor.webp';
-  const HERO_IMAGE = 'assets/images/hero-reference.webp';
+  const HERO_IMAGE = 'assets/images/hero-kubota-cover.webp';
   const SITE = window.HIKARI_CONFIG?.storefront || {};
   const REGION_DEFAULT = regionalDefault();
   const initialLanguage = readLocal('hikari_language', REGION_DEFAULT.language);
@@ -33,6 +33,8 @@
     selectedCategory: '',
     query: '',
     stock: new Set(),
+    priceMin: Number(readLocal('hikari_price_min_usd', 0)) || 0,
+    priceMax: Number(readLocal('hikari_price_max_usd', 0)) || 0,
     sort: 'recommended',
     view: readLocal('hikari_view', 'grid'),
     page: 1,
@@ -477,7 +479,7 @@
     const categorySelect = $('#globalCategorySelect');
     categorySelect.innerHTML = `<option value="">All Categories</option>${state.categories.map(category => `<option value="${esc(category.name)}">${esc(category.name)}</option>`).join('')}`;
     const strip = $('#modelStripLinks');
-    strip.innerHTML = state.models.slice(0, 7).map(model => `<button type="button" data-header-model="${esc(model)}">${esc(model.replace('DT-NES', '').replace('DT', ''))}</button>`).join('');
+    strip.innerHTML = state.models.slice(0, 7).map(model => `<button type="button" data-header-model="${esc(model)}">${esc(model)}</button>`).join('');
     updateHeaderActiveState();
     syncPreferencesUi();
   }
@@ -573,8 +575,12 @@
     $$('[data-system-card]').forEach(button => button.onclick = () => go('catalog', { category: button.dataset.systemCard }));
     $$('[data-open-product]').forEach(button => button.onclick = () => go('diagram', { id: button.dataset.openProduct }));
     $('[data-all-models]').onclick = () => go('models');
-    $('[data-all-categories]').onclick = () => go('catalog');
+    $('[data-all-categories]').onclick = () => openCategoryModal();
     $('[data-all-diagrams]').onclick = () => go('catalog');
+  }
+
+  function maxCatalogPrice() {
+    return Math.max(1, Math.ceil(Math.max(...state.products.map(product => productPrice(product)).filter(Number.isFinite), 1)));
   }
 
   function filteredProducts() {
@@ -583,9 +589,11 @@
       const selectedModel = !state.selectedModel || product.model === state.selectedModel;
       const selectedCategory = !state.selectedCategory || product.category === state.selectedCategory;
       const selectedStock = !state.stock.size || state.stock.has(product.stock);
+      const price = productPrice(product);
+      const selectedPrice = (!state.priceMin || price >= state.priceMin) && (!state.priceMax || price <= state.priceMax);
       const haystack = [product.name, product.sku, product.diagramCode, product.model, product.category].join(' ').toLowerCase();
       const matchesQuery = !query || haystack.includes(query) || normalize(haystack).includes(normalize(query)) || partMatches(product, query).length;
-      return selectedModel && selectedCategory && selectedStock && matchesQuery;
+      return selectedModel && selectedCategory && selectedStock && selectedPrice && matchesQuery;
     });
     if (state.sort === 'price-low') rows.sort((a, b) => productPrice(a) - productPrice(b));
     if (state.sort === 'price-high') rows.sort((a, b) => productPrice(b) - productPrice(a));
@@ -615,6 +623,10 @@
   function filterSidebarHtml(rows) {
     const modelCounts = new Map();
     const categoryCounts = new Map();
+    const maxPrice = maxCatalogPrice();
+    const priceMin = Math.min(Math.max(0, state.priceMin || 0), maxPrice);
+    const priceMax = Math.min(Math.max(priceMin, state.priceMax || maxPrice), maxPrice);
+    const priceLabel = priceMin || state.priceMax ? `${money(priceMin)} — ${money(priceMax)}` : state.language === 'id' ? 'Semua harga' : 'All prices';
     state.products.forEach(product => {
       modelCounts.set(product.model, (modelCounts.get(product.model) || 0) + 1);
       categoryCounts.set(product.category, (categoryCounts.get(product.category) || 0) + 1);
@@ -623,7 +635,7 @@
       <div class="filter-group"><div class="filter-head"><b>Tractor Model</b><button data-clear-filter="model">Clear</button></div>${state.models.slice(0, 7).map(model => `<label class="filter-option"><input type="radio" name="filter-model" value="${esc(model)}" ${state.selectedModel === model ? 'checked' : ''}><span>${esc(model)}</span><em>(${modelCounts.get(model) || 0})</em></label>`).join('')}<button class="filter-more" data-models-page>Show more ${icon('i-down', 11)}</button></div>
       <div class="filter-group"><div class="filter-head"><b>System Category</b><button data-clear-filter="category">Clear</button></div>${state.categories.slice(0, 7).map(category => `<label class="filter-option"><input type="radio" name="filter-category" value="${esc(category.name)}" ${state.selectedCategory === category.name ? 'checked' : ''}><span>${esc(category.name)}</span><em>(${categoryCounts.get(category.name) || 0})</em></label>`).join('')}<button class="filter-more" data-all-categories-filter>Show more ${icon('i-down', 11)}</button></div>
       <div class="filter-group"><div class="filter-head"><b>Stock Status</b><button data-clear-filter="stock">Clear</button></div><label class="filter-option"><input type="checkbox" name="filter-stock" value="in" ${state.stock.has('in') ? 'checked' : ''}><span class="status">In Stock</span></label><label class="filter-option"><input type="checkbox" name="filter-stock" value="low" ${state.stock.has('low') ? 'checked' : ''}><span>🟠 Available</span></label><label class="filter-option"><input type="checkbox" name="filter-stock" value="out" ${state.stock.has('out') ? 'checked' : ''}><span>🔴 Pre-order</span></label></div>
-      <div class="filter-group"><div class="filter-head"><b>${t('Price Range')} (${CURRENCY.code})</b><button>${t('Clear')}</button></div><div class="price-slider"><span></span><span></span></div><div class="price-labels"><span>${money(0)}</span><span>${money(1500)}+</span></div></div>
+      <div class="filter-group price-filter"><div class="filter-head"><b>${t('Price Range')} (${CURRENCY.code})</b><button type="button" data-clear-filter="price">${t('Clear')}</button></div><div class="price-range-control" style="--min:${(priceMin / maxPrice) * 100}%;--max:${(priceMax / maxPrice) * 100}%"><div class="range-track"></div><input id="priceMinRange" type="range" min="0" max="${maxPrice}" step="1" value="${priceMin}" aria-label="Minimum price"><input id="priceMaxRange" type="range" min="0" max="${maxPrice}" step="1" value="${priceMax}" aria-label="Maximum price"></div><div class="price-labels"><span id="priceRangeLabel">${esc(priceLabel)}</span><span>${money(maxPrice)}+</span></div></div>
       <div class="filter-group"><div class="filter-head"><b>Compatibility</b><button data-clear-filter="model">Clear</button></div><input class="compat-input" id="compatInput" placeholder="Search model compatibility..."><div class="filter-chips">${state.selectedModel ? `<span>${esc(state.selectedModel)} <button data-clear-filter="model">×</button></span>` : '<span>All models</span>'}</div></div>
       <div class="filter-group"><button class="btn btn-orange" id="applyMobileFilters" style="width:100%">${esc(state.language === 'id' ? `Tampilkan ${rows.length} diagram` : `Show ${rows.length} diagrams`)}</button></div>
     </aside>`;
@@ -634,6 +646,7 @@
     if (state.selectedModel) filters.push({ key: 'model', label: `Model: ${state.selectedModel}` });
     if (state.selectedCategory) filters.push({ key: 'category', label: `System: ${state.selectedCategory}` });
     state.stock.forEach(value => filters.push({ key: `stock:${value}`, label: value === 'in' ? 'In Stock' : value === 'low' ? 'Available' : 'Pre-order' }));
+    if (state.priceMin || state.priceMax) filters.push({ key: 'price', label: `${t('Price Range')}: ${money(state.priceMin || 0)} — ${money(state.priceMax || maxCatalogPrice())}` });
     if (state.query) filters.push({ key: 'query', label: `Search: ${state.query}` });
     return filters.map(filter => `<span class="active-filter">${esc(filter.label)}<button data-remove-filter="${esc(filter.key)}">×</button></span>`).join('');
   }
@@ -667,6 +680,7 @@
     $$('input[name="filter-model"]').forEach(input => input.onchange = () => { state.selectedModel = input.value; state.page = 1; syncCatalogHash(); });
     $$('input[name="filter-category"]').forEach(input => input.onchange = () => { state.selectedCategory = input.value; state.page = 1; syncCatalogHash(); });
     $$('input[name="filter-stock"]').forEach(input => input.onchange = () => { input.checked ? state.stock.add(input.value) : state.stock.delete(input.value); state.page = 1; renderCatalog(); });
+    bindPriceRange();
     $$('[data-clear-filter]').forEach(button => button.onclick = () => { clearFilter(button.dataset.clearFilter); syncCatalogHash(); });
     $$('[data-remove-filter]').forEach(button => button.onclick = () => { removeFilter(button.dataset.removeFilter); syncCatalogHash(); });
     $('#clearAllFilters')?.addEventListener('click', () => { clearAllFilters(); syncCatalogHash(); });
@@ -694,6 +708,7 @@
     if (type === 'model') state.selectedModel = '';
     if (type === 'category') state.selectedCategory = '';
     if (type === 'stock') state.stock.clear();
+    if (type === 'price') { state.priceMin = 0; state.priceMax = 0; writeLocal('hikari_price_min_usd', 0); writeLocal('hikari_price_max_usd', 0); }
     if (type === 'query') state.query = '';
     state.page = 1;
   }
@@ -706,7 +721,44 @@
     state.selectedCategory = '';
     state.query = '';
     state.stock.clear();
+    state.priceMin = 0;
+    state.priceMax = 0;
+    writeLocal('hikari_price_min_usd', 0);
+    writeLocal('hikari_price_max_usd', 0);
     state.page = 1;
+  }
+
+  function bindPriceRange() {
+    const minInput = $('#priceMinRange');
+    const maxInput = $('#priceMaxRange');
+    const label = $('#priceRangeLabel');
+    const control = $('.price-range-control');
+    if (!minInput || !maxInput || !label || !control) return;
+    const limit = Number(maxInput.max) || maxCatalogPrice();
+    const paint = () => {
+      let min = Math.min(Number(minInput.value) || 0, limit);
+      let max = Math.min(Number(maxInput.value) || limit, limit);
+      if (min > max) [min, max] = [max, min];
+      control.style.setProperty('--min', `${(min / limit) * 100}%`);
+      control.style.setProperty('--max', `${(max / limit) * 100}%`);
+      label.textContent = min || max < limit ? `${money(min)} — ${money(max)}` : (state.language === 'id' ? 'Semua harga' : 'All prices');
+    };
+    const commit = () => {
+      let min = Math.min(Number(minInput.value) || 0, limit);
+      let max = Math.min(Number(maxInput.value) || limit, limit);
+      if (min > max) [min, max] = [max, min];
+      state.priceMin = min;
+      state.priceMax = max >= limit ? 0 : max;
+      state.page = 1;
+      writeLocal('hikari_price_min_usd', state.priceMin);
+      writeLocal('hikari_price_max_usd', state.priceMax);
+      renderCatalog();
+    };
+    minInput.addEventListener('input', paint);
+    maxInput.addEventListener('input', paint);
+    minInput.addEventListener('change', commit);
+    maxInput.addEventListener('change', commit);
+    paint();
   }
   function closeFilterDrawer() {
     state.filterOpen = false;
@@ -986,7 +1038,7 @@
   }
 
   function renderModels() {
-    app.innerHTML = `<section class="content-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards" style="margin-top:20px">${state.models.map(model => `<button class="model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt=""><span><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} diagrams</small></span><span>›</span></button>`).join('')}</div></div></div></section>`;
+    app.innerHTML = `<section class="content-page models-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards model-page-grid" style="margin-top:20px">${state.models.map(model => `<button class="model-card model-card--full" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(model)} tractor"><span class="model-card-copy"><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} diagrams</small><em>Open model catalog</em></span><span class="model-arrow">›</span></button>`).join('')}</div></div></div></section>`;
     $$('[data-model-card]').forEach(button => button.onclick = () => go('catalog', { model: button.dataset.modelCard }));
   }
 
@@ -1047,7 +1099,7 @@
     document.body.classList.remove('no-scroll');
   }
   function openCategoryModal() {
-    openModal('Browse all systems', `${state.categories.length} categories`, `<div class="system-grid">${state.categories.map(category => `<button class="system-card" data-modal-category="${esc(category.name)}">${icon(categoryIcon(category.name), 25)}${esc(category.name)} <small>(${category.count})</small></button>`).join('')}</div>`);
+    openModal('Browse all systems', `${state.categories.length} categories`, `<div class="system-grid modal-system-grid">${state.categories.map(category => `<button class="system-card system-card--modal" data-modal-category="${esc(category.name)}">${icon(categoryIcon(category.name), 25)}<span>${esc(category.name)}</span><small>${category.count} diagrams</small></button>`).join('')}</div>`);
     $$('[data-modal-category]').forEach(button => button.onclick = () => { closeModal(); go('catalog', { category: button.dataset.modalCategory }); });
   }
 
