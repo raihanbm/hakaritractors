@@ -8,7 +8,11 @@ test('exploded-sheet rows become visible RFQ controls and support quantity updat
   assert.match(app, /function cartItemForKey/);
   assert.match(app, /function addPartToCart/);
   assert.match(app, /data-add-part/);
-  assert.match(app, /In RFQ \(\$\{inCart\.qty\}\)/);
+  assert.match(app, /class="part-qty-control"/);
+  assert.match(app, /data-part-qty="minus"/);
+  assert.match(app, /data-part-qty="plus"/);
+  assert.match(app, /data-part-qty="remove"/);
+  assert.match(app, /function updatePartCartQuantity/);
   assert.match(app, /class="qty-control"/);
   assert.match(app, /data-cart-action="minus"/);
   assert.match(app, /data-cart-action="plus"/);

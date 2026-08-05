@@ -17,7 +17,7 @@ test('public catalog is sourced from the real Hikari Drive inventory, not demo S
   assert.ok(catalog.products.every((part) => part.partCount > 0));
   assert.ok(catalog.products.every((part) => Number.isInteger(part.pageCount) && part.pageCount > 0));
   assert.ok(catalog.products.every((part) => part.sheetId && sheetIndex[part.sheetId]));
-  assert.ok(catalog.products.every((part) => part.previewImage?.endsWith('-crop.webp')));
+  assert.ok(catalog.products.every((part) => part.previewImage?.endsWith('-visual.webp')));
   assert.ok(catalog.products.every((part) => part.fullImage?.endsWith('-full.webp')));
   assert.deepEqual([...new Set(catalog.products.map((part) => part.model))].sort(), [
     'L3608', 'L4400DT', 'L5018DT-NES', 'M9000DT', 'M9540DT', 'MX5000DT', 'MX5100DT'

@@ -30,7 +30,7 @@ const partRows = catalog.products.reduce((sum, product) => sum + Number(product.
 const staticIds = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
 const secretPattern = /SUPABASE_SERVICE_ROLE_KEY|service[_-]?role|sk-[A-Za-z0-9_-]{16,}|eyJhbGci[A-Za-z0-9_-]+/i;
 const checks = {
-  storefrontV4Assets: html.includes('main.css?v=storefront-v4') && html.includes('app.js?v=storefront-v4'),
+  storefrontV4Assets: html.includes('main.css?v=reference-v5') && html.includes('app.js?v=reference-v5'),
   noInlineEventHandlers: !inlineHandler.test(html) && !inlineHandler.test(app),
   uniqueStaticElementIds: staticIds.length === new Set(staticIds).size,
   noEmbeddedSecretMarkers: !secretPattern.test(`${html}\n${app}\n${runtimeConfig}`),
@@ -49,7 +49,7 @@ const checks = {
 const passed = Object.values(checks).filter(Boolean).length;
 const report = {
   generatedAt: new Date().toISOString(),
-  release: 'storefront-v4',
+  release: 'reference-v5',
   status: passed === Object.keys(checks).length ? 'PASS' : 'REVIEW',
   checks: { passed, total: Object.keys(checks).length, details: checks },
   inventory: {
@@ -75,6 +75,6 @@ const report = {
 };
 const output = path.join(root, 'docs/hermes/AUDIT_SUMMARY.json');
 await writeFile(output, `${JSON.stringify(report, null, 2)}\n`);
-console.log(`Storefront v4 audit: ${report.status} (${passed}/${Object.keys(checks).length} checks)`);
+console.log(`Storefront reference-v5 audit: ${report.status} (${passed}/${Object.keys(checks).length} checks)`);
 console.log(`Catalog: ${catalog.products.length} diagrams, ${partRows.toLocaleString()} part rows, ${models.length} models`);
 console.log(`Wrote ${path.relative(root, output)}`);

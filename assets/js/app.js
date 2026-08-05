@@ -6,7 +6,7 @@
   const app = $('#app');
   const API_BASE = String(window.HIKARI_CONFIG?.catalogApiBase || '').replace(/\/$/, '');
   const FALLBACK_IMAGE = 'assets/images/tractor.webp';
-  const HERO_IMAGE = 'assets/images/hero.webp';
+  const HERO_IMAGE = 'assets/images/hero-reference.webp';
   const SITE = window.HIKARI_CONFIG?.storefront || {};
   const configuredCurrency = SITE.currency || {};
   const CURRENCY = { code: configuredCurrency.code || 'THB', symbol: configuredCurrency.symbol || '฿', rate: Number(configuredCurrency.usdRate) || 35.8 };
@@ -30,7 +30,7 @@
     query: '',
     stock: new Set(),
     sort: 'recommended',
-    view: localStorage.getItem('hikari_view') || 'grid',
+    view: readLocal('hikari_view', 'grid'),
     page: 1,
     wishlist: new Set(readLocal('hikari_wishlist', [])),
     cart: readLocal('hikari_cart_v4', []),
@@ -404,9 +404,8 @@
     const stock = stockMeta(product);
     return `<article class="assembly-card">
       <button class="assembly-image" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}"></button>
-      <div class="assembly-info"><div><small>${esc(product.category)}</small><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><code>${esc(product.diagramCode)}</code></div><div class="assembly-price"><small>From</small><b>${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span></div></div>
-      <div class="assembly-meta"><span>${Number(product.partCount || 0)} Parts</span><span>${Number(product.pageCount || 1)} Page${Number(product.pageCount || 1) > 1 ? 's' : ''}</span><span>Updated catalog</span></div>
-      <button class="btn btn-orange" data-open-product="${esc(product.id)}">View Diagram</button>
+      <div class="assembly-copy"><small>${esc(product.category)}</small><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><code>${esc(product.diagramCode)}</code><div class="assembly-badges"><span>${esc(product.model)}</span></div><div class="assembly-meta"><span>⬡ ${Number(product.partCount || 0)} Parts</span><span>↻ Updated catalog</span></div></div>
+      <div class="assembly-buy"><small>From</small><b>${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span><button class="btn btn-orange" data-open-product="${esc(product.id)}">View Diagram</button></div>
     </article>`;
   }
 
@@ -428,9 +427,9 @@
         </form>
       </section>
       <div class="home-content">
-        <section class="page-section"><div class="container"><div class="section-headline"><div><div class="section-label">FEATURED MODELS</div></div><button class="view-all" data-all-models>View All Models ${icon('i-chevron', 13)}</button></div><div class="model-cards">${models.map(model => `<button class="model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor.webp" alt="${esc(model)} tractor"><span><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} assembly diagrams</small></span><span>›</span></button>`).join('')}</div></div></section>
-        <section class="page-section"><div class="container"><div class="section-headline"><div><div class="section-label">BROWSE BY SYSTEM</div></div><button class="view-all" data-all-categories>View All Systems ${icon('i-chevron', 13)}</button></div><div class="system-grid">${topCategories.map(category => `<button class="system-card" data-system-card="${esc(category.name)}">${icon(categoryIcon(category.name), 25)}${esc(category.name)}</button>`).join('')}</div></div></section>
-        <section class="page-section"><div class="container"><div class="section-headline"><div><div class="section-label">FEATURED ASSEMBLY DIAGRAMS</div></div><button class="view-all" data-all-diagrams>View All Diagrams ${icon('i-chevron', 13)}</button></div><div class="assembly-row">${featured.map(homeProductCard).join('')}</div></div></section>
+        <section class="page-section home-section models-section"><div class="container"><div class="section-headline"><div><div class="section-label">FEATURED MODELS</div></div><button class="view-all" data-all-models>View All Models ${icon('i-chevron', 13)}</button></div><div class="model-cards">${models.map(model => { const count = state.products.filter(product => product.model === model).length; return `<button class="model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(model)} tractor"><span class="model-card-copy"><b>${esc(model)}</b><small>${count} assembly diagrams</small><em>View Parts</em></span><span class="model-arrow">→</span></button>`; }).join('')}</div></div></section>
+        <section class="page-section home-section systems-section"><div class="container"><div class="section-headline"><div><div class="section-label">BROWSE BY SYSTEM</div></div><button class="view-all" data-all-categories>View All Systems ${icon('i-chevron', 13)}</button></div><div class="system-grid">${topCategories.map(category => `<button class="system-card" data-system-card="${esc(category.name)}">${icon(categoryIcon(category.name), 25)}${esc(category.name)}</button>`).join('')}</div></div></section>
+        <section class="page-section home-section assemblies-section"><div class="container"><div class="section-headline"><div><div class="section-label">FEATURED ASSEMBLY DIAGRAMS</div></div><button class="view-all" data-all-diagrams>View All Diagrams ${icon('i-chevron', 13)}</button></div><div class="assembly-row">${featured.map(homeProductCard).join('')}</div></div></section>
       </div>`;
 
     $('#heroSearchPanel').addEventListener('submit', event => {
@@ -633,7 +632,7 @@
     const related = state.products.filter(item => item.id !== product.id && item.model === product.model && item.category === product.category).slice(0, 5);
     const stock = stockMeta(product);
     app.innerHTML = `<section class="detail-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a><a href="${routeHash('catalog', { model: product.model })}">${esc(product.model)}</a><a href="${routeHash('catalog', { model: product.model, category: product.category })}">${esc(product.category)}</a><span>${esc(cleanTitle(product.name))}</span></nav>
-      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><span>Page 1 / ${Number(sheet.page_count || 1)}</span><button class="btn" id="detailFullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download diagram">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print diagram">${icon('i-print', 18)}</button></div><button class="diagram-nav prev" aria-label="Previous page">${icon('i-chevron', 17)}</button><img id="diagramImage" src="${esc(sheet.full_image || sheet.preview_image || product.fullImage || product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} exploded parts diagram"><button class="diagram-nav next" aria-label="Next page">${icon('i-chevron', 17)}</button></div><div class="diagram-thumbs"><button class="diagram-thumb active"><img src="${esc(sheet.preview_image || product.previewImage || FALLBACK_IMAGE)}" alt="Diagram preview"></button>${Number(sheet.page_count || 1) > 1 ? `<button class="diagram-thumb"><img src="${esc(sheet.full_image || product.fullImage || product.previewImage || FALLBACK_IMAGE)}" alt="Parts list preview"></button>` : ''}</div></article>
+      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><span>Page 1 / ${Number(sheet.page_count || 1)}</span><button class="btn" id="detailFullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download diagram">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print diagram">${icon('i-print', 18)}</button></div><button class="diagram-nav prev" aria-label="Previous page">${icon('i-chevron', 17)}</button><img id="diagramImage" src="${esc(sheet.preview_image || sheet.full_image || product.previewImage || product.fullImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} exploded parts diagram"><button class="diagram-nav next" aria-label="Next page">${icon('i-chevron', 17)}</button></div><div class="diagram-thumbs"><button class="diagram-thumb active"><img src="${esc(sheet.preview_image || product.previewImage || FALLBACK_IMAGE)}" alt="Diagram preview"></button>${Number(sheet.page_count || 1) > 1 ? `<button class="diagram-thumb"><img src="${esc(sheet.full_image || product.fullImage || product.previewImage || FALLBACK_IMAGE)}" alt="Parts list preview"></button>` : ''}</div></article>
       <article class="detail-side"><div class="detail-summary"><div class="detail-summary-grid"><div><span class="official-label">OFFICIAL DIAGRAM</span><h1>${esc(titleCase(cleanTitle(sheet.title)))}</h1><div class="detail-code">Diagram Code: ${esc(sheet.diagram_code)}</div><div class="compatibility"><small>Compatible Models</small><div class="compatibility-row"><span class="badge">${esc(product.model)}</span><a href="${routeHash('catalog', { model: product.model })}">View all compatible models</a></div></div></div><div class="detail-summary-side"><div class="stock-box"><b>● ${esc(stock.label)}</b><small>${product.stock === 'out' ? 'Availability confirmed during RFQ' : 'Ships after stock verification'}</small></div><div class="help-box"><b>Need a part not listed?</b><small>Our experts can help you find it.</small><button data-contact>Request Help / RFQ</button></div></div></div><div class="detail-actions"><button class="btn" id="downloadDiagram">${icon('i-download', 15)}Download Diagram</button><button class="btn btn-orange" id="addAllVisible">${icon('i-list', 15)}Add All Visible to RFQ</button></div></div>
       <div class="parts-tabs"><button class="active">Parts List</button><button>Compatibility</button><button>Notes</button><button>Shipping</button><button class="expand-all" id="expandParts">${icon('i-expand', 13)}Expand All</button></div><div class="parts-table-wrap"><table class="parts-table"><thead><tr><th></th><th>Callout</th><th>Part Number</th><th>Part Name</th><th>Qty</th><th>Notes / Compatibility</th><th>Stock</th><th>Action</th></tr></thead><tbody>${shown.map(({ part, index }) => partRowHtml(sheet, part, index)).join('')}</tbody></table></div><div class="parts-footer"><span>Showing 1 to ${Math.min(state.detailVisibleParts, parts.length)} of ${parts.length} parts</span>${state.detailVisibleParts < parts.length ? '<button id="viewMoreParts">View More Parts⌄</button>' : '<span>All published parts shown</span>'}</div></article></div>
       <section class="related-section"><div class="section-headline"><div><div class="section-label">Related Assemblies for ${esc(product.category)}</div></div><button class="view-all" data-view-related>View All ${esc(product.category)} Diagrams ${icon('i-chevron', 13)}</button></div><div class="related-grid">${related.map(item => `<button class="related-card" data-open-product="${esc(item.id)}"><img src="${esc(item.previewImage || FALLBACK_IMAGE)}" alt=""><span><b>${esc(titleCase(cleanTitle(item.name)))}</b><small>Diagram Code: ${esc(item.diagramCode)}</small><span class="status">${esc(stockMeta(item).label)}</span></span></button>`).join('') || '<div class="empty-state"><p>No related assemblies found.</p></div>'}</div></section>
@@ -647,7 +646,10 @@
     const inCart = cartItemForKey(key);
     const stock = Number(part.admin_stock || 0);
     const stockLabel = stock > 0 ? `${stock} In Stock` : 'Pre-order';
-    return `<tr class="${selected ? 'selected' : ''}" data-part-row="${index}"><td><input type="checkbox" data-select-part="${index}" ${selected ? 'checked' : ''}></td><td>${esc(part.callout)}</td><td class="part-number">${esc(part.part_number)}</td><td>${esc(part.name)}</td><td>${Number(part.quantity) || 1}</td><td>${esc(part.notes || '—')}</td><td class="part-stock">● ${esc(stockLabel)}</td><td><button class="part-add ${inCart ? 'added' : ''}" data-add-part="${index}">${inCart ? `In RFQ (${inCart.qty})` : `${icon('i-cart', 12)} Add to RFQ`}</button></td></tr>`;
+    const action = inCart
+      ? `<div class="part-qty-control" aria-label="RFQ quantity for ${esc(part.part_number)}"><button type="button" data-part-qty="minus" data-part-index="${index}" aria-label="Decrease quantity">−</button><output>${Number(inCart.qty)}</output><button type="button" data-part-qty="plus" data-part-index="${index}" aria-label="Increase quantity">+</button><button type="button" class="part-remove" data-part-qty="remove" data-part-index="${index}" aria-label="Remove from RFQ">×</button></div>`
+      : `<button class="part-add" data-add-part="${index}">${icon('i-cart', 12)} Add to RFQ</button>`;
+    return `<tr class="${selected ? 'selected' : ''}" data-part-row="${index}"><td><input type="checkbox" data-select-part="${index}" ${selected ? 'checked' : ''}></td><td>${esc(part.callout)}</td><td class="part-number">${esc(part.part_number)}</td><td>${esc(part.name)}</td><td>${Number(part.quantity) || 1}</td><td>${esc(part.notes || '—')}</td><td class="part-stock">● ${esc(stockLabel)}</td><td class="part-action-cell">${action}</td></tr>`;
   }
 
   function bindDetailEvents(parts) {
@@ -667,6 +669,7 @@
       input.closest('tr').classList.toggle('selected', input.checked);
     });
     $$('[data-add-part]').forEach(button => button.onclick = () => { addPartToCart(Number(button.dataset.addPart)); drawDetail(); });
+    $$('[data-part-qty]').forEach(button => button.onclick = () => updatePartCartQuantity(Number(button.dataset.partIndex), button.dataset.partQty));
     $('#addAllVisible').onclick = () => {
       const targets = state.selectedPartKeys.size
         ? parts.filter(({ index }) => state.selectedPartKeys.has(partKey(state.currentSheet, index)))
@@ -679,6 +682,22 @@
     $$('[data-open-product]').forEach(button => button.onclick = () => go('diagram', { id: button.dataset.openProduct }));
     $('[data-view-related]')?.addEventListener('click', () => go('catalog', { model: state.currentProduct.model, category: state.currentProduct.category }));
     $('[data-contact]').onclick = () => go('rfq');
+  }
+
+  function updatePartCartQuantity(index, action) {
+    const key = partKey(state.currentSheet, index);
+    const item = cartItemForKey(key);
+    if (action === 'plus') {
+      addPartToCart(index, false);
+    } else if (item && action === 'minus') {
+      item.qty -= 1;
+      if (item.qty <= 0) state.cart = state.cart.filter(row => row.key !== key);
+    } else if (item && action === 'remove') {
+      state.cart = state.cart.filter(row => row.key !== key);
+    }
+    writeLocal('hikari_cart_v4', state.cart);
+    updateCartUi();
+    drawDetail();
   }
 
   function updateZoom(delta) {
@@ -756,11 +775,11 @@
       const item = state.cart.find(row => row.key === line.dataset.cartKey);
       if (!item) return;
       if (button.dataset.cartAction === 'plus') item.qty += 1;
-      if (button.dataset.cartAction === 'minus') item.qty = Math.max(1, item.qty - 1);
+      if (button.dataset.cartAction === 'minus') { item.qty -= 1; if (item.qty <= 0) state.cart = state.cart.filter(row => row.key !== item.key); }
       if (button.dataset.cartAction === 'remove') state.cart = state.cart.filter(row => row.key !== item.key);
       writeLocal('hikari_cart_v4', state.cart);
       updateCartUi();
-      if (state.currentSheet) drawDetail();
+      if (parseRoute().name === 'diagram' && state.currentSheet) drawDetail();
     });
   }
 
@@ -834,7 +853,7 @@
   }
 
   function renderModels() {
-    app.innerHTML = `<section class="content-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards" style="margin-top:20px">${state.models.map(model => `<button class="model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor.webp" alt=""><span><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} diagrams</small></span><span>›</span></button>`).join('')}</div></div></div></section>`;
+    app.innerHTML = `<section class="content-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards" style="margin-top:20px">${state.models.map(model => `<button class="model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt=""><span><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} diagrams</small></span><span>›</span></button>`).join('')}</div></div></div></section>`;
     $$('[data-model-card]').forEach(button => button.onclick = () => go('catalog', { model: button.dataset.modelCard }));
   }
 

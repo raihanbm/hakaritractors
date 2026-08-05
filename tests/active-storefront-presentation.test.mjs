@@ -7,8 +7,8 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('storefront v4 loads the consolidated production shell', async () => {
   const html = await read('index.html');
-  assert.match(html, /assets\/css\/main\.css\?v=storefront-v4/);
-  assert.match(html, /assets\/js\/app\.js\?v=storefront-v4/);
+  assert.match(html, /assets\/css\/main\.css\?v=reference-v5/);
+  assert.match(html, /assets\/js\/app\.js\?v=reference-v5/);
   for (const id of ['globalSearchForm', 'modelStripLinks', 'app', 'cartDrawer', 'modalBackdrop']) {
     assert.match(html, new RegExp(`id="${id}"`));
   }

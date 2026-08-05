@@ -1,0 +1,37 @@
+{
+  "release": "reference-v5",
+  "packageRole": "full storefront replacement",
+  "visualReferences": [
+    "docs/hermes/reference/01-home-reference.png",
+    "docs/hermes/reference/02-catalog-reference.png",
+    "docs/hermes/reference/03-diagram-reference.png"
+  ],
+  "visualProof": [
+    "docs/hermes/proof/01-home-implementation.png",
+    "docs/hermes/proof/02-catalog-implementation.png",
+    "docs/hermes/proof/03-diagram-implementation.png",
+    "docs/hermes/proof/04-rfq-stepper-proof.png"
+  ],
+  "inventory": {
+    "assemblyDiagrams": 913,
+    "orderablePartRows": 14237,
+    "models": [
+      "L3608",
+      "L4400DT",
+      "L5018DT-NES",
+      "M9000DT",
+      "M9540DT",
+      "MX5000DT",
+      "MX5100DT"
+    ],
+    "categories": 18,
+    "partNumberIndexKeys": 12606
+  },
+  "validation": {
+    "regressionTests": "16/16",
+    "auditChecks": "15/15",
+    "command": "npm run audit"
+  },
+  "rfqControl": "Add to RFQ -> minus / quantity / plus / remove",
+  "deployment": "Replace project as a whole; do not merge presentation files."
+}
