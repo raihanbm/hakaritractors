@@ -401,3 +401,4 @@ html,body{min-height:100%}body{min-height:100vh;display:flex;flex-direction:colu
   .home-help-strip b{font-size:10px}.home-help-strip small{font-size:8px}
   .support-widget{bottom:10px}
 }
+.rfq-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}

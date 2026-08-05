@@ -1,0 +1,91 @@
+[
+  {
+    "viewport": "desktop",
+    "home": 200,
+    "search": 1,
+    "appReady": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "viewport": "mobile",
+    "home": 200,
+    "search": 1,
+    "appReady": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "route": "about",
+    "status": 200,
+    "canonical": "https://hikaritractors.com/about",
+    "h1": "About Hikari Tractors",
+    "footerLinks": 8
+  },
+  {
+    "route": "contact",
+    "status": 200,
+    "canonical": "https://hikaritractors.com/contact",
+    "h1": "Contact Hikari Tractors",
+    "footerLinks": 8
+  },
+  {
+    "route": "privacy-policy",
+    "status": 200,
+    "canonical": "https://hikaritractors.com/privacy-policy",
+    "h1": "Privacy Policy",
+    "footerLinks": 8
+  },
+  {
+    "route": "terms-and-conditions",
+    "status": 200,
+    "canonical": "https://hikaritractors.com/terms-and-conditions",
+    "h1": "Terms & Conditions",
+    "footerLinks": 8
+  },
+  {
+    "route": "shipping-policy",
+    "status": 200,
+    "canonical": "https://hikaritractors.com/shipping-policy",
+    "h1": "Shipping Policy",
+    "footerLinks": 8
+  },
+  {
+    "route": "returns-and-refunds",
+    "status": 200,
+    "canonical": "https://hikaritractors.com/returns-and-refunds",
+    "h1": "Returns & Refunds",
+    "footerLinks": 8
+  },
+  {
+    "route": "warranty",
+    "status": 200,
+    "canonical": "https://hikaritractors.com/warranty",
+    "h1": "Warranty",
+    "footerLinks": 8
+  },
+  {
+    "route": "help-center",
+    "status": 200,
+    "canonical": "https://hikaritractors.com/help-center",
+    "h1": "Help Center",
+    "footerLinks": 8
+  },
+  {
+    "footerRoutes": [
+      "/",
+      "/#catalog",
+      "/#models",
+      "/#deals",
+      "/help-center",
+      "/shipping-policy",
+      "/returns-and-refunds",
+      "/warranty",
+      "/about",
+      "/contact",
+      "/#rfq",
+      "/terms-and-conditions",
+      "/privacy-policy"
+    ]
+  }
+]

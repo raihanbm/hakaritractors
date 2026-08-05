@@ -1,2 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /login
+Disallow: /admin/
+Disallow: /internal/
+
+Sitemap: https://hikaritractors.com/sitemap.xml

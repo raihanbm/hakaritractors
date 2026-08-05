@@ -5,7 +5,7 @@
     storefront: Object.freeze({
       phone: "+62 852-8755-1869",
       email: "info@hikaritractors.com",
-      genuineLabel: "Genuine Parts for Kubota Tractors",
+      genuineLabel: "Model-first parts identification & RFQ support",
       currency: Object.freeze({ code: "IDR", symbol: "Rp", usdRate: 16300 })
     })
   });

@@ -1177,8 +1177,12 @@
     const destination = $('#rfqDestination').value.trim();
     const incoterm = $('#rfqTerm').value;
     const note = $('#rfqNote').value.trim();
+    const website = $('#rfqWebsite')?.value.trim() || '';
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if (!state.cart.length) { toast('RFQ cart is empty', 'Add at least one spare part.'); return; }
     if (!name || !email || !destination) { toast('Complete quotation details', 'Name, email and destination are required.'); return; }
+    if (!emailValid) { toast('Enter a valid email address', 'Use an address such as name@company.com.'); return; }
+    if (name.length > 120 || email.length > 254 || destination.length > 160 || note.length > 2000 || website) { toast('Unable to submit RFQ', 'Check the form fields and try again.'); return; }
     const button = $('#submitRfqButton');
     button.disabled = true;
     button.textContent = 'Submitting…';
@@ -1190,6 +1194,7 @@
       destination,
       incoterm,
       accountType: 'retail',
+      website,
       message: [note, 'RFQ cart:', itemSummary].filter(Boolean).join('\n\n'),
       items: rfqSnapshot.filter(item => item.partId).map(item => ({ partId: item.partId, quantity: item.qty }))
     };
@@ -1398,7 +1403,7 @@
       if (!event.target.closest('.preference-control')) closePreferenceMenus();
       if (!event.target.closest('#supportWidget')) { $('#supportPanel').classList.remove('open'); $('#supportFab').setAttribute('aria-expanded', 'false'); }
     });
-    $('#newsletterForm').onsubmit = event => { event.preventDefault(); toast('Subscription captured', 'Connect this form to your email-marketing endpoint.'); event.currentTarget.reset(); };
+    $('#newsletterForm')?.addEventListener('submit', event => { event.preventDefault(); toast('Newsletter unavailable', 'Contact Hikari support for catalog and quotation updates.'); });
     document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeModal(); closeCart(); closeFilterDrawer(); closePreferenceMenus(); $('#supportPanel').classList.remove('open'); $('#supportFab').setAttribute('aria-expanded', 'false'); $('.main-nav').classList.remove('open'); } });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && Date.now() - lastCatalogRefreshAt >= 300_000) refreshCatalogControl();
