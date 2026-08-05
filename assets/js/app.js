@@ -8,14 +8,18 @@
   const FALLBACK_IMAGE = 'assets/images/tractor.webp';
   const HERO_IMAGE = 'assets/images/hero-reference.webp';
   const SITE = window.HIKARI_CONFIG?.storefront || {};
-  const configuredCurrency = SITE.currency || {};
-  const CURRENCY = { code: configuredCurrency.code || 'THB', symbol: configuredCurrency.symbol || '฿', rate: Number(configuredCurrency.usdRate) || 35.8 };
+  const REGION_DEFAULT = regionalDefault();
+  const initialLanguage = readLocal('hikari_language', REGION_DEFAULT.language);
+  const initialCurrency = readLocal('hikari_currency', REGION_DEFAULT.currency);
+  let CURRENCY = currencyProfile(initialCurrency);
   const PAGE_SIZE = 20;
   let catalogRefreshPromise = null;
   let lastCatalogRefreshAt = 0;
 
   const state = {
     loading: true,
+    language: initialLanguage === 'id' ? 'id' : 'en',
+    currency: CURRENCY.code,
     products: [],
     baseProducts: [],
     productMap: new Map(),
@@ -48,6 +52,125 @@
   }
   function writeLocal(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage may be blocked */ }
+  }
+
+  const ID_COPY = Object.freeze({
+    'Genuine Parts for Kubota Tractors': 'Suku Cadang Asli untuk Traktor Kubota',
+    'English': 'English', 'Home': 'Beranda', 'Parts': 'Suku Cadang', 'Diagrams': 'Diagram', 'Models': 'Model Traktor',
+    'Request a Quote (RFQ)': 'Minta Penawaran (RFQ)', 'Request a Quote': 'Minta Penawaran', 'Deals': 'Penawaran',
+    'Help Center': 'Pusat Bantuan', 'Contact Us': 'Hubungi Kami', 'Browse Categories': 'Jelajahi Kategori',
+    'SHOP BY TRACTOR MODEL': 'CARI BERDASARKAN MODEL TRAKTOR', 'View All Models': 'Lihat Semua Model',
+    'My Account': 'Akun Saya', 'Sign in / Register': 'Masuk / Daftar', 'Cart': 'Keranjang',
+    'All Categories': 'Semua Kategori', 'Search': 'Cari', 'View Diagram': 'Lihat Diagram',
+    '100% Genuine Parts': 'Suku Cadang 100% Asli', 'Authentic parts for reliable performance': 'Suku cadang asli untuk performa yang andal',
+    'RFQ Support': 'Bantuan Penawaran', 'Need help? Our experts are here for you.': 'Butuh bantuan? Tim ahli kami siap membantu.',
+    'Diagram Based Ordering': 'Pesan Berdasarkan Diagram', 'Accurate parts with official diagrams': 'Suku cadang tepat berdasarkan diagram resmi',
+    'Worldwide Shipping': 'Pengiriman Internasional', 'Fast & secure delivery to your location': 'Pengiriman aman dan cepat ke lokasi Anda',
+    'SHOP': 'BELANJA', 'SUPPORT': 'BANTUAN', 'COMPANY': 'PERUSAHAAN', 'NEWSLETTER': 'NEWSLETTER',
+    'All Categories': 'Semua Kategori', 'Tractor Models': 'Model Traktor', 'Parts by Diagram': 'Suku Cadang per Diagram',
+    'Special Deals': 'Penawaran Khusus', 'How to Order': 'Cara Memesan', 'Shipping & Delivery': 'Pengiriman',
+    'Returns & Warranty': 'Pengembalian & Garansi', 'About Us': 'Tentang Kami', 'Terms & Conditions': 'Syarat & Ketentuan',
+    'Get updates on new parts, deals and more.': 'Dapatkan kabar suku cadang baru, penawaran, dan informasi lainnya.',
+    'Enter your email': 'Masukkan email Anda', 'Subscribe': 'Berlangganan',
+    'Quotation details': 'Detail Penawaran', 'Name / Company': 'Nama / Perusahaan', 'Destination': 'Tujuan Pengiriman',
+    'Trade term': 'Ketentuan Pengiriman', 'Buyer note': 'Catatan Pembeli', 'Submit RFQ': 'Kirim Permintaan Penawaran',
+    'Estimated parts subtotal': 'Perkiraan subtotal suku cadang', 'Need help?': 'Butuh bantuan?',
+    'Hikari Support Online': 'Tim Hikari Siap Membantu', 'Need help finding the right part?': 'Butuh bantuan mencari suku cadang yang tepat?',
+    'Send your tractor model, diagram code, or part number. Our team will help check fitment before you request a quote.': 'Kirim model traktor, kode diagram, atau nomor part. Tim kami akan membantu memeriksa kecocokan sebelum Anda meminta penawaran.',
+    'Chat via WhatsApp': 'Hubungi via WhatsApp', 'Close support chat': 'Tutup bantuan',
+    'Your RFQ cart is empty': 'Keranjang penawaran Anda masih kosong',
+    'Open a diagram and add exact spare parts by callout.': 'Buka diagram dan tambahkan suku cadang sesuai nomor penunjuk.',
+    'Add to RFQ': 'Tambah ke Penawaran', 'Download Diagram': 'Unduh Diagram', 'Add All Visible to RFQ': 'Tambah Semua ke Penawaran',
+    'Official Diagram': 'DIAGRAM RESMI', 'Compatible Models': 'Model yang Sesuai', 'In Stock': 'Tersedia', 'Limited Stock': 'Stok Terbatas', 'Pre-order': 'Pre-order',
+    'Need a part not listed?': 'Belum menemukan suku cadang yang dicari?', 'Request Help / RFQ': 'Minta Bantuan / Penawaran',
+    'Parts List': 'Daftar Suku Cadang', 'Compatibility': 'Kecocokan', 'Notes': 'Catatan', 'Shipping': 'Pengiriman',
+    'Expand All': 'Tampilkan Semua', 'Callout': 'Penunjuk', 'Part Number': 'Nomor Part', 'Part Name': 'Nama Suku Cadang',
+    'Qty': 'Jumlah', 'Stock': 'Stok', 'Action': 'Aksi', 'Related Assemblies': 'Rangkaian Terkait',
+    'From': 'Mulai', 'Assembly Diagrams Found': 'Diagram Rangkaian Ditemukan',
+    'Need help finding parts?': 'Butuh bantuan mencari suku cadang?', 'Our parts experts are here for you.': 'Tim spesialis kami siap membantu.',
+    'Contact Us': 'Hubungi Kami', 'Tractor Model': 'Model Traktor', 'System Category': 'Kategori Sistem',
+    'Stock Status': 'Status Stok', 'Clear': 'Hapus', 'Show more': 'Tampilkan lainnya', 'All models': 'Semua model',
+    'Filters': 'Filter', 'Sort by:': 'Urutkan:', 'Recommended': 'Rekomendasi', 'Most parts': 'Part terbanyak',
+    'Price: Low to High': 'Harga: Terendah ke Tertinggi', 'Price: High to Low': 'Harga: Tertinggi ke Terendah',
+    'Active Filters:': 'Filter Aktif:', 'Clear All': 'Hapus Semua', 'View:': 'Tampilan:',
+    'No matching diagrams': 'Diagram yang sesuai tidak ditemukan', 'Try a broader model, system or part-number search.': 'Coba gunakan model, sistem, atau nomor part yang lebih umum.',
+    'Reset filters': 'Atur Ulang Filter', 'Showing': 'Menampilkan', 'to': 'sampai', 'of': 'dari', 'diagrams': 'diagram',
+    'Page': 'Halaman', 'Pages': 'Halaman', 'Price Range': 'Rentang Harga'
+  });
+  const textSource = new WeakMap();
+  const placeholderSource = new WeakMap();
+
+  function regionalDefault() {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    return /^Asia\/(Jakarta|Makassar|Jayapura)$/.test(zone) ? { language: 'id', currency: 'IDR' } : { language: 'en', currency: 'USD' };
+  }
+  function currencyProfile(code) {
+    const preset = SITE.currencies?.[code] || SITE.currencies?.USD || { code: 'USD', symbol: '$', usdRate: 1 };
+    return { code: preset.code, symbol: preset.symbol, rate: Number(preset.usdRate) || 1 };
+  }
+  function t(value) {
+    const source = String(value ?? '');
+    return state?.language === 'id' ? (ID_COPY[source] || source) : source;
+  }
+  function translateTextNode(node) {
+    const source = textSource.get(node) ?? node.nodeValue;
+    textSource.set(node, source);
+    const match = source.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    node.nodeValue = `${match?.[1] || ''}${t(match?.[2] || source)}${match?.[3] || ''}`;
+  }
+  function localizeVisibleCopy() {
+    document.documentElement.lang = state.language === 'id' ? 'id' : 'en';
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        return parent && !/^(SCRIPT|STYLE|NOSCRIPT|OPTION)$/i.test(parent.tagName) && node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(translateTextNode);
+    document.querySelectorAll('[placeholder]').forEach(element => {
+      const source = placeholderSource.get(element) ?? element.getAttribute('placeholder');
+      placeholderSource.set(element, source);
+      element.setAttribute('placeholder', t(source));
+    });
+  }
+  function syncPreferencesUi() {
+    $('#languageLabel').textContent = state.language === 'id' ? 'Bahasa Indonesia' : 'English';
+    $('#currencyLabel').textContent = `${CURRENCY.code} ${CURRENCY.symbol}`;
+    $$('[data-language]').forEach(button => button.classList.toggle('active', button.dataset.language === state.language));
+    $$('[data-currency]').forEach(button => button.classList.toggle('active', button.dataset.currency === CURRENCY.code));
+    localizeVisibleCopy();
+  }
+  function closePreferenceMenus() {
+    $$('.preference-menu.open').forEach(menu => menu.classList.remove('open'));
+    $$('#langButton, #currencyButton').forEach(button => button.setAttribute('aria-expanded', 'false'));
+  }
+  function setLanguage(language, manual = false) {
+    state.language = language === 'id' ? 'id' : 'en';
+    writeLocal('hikari_language', state.language);
+    if (manual) writeLocal('hikari_language_locked', true);
+    syncPreferencesUi();
+    if (!state.loading) route();
+  }
+  function setCurrency(code, manual = false) {
+    CURRENCY = currencyProfile(code === 'IDR' ? 'IDR' : 'USD');
+    state.currency = CURRENCY.code;
+    writeLocal('hikari_currency', state.currency);
+    if (manual) writeLocal('hikari_currency_locked', true);
+    updateCartUi();
+    syncPreferencesUi();
+    if (!state.loading) route();
+  }
+  async function detectVisitorMarket() {
+    if (readLocal('hikari_language_locked', false) && readLocal('hikari_currency_locked', false)) return;
+    try {
+      const response = await fetch(window.HIKARI_CONFIG?.geoLookupUrl || 'https://ipapi.co/json/', { cache: 'no-store' });
+      const result = await response.json();
+      const indonesia = result?.country_code === 'ID';
+      if (!readLocal('hikari_language_locked', false)) setLanguage(indonesia ? 'id' : 'en');
+      if (!readLocal('hikari_currency_locked', false)) setCurrency(indonesia ? 'IDR' : 'USD');
+    } catch { /* timezone default remains active when geolocation is unavailable */ }
   }
   function esc(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
@@ -109,7 +232,7 @@
   function toast(title, message = '') {
     const node = document.createElement('div');
     node.className = 'toast';
-    node.innerHTML = `<b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ''}`;
+    node.innerHTML = `<b>${esc(t(title))}</b>${message ? `<small>${esc(t(message))}</small>` : ''}`;
     $('#toastStack').append(node);
     setTimeout(() => node.remove(), 3200);
   }
@@ -344,15 +467,19 @@
   }
 
   function hydrateHeader() {
-    $('#supportPhone').textContent = SITE.phone || '+66 2 123 4567';
-    $('#supportEmail').textContent = SITE.email || 'support@hikaritractors.com';
+    $('#supportPhone').textContent = SITE.phone || '+62 852-8755-1869';
+    $('#supportEmail').textContent = SITE.email || 'info@hikaritractors.com';
     $('#genuineLabel').textContent = SITE.genuineLabel || 'Genuine Parts for Kubota Tractors';
-    $('#currencyButton').childNodes[0].textContent = `${CURRENCY.code} ${CURRENCY.symbol} `;
+    const whatsapp = String(SITE.whatsapp || SITE.phone || '').replace(/\D/g, '');
+    $('#supportWhatsappLink').href = `https://wa.me/${whatsapp}?text=${encodeURIComponent('Hello Hikari Tractors, I need help finding a spare part.')}`;
+    $('#supportEmailLink').href = `mailto:${SITE.email || 'info@hikaritractors.com'}`;
+    $('#supportEmailLink span').textContent = SITE.email || 'info@hikaritractors.com';
     const categorySelect = $('#globalCategorySelect');
     categorySelect.innerHTML = `<option value="">All Categories</option>${state.categories.map(category => `<option value="${esc(category.name)}">${esc(category.name)}</option>`).join('')}`;
     const strip = $('#modelStripLinks');
     strip.innerHTML = state.models.slice(0, 7).map(model => `<button type="button" data-header-model="${esc(model)}">${esc(model.replace('DT-NES', '').replace('DT', ''))}</button>`).join('');
     updateHeaderActiveState();
+    syncPreferencesUi();
   }
 
   function updateHeaderActiveState() {
@@ -479,8 +606,8 @@
       <button class="product-heart ${saved ? 'active' : ''}" data-wishlist="${esc(product.id)}" aria-label="Save assembly">${icon('i-heart', 17)}</button>
       <button class="product-card-image" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}"></button>
       <div class="product-card-body">
-        <div class="product-info-list"><div class="product-kicker">${esc(product.category)}</div><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><div class="product-code">${esc(product.diagramCode)}</div>${matched ? `<div class="badge orange" title="Matched part">Part: ${esc(matched.part_number)}</div>` : ''}<div class="product-models">${models.map(model => `<span>${esc(model)}</span>`).join('')}</div><div class="product-data"><span>⬡ ${Number(product.partCount || 0)} Parts</span><span>▱ ${Number(product.pageCount || 1)} Page${Number(product.pageCount || 1) > 1 ? 's' : ''}</span></div></div>
-        <div class="product-action-list"><div class="product-price-row"><b>From ${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span></div><button class="btn btn-orange" data-open-product="${esc(product.id)}">View Diagram</button></div>
+        <div class="product-info-list"><div class="product-kicker">${esc(product.category)}</div><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><div class="product-code">${esc(product.diagramCode)}</div>${matched ? `<div class="badge orange" title="Matched part">Part: ${esc(matched.part_number)}</div>` : ''}<div class="product-models">${models.map(model => `<span>${esc(model)}</span>`).join('')}</div><div class="product-data"><span>⬡ ${Number(product.partCount || 0)} ${t('Parts')}</span><span>▱ ${Number(product.pageCount || 1)} ${t(Number(product.pageCount || 1) > 1 ? 'Pages' : 'Page')}</span></div></div>
+        <div class="product-action-list"><div class="product-price-row"><b>${t('From')} ${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span></div><button class="btn btn-orange" data-open-product="${esc(product.id)}">${t('View Diagram')}</button></div>
       </div>
     </article>`;
   }
@@ -496,9 +623,9 @@
       <div class="filter-group"><div class="filter-head"><b>Tractor Model</b><button data-clear-filter="model">Clear</button></div>${state.models.slice(0, 7).map(model => `<label class="filter-option"><input type="radio" name="filter-model" value="${esc(model)}" ${state.selectedModel === model ? 'checked' : ''}><span>${esc(model)}</span><em>(${modelCounts.get(model) || 0})</em></label>`).join('')}<button class="filter-more" data-models-page>Show more ${icon('i-down', 11)}</button></div>
       <div class="filter-group"><div class="filter-head"><b>System Category</b><button data-clear-filter="category">Clear</button></div>${state.categories.slice(0, 7).map(category => `<label class="filter-option"><input type="radio" name="filter-category" value="${esc(category.name)}" ${state.selectedCategory === category.name ? 'checked' : ''}><span>${esc(category.name)}</span><em>(${categoryCounts.get(category.name) || 0})</em></label>`).join('')}<button class="filter-more" data-all-categories-filter>Show more ${icon('i-down', 11)}</button></div>
       <div class="filter-group"><div class="filter-head"><b>Stock Status</b><button data-clear-filter="stock">Clear</button></div><label class="filter-option"><input type="checkbox" name="filter-stock" value="in" ${state.stock.has('in') ? 'checked' : ''}><span class="status">In Stock</span></label><label class="filter-option"><input type="checkbox" name="filter-stock" value="low" ${state.stock.has('low') ? 'checked' : ''}><span>🟠 Available</span></label><label class="filter-option"><input type="checkbox" name="filter-stock" value="out" ${state.stock.has('out') ? 'checked' : ''}><span>🔴 Pre-order</span></label></div>
-      <div class="filter-group"><div class="filter-head"><b>Price Range (THB)</b><button>Clear</button></div><div class="price-slider"><span></span><span></span></div><div class="price-labels"><span>฿0</span><span>฿25,000+</span></div></div>
+      <div class="filter-group"><div class="filter-head"><b>${t('Price Range')} (${CURRENCY.code})</b><button>${t('Clear')}</button></div><div class="price-slider"><span></span><span></span></div><div class="price-labels"><span>${money(0)}</span><span>${money(1500)}+</span></div></div>
       <div class="filter-group"><div class="filter-head"><b>Compatibility</b><button data-clear-filter="model">Clear</button></div><input class="compat-input" id="compatInput" placeholder="Search model compatibility..."><div class="filter-chips">${state.selectedModel ? `<span>${esc(state.selectedModel)} <button data-clear-filter="model">×</button></span>` : '<span>All models</span>'}</div></div>
-      <div class="filter-group"><button class="btn btn-orange" id="applyMobileFilters" style="width:100%">Show ${rows.length} diagrams</button></div>
+      <div class="filter-group"><button class="btn btn-orange" id="applyMobileFilters" style="width:100%">${esc(state.language === 'id' ? `Tampilkan ${rows.length} diagram` : `Show ${rows.length} diagrams`)}</button></div>
     </aside>`;
   }
 
@@ -517,13 +644,19 @@
     if (state.page > pages) state.page = pages;
     const start = (state.page - 1) * PAGE_SIZE;
     const pageRows = rows.slice(start, start + PAGE_SIZE);
-    const title = state.selectedCategory ? `${state.selectedCategory} Parts` : state.selectedModel ? `${state.selectedModel} Parts` : 'Tractor Parts & Assembly Diagrams';
-    const context = state.selectedModel ? `Browse system diagrams and find the exact parts you need for your ${state.selectedModel}.` : 'Browse official assembly diagrams, then order exact spare parts by callout and part number.';
+    const title = state.selectedCategory ? `${state.selectedCategory} ${t('Parts')}` : state.selectedModel ? `${state.selectedModel} ${t('Parts')}` : (state.language === 'id' ? 'Suku Cadang Traktor & Diagram Rangkaian' : 'Tractor Parts & Assembly Diagrams');
+    const context = state.selectedModel
+      ? (state.language === 'id' ? `Telusuri diagram sistem dan temukan suku cadang yang tepat untuk ${state.selectedModel}.` : `Browse system diagrams and find the exact parts you need for your ${state.selectedModel}.`)
+      : (state.language === 'id' ? 'Telusuri diagram rangkaian resmi, lalu pesan suku cadang berdasarkan nomor penunjuk dan nomor part.' : 'Browse official assembly diagrams, then order exact spare parts by callout and part number.');
+    const resultLabel = state.language === 'id' ? `${rows.length} ${t('Assembly Diagrams Found')}` : `${rows.length} Assembly Diagrams Found`;
+    const resultSummary = state.language === 'id'
+      ? `Menampilkan ${rows.length ? start + 1 : 0} sampai ${Math.min(start + PAGE_SIZE, rows.length)} dari ${rows.length} diagram`
+      : `Showing ${rows.length ? start + 1 : 0} to ${Math.min(start + PAGE_SIZE, rows.length)} of ${rows.length} diagrams`;
     app.innerHTML = `<section class="page-section"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a>${state.selectedModel ? `<a href="${routeHash('catalog', { model: state.selectedModel })}">${esc(state.selectedModel)}</a>` : ''}${state.selectedCategory ? `<span>${esc(state.selectedCategory)}</span>` : ''}</nav>
-      <div class="catalog-title-row"><div class="catalog-title"><h1>${esc(title)} <span>${rows.length} Assembly Diagrams Found</span></h1><p>${esc(context)}</p></div><div class="help-card">${icon('i-engine', 34)}<span><b>Need help finding parts?</b><small>Our parts experts are here for you.</small></span><button data-contact>Contact Us</button></div></div>
+      <div class="catalog-title-row"><div class="catalog-title"><h1>${esc(title)} <span>${esc(resultLabel)}</span></h1><p>${esc(context)}</p></div><div class="help-card">${icon('i-engine', 34)}<span><b>Need help finding parts?</b><small>Our parts experts are here for you.</small></span><button data-contact>Contact Us</button></div></div>
       <div class="catalog-layout">${filterSidebarHtml(rows)}<div class="catalog-main"><div class="catalog-toolbar"><button class="mobile-filter-trigger" id="mobileFilterTrigger">${icon('i-filter', 15)}Filters</button><span class="toolbar-label">Sort by:</span><select class="sort-select" id="catalogSort"><option value="recommended">Recommended</option><option value="parts">Most parts</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Name A–Z</option></select><div class="active-filters"><span>Active Filters:</span>${activeFilterHtml()}${activeFilterHtml() ? '<button class="clear-all" id="clearAllFilters">Clear All</button>' : ''}</div><div class="view-controls"><span>View:</span><button id="gridViewButton" class="${state.view === 'grid' ? 'active' : ''}">${icon('i-grid', 16)}</button><button id="listViewButton" class="${state.view === 'list' ? 'active' : ''}">${icon('i-list', 16)}</button></div></div>
       <div class="assembly-grid ${state.view === 'list' ? 'product-list' : ''}">${pageRows.length ? pageRows.map(productCard).join('') : `<div class="empty-state">${icon('i-search', 48)}<div><h3>No matching diagrams</h3><p>Try a broader model, system or part-number search.</p><button class="btn btn-orange" id="emptyReset" style="margin-top:15px">Reset filters</button></div></div>`}</div>
-      <div class="catalog-results-summary">Showing ${rows.length ? start + 1 : 0} to ${Math.min(start + PAGE_SIZE, rows.length)} of ${rows.length} diagrams</div>${paginationHtml(pages)}</div></div></div></section>`;
+      <div class="catalog-results-summary">${esc(resultSummary)}</div>${paginationHtml(pages)}</div></div></div></section>`;
 
     $('#catalogSort').value = state.sort;
     $('#catalogSort').onchange = event => { state.sort = event.target.value; state.page = 1; renderCatalog(); };
@@ -937,6 +1070,7 @@
     else if (['help', 'contact', 'deals', 'about', 'terms'].includes(name)) renderContentPage(name);
     else renderNotFound('Page not found');
     updateHeaderActiveState();
+    localizeVisibleCopy();
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
   }
 
@@ -971,10 +1105,29 @@
     $('#viewAllModelsButton').onclick = () => go('models');
     $('#modelStripLinks').addEventListener('click', event => { const button = event.target.closest('[data-header-model]'); if (button) go('catalog', { model: button.dataset.headerModel }); });
     $('#accountButton').onclick = () => openModal('My Account', 'Account integration', '<div class="content-card" style="border:0;padding:4px"><h2>Customer account area</h2><p>Connect this button to your authentication provider and customer profile API. Cart and saved assemblies currently persist locally for guest users.</p><button class="btn btn-orange" data-modal-close>Continue as Guest</button></div>');
-    $('#langButton').onclick = () => toast('Language selector', 'English is active. Add translated catalog content through the CMS.');
-    $('#currencyButton').onclick = () => toast('Currency', `${CURRENCY.code} display is active. Server quotations remain authoritative.`);
+    const togglePreferenceMenu = (menuId, buttonId) => {
+      const menu = $(menuId);
+      const opening = !menu.classList.contains('open');
+      closePreferenceMenus();
+      menu.classList.toggle('open', opening);
+      $(buttonId).setAttribute('aria-expanded', String(opening));
+    };
+    $('#langButton').onclick = () => togglePreferenceMenu('#langMenu', '#langButton');
+    $('#currencyButton').onclick = () => togglePreferenceMenu('#currencyMenu', '#currencyButton');
+    $$('[data-language]').forEach(button => button.onclick = () => { setLanguage(button.dataset.language, true); closePreferenceMenus(); });
+    $$('[data-currency]').forEach(button => button.onclick = () => { setCurrency(button.dataset.currency, true); closePreferenceMenus(); });
+    $('#supportFab').onclick = () => {
+      const open = !$('#supportPanel').classList.contains('open');
+      $('#supportPanel').classList.toggle('open', open);
+      $('#supportFab').setAttribute('aria-expanded', String(open));
+    };
+    $('#supportClose').onclick = () => { $('#supportPanel').classList.remove('open'); $('#supportFab').setAttribute('aria-expanded', 'false'); };
+    document.addEventListener('click', event => {
+      if (!event.target.closest('.preference-control')) closePreferenceMenus();
+      if (!event.target.closest('#supportWidget')) { $('#supportPanel').classList.remove('open'); $('#supportFab').setAttribute('aria-expanded', 'false'); }
+    });
     $('#newsletterForm').onsubmit = event => { event.preventDefault(); toast('Subscription captured', 'Connect this form to your email-marketing endpoint.'); event.currentTarget.reset(); };
-    document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeModal(); closeCart(); closeFilterDrawer(); $('.main-nav').classList.remove('open'); } });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeModal(); closeCart(); closeFilterDrawer(); closePreferenceMenus(); $('#supportPanel').classList.remove('open'); $('#supportFab').setAttribute('aria-expanded', 'false'); $('.main-nav').classList.remove('open'); } });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && Date.now() - lastCatalogRefreshAt >= 300_000) refreshCatalogControl();
     });
@@ -987,6 +1140,7 @@
     try {
       await loadCatalog();
       await route();
+      detectVisitorMarket();
     } catch (error) {
       console.error('[boot]', error);
       state.loading = false;
