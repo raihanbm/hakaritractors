@@ -1,10 +1,12 @@
 {
-  "name": "hikari-tractors-catalog",
+  "name": "hikari-tractors-storefront-v4",
   "private": true,
-  "version": "0.1.0",
-  "description": "Hikari Tractors Indonesia export-ready tractor spare parts catalog.",
+  "version": "1.0.0",
+  "description": "Hikari Tractors model-first exploded-diagram storefront and RFQ catalog.",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
-    "check": "node scripts/verify.mjs"
+    "check": "node scripts/verify.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "audit": "npm run check && npm test && node scripts/audit-v4.mjs"
   }
 }

@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-08-05T00:20:30.078Z",
+  "release": "storefront-v4",
+  "status": "PASS",
+  "checks": {
+    "passed": 15,
+    "total": 15,
+    "details": {
+      "storefrontV4Assets": true,
+      "noInlineEventHandlers": true,
+      "uniqueStaticElementIds": true,
+      "noEmbeddedSecretMarkers": true,
+      "robotsAllowsHomepage": true,
+      "catalogAndSheetIndexAligned": true,
+      "searchIndexPresent": true,
+      "modelFirstNavigation": true,
+      "diagramPartsTable": true,
+      "rfqSubmissionAndFallback": true,
+      "adminControlMapping": true,
+      "fiveMinuteRefresh": true,
+      "responsiveBreakpoints": true,
+      "allCatalogRowsHaveImages": true,
+      "allCatalogRowsHaveParts": true
+    }
+  },
+  "inventory": {
+    "files": 2981,
+    "bytes": 455634777,
+    "assemblyDiagrams": 913,
+    "sheetMetadataRecords": 913,
+    "orderablePartRows": 14237,
+    "models": [
+      "L3608",
+      "L4400DT",
+      "L5018DT-NES",
+      "M9000DT",
+      "M9540DT",
+      "MX5000DT",
+      "MX5100DT"
+    ],
+    "categories": 18,
+    "partNumberIndexKeys": 12606,
+    "controlledProducts": 913,
+    "controlledPartEntries": 2
+  },
+  "knownProductionConnections": [
+    "Replace phone, email and currency values in assets/js/runtime-config.js.",
+    "Confirm catalogApiBase and its public-catalog, public-media and public-orders routes.",
+    "Connect customer authentication; current account button is an explicit placeholder.",
+    "Connect newsletter endpoint; current form only shows an honest local notice.",
+    "Add analytics/consent only after selecting the production provider.",
+    "Perform final visual QA in a normal browser at desktop, tablet and mobile widths."
+  ]
+}

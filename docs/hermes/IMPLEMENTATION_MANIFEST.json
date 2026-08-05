@@ -1,0 +1,24 @@
+{
+  "release": "storefront-v4",
+  "entry": "index.html",
+  "activeStylesheet": "assets/css/main.css",
+  "activeApplication": "assets/js/app.js",
+  "runtimeConfiguration": "assets/js/runtime-config.js",
+  "routes": ["home", "catalog", "diagram", "models", "rfq", "help", "contact", "deals", "about", "terms"],
+  "localData": {
+    "catalog": "assets/data/drive-catalog.json",
+    "sheetIndex": "assets/data/sheets-index.json",
+    "partSearch": "assets/data/sheets-search.json",
+    "controlState": "assets/data/catalog-control-state.json",
+    "sheets": "assets/data/sheets/*.json"
+  },
+  "publicApi": {
+    "catalog": "GET /api/public-catalog",
+    "media": "GET /api/public-media?id=...",
+    "assets": "GET /api/public-assets?path=...",
+    "orders": "POST /api/public-orders"
+  },
+  "persistence": ["hikari_view", "hikari_wishlist", "hikari_cart_v4"],
+  "productionPlaceholders": ["customer authentication", "newsletter endpoint", "analytics/consent", "confirmed contact and currency values"],
+  "validation": ["npm run check", "npm test", "npm run audit"]
+}
