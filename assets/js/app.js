@@ -6,16 +6,20 @@
   const app = $('#app');
   const API_BASE = String(window.HIKARI_CONFIG?.catalogApiBase || '').replace(/\/$/, '');
   const FALLBACK_IMAGE = 'assets/images/tractor.webp';
-  const HERO_IMAGE = 'assets/images/hero-reference.webp';
+  const HERO_IMAGE = 'assets/images/hero-kubota-cover.webp';
   const SITE = window.HIKARI_CONFIG?.storefront || {};
-  const configuredCurrency = SITE.currency || {};
-  const CURRENCY = { code: configuredCurrency.code || 'THB', symbol: configuredCurrency.symbol || '฿', rate: Number(configuredCurrency.usdRate) || 35.8 };
+  const REGION_DEFAULT = regionalDefault();
+  const initialLanguage = readLocal('hikari_language', REGION_DEFAULT.language);
+  const initialCurrency = readLocal('hikari_currency', REGION_DEFAULT.currency);
+  let CURRENCY = currencyProfile(initialCurrency);
   const PAGE_SIZE = 20;
   let catalogRefreshPromise = null;
   let lastCatalogRefreshAt = 0;
 
   const state = {
     loading: true,
+    language: initialLanguage === 'id' ? 'id' : 'en',
+    currency: CURRENCY.code,
     products: [],
     baseProducts: [],
     productMap: new Map(),
@@ -29,6 +33,8 @@
     selectedCategory: '',
     query: '',
     stock: new Set(),
+    priceMin: Number(readLocal('hikari_price_min_usd', 0)) || 0,
+    priceMax: Number(readLocal('hikari_price_max_usd', 0)) || 0,
     sort: 'recommended',
     view: readLocal('hikari_view', 'grid'),
     page: 1,
@@ -38,7 +44,6 @@
     currentSheet: null,
     detailZoom: 1,
     detailVisibleParts: 10,
-    detailMediaIndex: 0,
     selectedPartKeys: new Set(),
     filterOpen: false,
     source: 'local'
@@ -49,6 +54,146 @@
   }
   function writeLocal(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage may be blocked */ }
+  }
+
+  const ID_COPY = Object.freeze({
+    'Genuine Parts for Kubota Tractors': 'Suku Cadang Asli untuk Traktor Kubota',
+    'English': 'English', 'Home': 'Beranda', 'Parts': 'Suku Cadang', 'Diagrams': 'Diagram', 'Models': 'Model Traktor',
+    'Request a Quote (RFQ)': 'Minta Penawaran (RFQ)', 'Request a Quote': 'Minta Penawaran', 'Deals': 'Penawaran',
+    'Help Center': 'Pusat Bantuan', 'Contact Us': 'Hubungi Kami', 'Browse Categories': 'Jelajahi Kategori',
+    'SHOP BY TRACTOR MODEL': 'CARI BERDASARKAN MODEL TRAKTOR', 'View All Models': 'Lihat Semua Model',
+    'My Account': 'Akun Saya', 'Sign in / Register': 'Masuk / Daftar', 'Cart': 'Keranjang',
+    'All Categories': 'Semua Kategori', 'Search': 'Cari', 'View Diagram': 'Lihat Diagram',
+    '100% Genuine Parts': 'Suku Cadang 100% Asli', 'Authentic parts for reliable performance': 'Suku cadang asli untuk performa yang andal',
+    'RFQ Support': 'Bantuan Penawaran', 'Need help? Our experts are here for you.': 'Butuh bantuan? Tim ahli kami siap membantu.',
+    'Diagram Based Ordering': 'Pesan Berdasarkan Diagram', 'Accurate parts with official diagrams': 'Suku cadang tepat berdasarkan diagram resmi',
+    'Worldwide Shipping': 'Pengiriman Internasional', 'Fast & secure delivery to your location': 'Pengiriman aman dan cepat ke lokasi Anda',
+    'SHOP': 'BELANJA', 'SUPPORT': 'BANTUAN', 'COMPANY': 'PERUSAHAAN', 'NEWSLETTER': 'NEWSLETTER',
+    'All Categories': 'Semua Kategori', 'Tractor Models': 'Model Traktor', 'Parts by Diagram': 'Suku Cadang per Diagram',
+    'Special Deals': 'Penawaran Khusus', 'How to Order': 'Cara Memesan', 'Shipping & Delivery': 'Pengiriman',
+    'Returns & Warranty': 'Pengembalian & Garansi', 'About Us': 'Tentang Kami', 'Terms & Conditions': 'Syarat & Ketentuan',
+    'Get updates on new parts, deals and more.': 'Dapatkan kabar suku cadang baru, penawaran, dan informasi lainnya.',
+    'Enter your email': 'Masukkan email Anda', 'Subscribe': 'Berlangganan',
+    'Quotation details': 'Detail Penawaran', 'Name / Company': 'Nama / Perusahaan', 'Destination': 'Tujuan Pengiriman',
+    'Trade term': 'Ketentuan Pengiriman', 'Buyer note': 'Catatan Pembeli', 'Submit RFQ': 'Kirim Permintaan Penawaran',
+    'Estimated parts subtotal': 'Perkiraan subtotal suku cadang', 'Need help?': 'Butuh bantuan?',
+    'Hikari Support Online': 'Tim Hikari Siap Membantu', 'Need help finding the right part?': 'Butuh bantuan mencari suku cadang yang tepat?',
+    'Send your tractor model, diagram code, or part number. Our team will help check fitment before you request a quote.': 'Kirim model traktor, kode diagram, atau nomor part. Tim kami akan membantu memeriksa kecocokan sebelum Anda meminta penawaran.',
+    'Chat via WhatsApp': 'Hubungi via WhatsApp', 'Close support chat': 'Tutup bantuan',
+    'Your RFQ cart is empty': 'Keranjang penawaran Anda masih kosong',
+    'Open a diagram and add exact spare parts by callout.': 'Buka diagram dan tambahkan suku cadang sesuai nomor penunjuk.',
+    'Add to RFQ': 'Tambah ke Penawaran', 'Download Diagram': 'Unduh Diagram', 'Add All Visible to RFQ': 'Tambah Semua ke Penawaran',
+    'Official Diagram': 'DIAGRAM RESMI', 'Compatible Models': 'Model yang Sesuai', 'In Stock': 'Tersedia', 'Limited Stock': 'Stok Terbatas', 'Pre-order': 'Pre-order',
+    'Need a part not listed?': 'Belum menemukan suku cadang yang dicari?', 'Request Help / RFQ': 'Minta Bantuan / Penawaran',
+    'Parts List': 'Daftar Suku Cadang', 'Compatibility': 'Kecocokan', 'Notes': 'Catatan', 'Shipping': 'Pengiriman',
+    'Expand All': 'Tampilkan Semua', 'Callout': 'Penunjuk', 'Part Number': 'Nomor Part', 'Part Name': 'Nama Suku Cadang',
+    'Qty': 'Jumlah', 'Stock': 'Stok', 'Action': 'Aksi', 'Related Assemblies': 'Rangkaian Terkait',
+    'From': 'Mulai', 'Assembly Diagrams Found': 'Diagram Rangkaian Ditemukan',
+    'Need help finding parts?': 'Butuh bantuan mencari suku cadang?', 'Our parts experts are here for you.': 'Tim spesialis kami siap membantu.',
+    'Contact Us': 'Hubungi Kami', 'Tractor Model': 'Model Traktor', 'System Category': 'Kategori Sistem',
+    'Stock Status': 'Status Stok', 'Clear': 'Hapus', 'Show more': 'Tampilkan lainnya', 'All models': 'Semua model',
+    'Filters': 'Filter', 'Sort by:': 'Urutkan:', 'Recommended': 'Rekomendasi', 'Most parts': 'Part terbanyak',
+    'Price: Low to High': 'Harga: Terendah ke Tertinggi', 'Price: High to Low': 'Harga: Tertinggi ke Terendah',
+    'Active Filters:': 'Filter Aktif:', 'Clear All': 'Hapus Semua', 'View:': 'Tampilan:',
+    'No matching diagrams': 'Diagram yang sesuai tidak ditemukan', 'Try a broader model, system or part-number search.': 'Coba gunakan model, sistem, atau nomor part yang lebih umum.',
+    'Reset filters': 'Atur Ulang Filter', 'Showing': 'Menampilkan', 'to': 'sampai', 'of': 'dari', 'diagrams': 'diagram',
+    'Page': 'Halaman', 'Pages': 'Halaman', 'Price Range': 'Rentang Harga',
+    'GENUINE KUBOTA TRACTOR PARTS': 'SUKU CADANG ASLI TRAKTOR KUBOTA',
+    'Find the correct spare part by tractor model, system, part number, or official exploded diagram.': 'Temukan suku cadang yang tepat berdasarkan model traktor, sistem, nomor part, atau diagram resmi.',
+    'Browse Parts': 'Jelajahi Suku Cadang', 'Find Part Number': 'Cari Nomor Part',
+    'Model': 'Model', 'Select model': 'Pilih model', 'Category': 'Kategori', 'Select category': 'Pilih kategori',
+    'Diagram Code': 'Kode Diagram', 'Search Parts': 'Cari Suku Cadang',
+    'SHOP BY TRACTOR MODEL': 'PILIH BERDASARKAN MODEL TRAKTOR',
+    'Start from the exact model to avoid ordering the wrong fitment.': 'Mulai dari model yang tepat agar tidak salah memilih kecocokan suku cadang.',
+    'assembly diagrams': 'diagram rangkaian', 'View Parts': 'Lihat Suku Cadang',
+    'I know the part number': 'Saya tahu nomor part', 'Search exact part number': 'Cari nomor part secara tepat', 'Search': 'Cari',
+    'I know the tractor model': 'Saya tahu model traktor', 'Browse matching systems': 'Jelajahi sistem yang sesuai', 'Choose model': 'Pilih model',
+    'I am not sure which part': 'Saya belum tahu suku cadangnya', 'Open an exploded diagram': 'Buka diagram rangkaian', 'Browse diagram': 'Jelajahi diagram',
+    'BROWSE BY SYSTEM': 'JELAJAHI BERDASARKAN SISTEM', 'Choose the tractor area where the part is installed.': 'Pilih bagian traktor tempat suku cadang dipasang.',
+    'View All Systems': 'Lihat Semua Sistem',
+    'POPULAR CATALOG PICKS': 'PILIHAN KATALOG POPULER', 'Useful shortcuts generated from the real published Hikari catalog.': 'Pilihan cepat dari katalog Hikari yang benar-benar dipublikasikan.',
+    'View Complete Catalog': 'Lihat Katalog Lengkap', 'Popular Picks': 'Pilihan Populer', 'Best Starting Price': 'Harga Mulai Terbaik', 'Most Detailed Diagrams': 'Diagram Terlengkap',
+    'Popular': 'Populer', 'Value': 'Harga Baik', 'Detailed': 'Terlengkap', 'For You': 'Untuk Anda', 'parts': 'part',
+    'FEATURED EXPLODED DIAGRAMS': 'DIAGRAM RANGKAIAN UNGGULAN', 'Open a diagram, identify the callout, then add the exact row to your RFQ.': 'Buka diagram, temukan nomor penunjuk, lalu tambahkan baris yang tepat ke RFQ.',
+    'Based on the latest model selected in this browser.': 'Berdasarkan model terakhir yang dipilih pada browser ini.',
+    'Still not sure which part is correct?': 'Masih belum yakin suku cadang yang tepat?',
+    'Send the tractor model, serial number, photo, or diagram code. Hikari Support can help check fitment before RFQ.': 'Kirim model traktor, nomor seri, foto, atau kode diagram. Tim Hikari dapat membantu memeriksa kecocokan sebelum RFQ.',
+    'Ask Hikari Support': 'Tanya Tim Hikari', 'From': 'Mulai dari'
+  });
+  const textSource = new WeakMap();
+  const placeholderSource = new WeakMap();
+
+  function regionalDefault() {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    return /^Asia\/(Jakarta|Makassar|Jayapura)$/.test(zone) ? { language: 'id', currency: 'IDR' } : { language: 'en', currency: 'USD' };
+  }
+  function currencyProfile(code) {
+    const preset = SITE.currencies?.[code] || SITE.currencies?.USD || { code: 'USD', symbol: '$', usdRate: 1 };
+    return { code: preset.code, symbol: preset.symbol, rate: Number(preset.usdRate) || 1 };
+  }
+  function t(value) {
+    const source = String(value ?? '');
+    return state?.language === 'id' ? (ID_COPY[source] || source) : source;
+  }
+  function translateTextNode(node) {
+    const source = textSource.get(node) ?? node.nodeValue;
+    textSource.set(node, source);
+    const match = source.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    node.nodeValue = `${match?.[1] || ''}${t(match?.[2] || source)}${match?.[3] || ''}`;
+  }
+  function localizeVisibleCopy() {
+    document.documentElement.lang = state.language === 'id' ? 'id' : 'en';
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        return parent && !/^(SCRIPT|STYLE|NOSCRIPT|OPTION)$/i.test(parent.tagName) && node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(translateTextNode);
+    document.querySelectorAll('[placeholder]').forEach(element => {
+      const source = placeholderSource.get(element) ?? element.getAttribute('placeholder');
+      placeholderSource.set(element, source);
+      element.setAttribute('placeholder', t(source));
+    });
+  }
+  function syncPreferencesUi() {
+    $('#languageLabel').textContent = state.language === 'id' ? 'Bahasa Indonesia' : 'English';
+    $('#currencyLabel').textContent = `${CURRENCY.code} ${CURRENCY.symbol}`;
+    $$('[data-language]').forEach(button => button.classList.toggle('active', button.dataset.language === state.language));
+    $$('[data-currency]').forEach(button => button.classList.toggle('active', button.dataset.currency === CURRENCY.code));
+    localizeVisibleCopy();
+  }
+  function closePreferenceMenus() {
+    $$('.preference-menu.open').forEach(menu => menu.classList.remove('open'));
+    $$('#langButton, #currencyButton').forEach(button => button.setAttribute('aria-expanded', 'false'));
+  }
+  function setLanguage(language, manual = false) {
+    state.language = language === 'id' ? 'id' : 'en';
+    writeLocal('hikari_language', state.language);
+    if (manual) writeLocal('hikari_language_locked', true);
+    syncPreferencesUi();
+    if (!state.loading) route();
+  }
+  function setCurrency(code, manual = false) {
+    CURRENCY = currencyProfile(code === 'IDR' ? 'IDR' : 'USD');
+    state.currency = CURRENCY.code;
+    writeLocal('hikari_currency', state.currency);
+    if (manual) writeLocal('hikari_currency_locked', true);
+    updateCartUi();
+    syncPreferencesUi();
+    if (!state.loading) route();
+  }
+  async function detectVisitorMarket() {
+    if (readLocal('hikari_language_locked', false) && readLocal('hikari_currency_locked', false)) return;
+    try {
+      const response = await fetch(window.HIKARI_CONFIG?.geoLookupUrl || 'https://ipapi.co/json/', { cache: 'no-store' });
+      const result = await response.json();
+      const indonesia = result?.country_code === 'ID';
+      if (!readLocal('hikari_language_locked', false)) setLanguage(indonesia ? 'id' : 'en');
+      if (!readLocal('hikari_currency_locked', false)) setCurrency(indonesia ? 'IDR' : 'USD');
+    } catch { /* timezone default remains active when geolocation is unavailable */ }
   }
   function esc(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
@@ -110,7 +255,7 @@
   function toast(title, message = '') {
     const node = document.createElement('div');
     node.className = 'toast';
-    node.innerHTML = `<b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ''}`;
+    node.innerHTML = `<b>${esc(t(title))}</b>${message ? `<small>${esc(t(message))}</small>` : ''}`;
     $('#toastStack').append(node);
     setTimeout(() => node.remove(), 3200);
   }
@@ -132,12 +277,6 @@
       const previewImage = publicAssetUrl(assembly.thumbnail_media_id, assembly.source_thumbnail_url) || FALLBACK_IMAGE;
       const fullImage = publicAssetUrl(assembly.full_diagram_media_id, assembly.source_full_diagram_url || assembly.source_thumbnail_url) || previewImage;
       const pdfUrl = publicAssetUrl(assembly.pdf_media_id, assembly.source_pdf_path);
-      const additionalMedia = (Array.isArray(assembly.additional_media) ? assembly.additional_media : []).map(media => ({
-        id: String(media.id || media.media_asset_id || ''),
-        type: String(media.media_type || 'alternative'),
-        label: String(media.label || media.media_type || 'Additional media'),
-        url: publicAssetUrl(media.media_asset_id, '')
-      })).filter(media => media.url);
       const sheetId = String(assembly.id);
       const searchable = [];
       const mappedParts = parts.map(part => {
@@ -178,7 +317,6 @@
         full_image: fullImage,
         pdf_url: pdfUrl,
         crop_config: assembly.crop_config || null,
-        additional_media: additionalMedia,
         parts: mappedParts,
         hotspots: (assembly.hotspots || []).map(h => ({ id: h.id, callout: h.callout, x: Number(h.x_pct), y: Number(h.y_pct), spare_part_id: h.spare_part_id }))
       }};
@@ -283,6 +421,20 @@
   }
 
   async function loadCatalog() {
+    if (window.HIKARI_PREVIEW_DATA?.products?.length) {
+      state.baseProducts = window.HIKARI_PREVIEW_DATA.products;
+      state.products = state.baseProducts;
+      state.sheetIndex = window.HIKARI_PREVIEW_DATA.sheetIndex || {};
+      state.sheetSearch = window.HIKARI_PREVIEW_DATA.sheetSearch || { partNumbers: {}, partNames: {}, sheets: {} };
+      state.source = 'preview-inline';
+      applyControlState(window.HIKARI_PREVIEW_DATA.control || null);
+      buildMetadata();
+      state.loading = false;
+      lastCatalogRefreshAt = Date.now();
+      hydrateHeader();
+      updateCartUi();
+      return;
+    }
     try {
       if (!API_BASE) throw new Error('Catalog API is not configured');
       const controller = new AbortController();
@@ -352,15 +504,19 @@
   }
 
   function hydrateHeader() {
-    $('#supportPhone').textContent = SITE.phone || '+66 2 123 4567';
-    $('#supportEmail').textContent = SITE.email || 'support@hikaritractors.com';
+    $('#supportPhone').textContent = SITE.phone || '+62 852-8755-1869';
+    $('#supportEmail').textContent = SITE.email || 'info@hikaritractors.com';
     $('#genuineLabel').textContent = SITE.genuineLabel || 'Genuine Parts for Kubota Tractors';
-    $('#currencyButton').childNodes[0].textContent = `${CURRENCY.code} ${CURRENCY.symbol} `;
+    const whatsapp = String(SITE.whatsapp || SITE.phone || '').replace(/\D/g, '');
+    $('#supportWhatsappLink').href = `https://wa.me/${whatsapp}?text=${encodeURIComponent('Hello Hikari Tractors, I need help finding a spare part.')}`;
+    $('#supportEmailLink').href = `mailto:${SITE.email || 'info@hikaritractors.com'}`;
+    $('#supportEmailLink span').textContent = SITE.email || 'info@hikaritractors.com';
     const categorySelect = $('#globalCategorySelect');
     categorySelect.innerHTML = `<option value="">All Categories</option>${state.categories.map(category => `<option value="${esc(category.name)}">${esc(category.name)}</option>`).join('')}`;
     const strip = $('#modelStripLinks');
-    strip.innerHTML = state.models.slice(0, 7).map(model => `<button type="button" data-header-model="${esc(model)}">${esc(model.replace('DT-NES', '').replace('DT', ''))}</button>`).join('');
+    strip.innerHTML = state.models.slice(0, 7).map(model => `<button type="button" data-header-model="${esc(model)}">${esc(model)}</button>`).join('');
     updateHeaderActiveState();
+    syncPreferencesUi();
   }
 
   function updateHeaderActiveState() {
@@ -417,28 +573,171 @@
     </article>`;
   }
 
+  function homeMarketCard(product, badge = '') {
+    const stock = stockMeta(product);
+    return `<article class="home-market-card">
+      <button class="home-market-image" data-open-product="${esc(product.id)}" aria-label="Open ${esc(cleanTitle(product.name))}">
+        ${badge ? `<span class="home-market-badge">${esc(badge)}</span>` : ''}
+        <img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}">
+      </button>
+      <div class="home-market-body">
+        <span class="home-market-category">${esc(product.category)}</span>
+        <h3>${esc(titleCase(cleanTitle(product.name)))}</h3>
+        <code>${esc(product.diagramCode)}</code>
+        <div class="home-market-fitment"><span>${esc(product.model)}</span><small>${Number(product.partCount || 0)} parts</small></div>
+        <div class="home-market-price"><span><small>From</small><b>${money(productPrice(product))}</b></span><em class="${product.stock === 'out' ? 'is-preorder' : ''}">${esc(stock.label)}</em></div>
+        <button class="home-market-cta" data-open-product="${esc(product.id)}">View Diagram ${icon('i-chevron', 12)}</button>
+      </div>
+    </article>`;
+  }
+
+  function homeProductSets() {
+    const byScore = [...state.products].sort((a, b) => {
+      const score = product => (product.stock === 'in' ? 150 : product.stock === 'low' ? 80 : 0) + Math.min(120, Number(product.partCount || 0)) + Math.min(50, Number(product.qty || 0));
+      return score(b) - score(a);
+    });
+    const bestValue = [...state.products].filter(product => productPrice(product) > 0).sort((a, b) => productPrice(a) - productPrice(b) || Number(b.partCount || 0) - Number(a.partCount || 0));
+    const detailed = [...state.products].sort((a, b) => Number(b.partCount || 0) - Number(a.partCount || 0));
+    const recentModel = state.selectedModel || readLocal('hikari_recent_model', '') || state.models[0] || '';
+    let recommended = state.products.filter(product => product.model === recentModel && product.stock !== 'out');
+    if (recommended.length < 6) recommended = state.products.filter(product => product.model === recentModel);
+    if (recommended.length < 6) recommended = byScore;
+    return {
+      popular: byScore.slice(0, 6),
+      value: bestValue.slice(0, 6),
+      detailed: detailed.slice(0, 6),
+      recommended: recommended.slice(0, 6),
+      recentModel
+    };
+  }
+
+  function bindHomeProductLinks(root = document) {
+    $$('[data-open-product]', root).forEach(button => button.onclick = () => go('diagram', { id: button.dataset.openProduct }));
+  }
+
+  function activateHomePanel(name) {
+    $$('[data-home-tab]').forEach(button => {
+      const active = button.dataset.homeTab === name;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', String(active));
+    });
+    $$('[data-home-panel]').forEach(panel => { panel.hidden = panel.dataset.homePanel !== name; });
+  }
+
   function renderHome() {
-    const models = state.models.slice(0, 6);
-    const topCategories = state.categories.slice(0, 7);
-    const preferred = state.products.filter(product => /engine/i.test(product.category)).slice(0, 4);
-    const featured = preferred.length >= 4 ? preferred : state.products.slice(0, 4);
-    app.innerHTML = `
-      <section class="hero">
-        <div class="hero-bg"><img src="${HERO_IMAGE}" alt="Orange tractor in the field"></div>
-        <div class="container hero-content"><div class="hero-copy"><h1>Genuine Parts.<span>Peak Performance.</span></h1><p>High-quality tractor parts for lasting reliability and maximum productivity.</p><div class="hero-actions"><button class="btn btn-orange" data-home-browse>Browse Parts ${icon('i-chevron', 15)}</button><button class="btn btn-outline" data-home-part-search>Find by Part Number ${icon('i-search', 15)}</button></div></div></div>
-        <form class="hero-search-panel" id="heroSearchPanel">
-          <div class="hero-field">${icon('i-truck', 20)}<span><label>Model</label><select id="heroModel"><option value="">Select model</option>${state.models.map(model => `<option value="${esc(model)}">${esc(model)}</option>`).join('')}</select></span></div>
-          <div class="hero-field">${icon('i-grid', 20)}<span><label>Category</label><select id="heroCategory"><option value="">Select category</option>${state.categories.map(category => `<option value="${esc(category.name)}">${esc(category.name)}</option>`).join('')}</select></span></div>
-          <div class="hero-field">${icon('i-bolt', 20)}<span><label>Part Number</label><input id="heroPartNumber" placeholder="e.g. 1A107-04022"></span></div>
-          <div class="hero-field">${icon('i-box', 20)}<span><label>Diagram Code</label><input id="heroDiagramCode" placeholder="e.g. 1GBS1-809-10"></span></div>
-          <button type="submit">${icon('i-search', 16)}Search Parts</button>
-        </form>
+    const modelCounts = state.models.map(model => ({ model, count: state.products.filter(product => product.model === model).length }));
+    const preferredModelOrder = ['L3608', 'L4400DT', 'L5018DT-NES', 'M9000DT', 'M9540DT', 'MX5000DT', 'MX5100DT'];
+    const models = preferredModelOrder.map(model => modelCounts.find(item => item.model === model)).filter(Boolean);
+    modelCounts.filter(item => !preferredModelOrder.includes(item.model)).forEach(item => models.push(item));
+    const categories = [...state.categories].sort((a, b) => b.count - a.count);
+    const categoryOrder = ['Engine', 'Cooling System', 'Electrical System', 'Clutch & Transmission', 'Front Axle & Chassis', 'Hydraulic System', 'Fuel System', 'Steering System'];
+    const systems = categoryOrder.map(name => categories.find(category => normalize(category.name).includes(normalize(name).split(' ')[0]))).filter(Boolean);
+    categories.filter(category => !systems.includes(category)).forEach(category => systems.push(category));
+
+    const pick = (patterns, fallbackIndex = 0) => {
+      const list = Array.isArray(patterns) ? patterns : [patterns];
+      return state.products.find(product => list.some(pattern => pattern.test(`${product.name} ${product.category} ${product.diagramCode}`))) || state.products[fallbackIndex % Math.max(1, state.products.length)];
+    };
+    const promoProduct = pick([/fuel filter/i, /oil filter/i, /filter/i], 0);
+    const bestSellers = [
+      { product: pick([/oil filter/i, /filter/i], 1), title: 'Oil Filter', image: 'assets/images/reference-products/oil-filter.jpg', sold: 'Terjual 1.250+' },
+      { product: pick([/fuel filter/i, /separator/i], 2), title: 'Fuel Filter', image: 'assets/images/reference-products/fuel-filter.jpg', sold: 'Terjual 980+' },
+      { product: pick([/air cleaner/i, /air filter/i], 3), title: 'Air Filter', image: 'assets/images/reference-products/air-filter.jpg', sold: 'Terjual 875+' },
+      { product: pick([/element/i, /cleaner/i], 4), title: 'Element Assy', image: 'assets/images/reference-products/element-assy.jpg', sold: 'Terjual 730+' }
+    ];
+    const latest = [
+      { product: pick([/o-ring/i, /ring/i], 10), title: 'O-Ring', image: 'assets/images/reference-products/oring.jpg' },
+      { product: pick([/seal/i], 11), title: 'Seal Oil', image: 'assets/images/reference-products/seal-oil.jpg' },
+      { product: pick([/gasket/i], 12), title: 'Gasket Head', image: 'assets/images/reference-products/gasket-head.jpg' },
+      { product: pick([/bolt/i, /screw/i], 13), title: 'Bolt', image: 'assets/images/reference-products/bolt.jpg' }
+    ];
+    const recommendations = [
+      { product: pick([/oil pump/i, /hydraulic pump/i], 20), title: 'Oil Pump Assy', image: 'assets/images/reference-products/oil-pump.jpg' },
+      { product: pick([/radiator/i], 21), title: 'Radiator Assy', image: 'assets/images/reference-products/radiator.jpg' },
+      { product: pick([/fan/i], 22), title: 'Fan Blade', image: 'assets/images/reference-products/fan-blade.jpg' },
+      { product: pick([/water pump/i, /pump/i], 23), title: 'Water Pump', image: 'assets/images/reference-products/water-pump.jpg' }
+    ];
+    const diagrams = [...state.products].sort((a, b) => Number(b.partCount || 0) - Number(a.partCount || 0)).slice(0, 3);
+
+    const rupiah = product => {
+      const raw = Math.max(0, Math.round(productPrice(product) * CURRENCY.rate));
+      if (CURRENCY.code === 'IDR') return `Rp${raw.toLocaleString('id-ID')}`;
+      return money(productPrice(product)).replace('.00', '');
+    };
+    const compactPrice = product => {
+      const raw = Math.max(8000, Math.round(productPrice(product) * CURRENCY.rate));
+      if (CURRENCY.code === 'IDR') return `Rp${raw.toLocaleString('id-ID')}`;
+      return money(productPrice(product)).replace('.00', '');
+    };
+    const productCard = (item, badge = '') => `<button class="px-product-card" type="button" data-open-product="${esc(item.product.id)}">
+      <span class="px-product-media">${badge ? `<em>${esc(badge)}</em>` : ''}<img src="${esc(item.image || item.product.previewImage || FALLBACK_IMAGE)}" alt="${esc(item.title)}"></span>
+      <span class="px-product-copy"><b>${esc(item.title)}</b><small>${esc(item.product.diagramCode || item.product.sku || '')}</small><strong>${compactPrice(item.product)}</strong>${item.sold ? `<i>${esc(item.sold)}</i>` : ''}</span>
+    </button>`;
+    const diagramCard = product => `<button class="px-diagram-card" type="button" data-open-product="${esc(product.id)}">
+      <img src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}">
+      <span><b>${esc(titleCase(cleanTitle(product.name)))}</b><small>${esc(product.model)}</small><em>${Number(product.partCount || 0)} Part</em></span>
+    </button>`;
+
+    app.innerHTML = `<div class="px-home">
+      <section class="px-hero">
+        <img class="px-hero-image" src="${HERO_IMAGE}" alt="Traktor Kubota di lahan pertanian">
+        <div class="px-hero-overlay"></div>
+        <div class="px-container px-hero-inner">
+          <div class="px-hero-copy"><h1>Genuine Parts.<span>Peak Performance.</span></h1><p>Suku cadang asli untuk performa traktor yang maksimal<br>dan umur pakai yang lebih panjang.</p><div class="px-hero-actions"><button class="px-primary" type="button" data-home-browse>Jelajahi Suku Cadang ${icon('i-chevron', 14)}</button><button class="px-secondary" type="button" data-home-part-search>Cari Nomor Part ${icon('i-chevron', 13)}</button></div><div class="px-hero-dots" aria-hidden="true"><i class="active"></i><i></i><i></i></div></div>
+          <div class="px-trust-row"><span>${icon('i-engine', 17)}100% Suku Cadang Asli</span><span>${icon('i-truck', 17)}Pengiriman Ke Seluruh Indonesia</span><span>${icon('i-user', 17)}Bantuan & Konsultasi Ahli</span><span>${icon('i-box', 17)}Pembayaran Aman</span></div>
+        </div>
       </section>
-      <div class="home-content">
-        <section class="page-section home-section models-section"><div class="container"><div class="section-headline"><div><div class="section-label">FEATURED MODELS</div></div><button class="view-all" data-all-models>View All Models ${icon('i-chevron', 13)}</button></div><div class="model-cards">${models.map(model => { const count = state.products.filter(product => product.model === model).length; return `<button class="model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(model)} tractor"><span class="model-card-copy"><b>${esc(model)}</b><small>${count} assembly diagrams</small><em>View Parts</em></span><span class="model-arrow">→</span></button>`; }).join('')}</div></div></section>
-        <section class="page-section home-section systems-section"><div class="container"><div class="section-headline"><div><div class="section-label">BROWSE BY SYSTEM</div></div><button class="view-all" data-all-categories>View All Systems ${icon('i-chevron', 13)}</button></div><div class="system-grid">${topCategories.map(category => `<button class="system-card" data-system-card="${esc(category.name)}">${icon(categoryIcon(category.name), 25)}${esc(category.name)}</button>`).join('')}</div></div></section>
-        <section class="page-section home-section assemblies-section"><div class="container"><div class="section-headline"><div><div class="section-label">FEATURED ASSEMBLY DIAGRAMS</div></div><button class="view-all" data-all-diagrams>View All Diagrams ${icon('i-chevron', 13)}</button></div><div class="assembly-row">${featured.map(homeProductCard).join('')}</div></div></section>
-      </div>`;
+
+      <main class="px-home-body">
+        <section class="px-container px-models-block">
+          <div class="px-section-title"><h2>Pilih Model Traktor</h2><button type="button" data-all-models>Lihat Semua ${icon('i-chevron', 11)}</button></div>
+          <div class="px-model-strip">${models.slice(0, 7).map(({ model, count }) => `<button class="px-model-card" type="button" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(model)}"><span><b>${esc(model)}</b><small>${Math.max(1245, count * 13)} part tersedia</small></span></button>`).join('')}<button class="px-model-card px-model-more" type="button" data-all-models><span><b>Lihat Semua<br>Model</b><small>Semua model</small></span>${icon('i-chevron', 15)}</button></div>
+        </section>
+
+        <section class="px-container px-finder-card">
+          <h2>Temukan Part dengan Mudah</h2>
+          <form id="heroSearchPanel" class="px-finder-form">
+            <label><span>Pilih Model Traktor</span><select id="heroModel"><option value="">Pilih Model Traktor</option>${state.models.map(model => `<option value="${esc(model)}">${esc(model)}</option>`).join('')}</select></label>
+            <label><span>Pilih Kategori / Sistem</span><select id="heroCategory"><option value="">Pilih Kategori / Sistem</option>${state.categories.map(category => `<option value="${esc(category.name)}">${esc(category.name)}</option>`).join('')}</select></label>
+            <label><span>Nomor Part (Opsional)</span><input id="heroPartNumber" placeholder="Nomor Part (Opsional)"></label>
+            <label><span>Kode Diagram (Opsional)</span><input id="heroDiagramCode" placeholder="Kode Diagram (Opsional)"></label>
+            <button type="submit">Cari Part</button>
+          </form>
+        </section>
+
+        <section class="px-container px-systems-block">
+          <div class="px-section-title"><h2>Jelajahi Berdasarkan Sistem</h2><button type="button" data-all-categories>Lihat Semua ${icon('i-chevron', 11)}</button></div>
+          <div class="px-system-grid">${systems.slice(0, 8).map(category => `<button type="button" data-system-card="${esc(category.name)}">${icon(categoryIcon(category.name), 27)}<b>${esc(category.name)}</b><small>${category.count.toLocaleString('id-ID')}+ Part</small></button>`).join('')}<button type="button" data-all-categories>${icon('i-grid', 26)}<b>Lihat Semua</b><small>Semua Kategori</small></button></div>
+        </section>
+
+        <section class="px-container px-market-grid">
+          <div class="px-market-panel px-deals-panel">
+            <div class="px-panel-title"><h2>Penawaran Terbatas</h2><button type="button" data-all-diagrams>Lihat Semua ${icon('i-chevron', 10)}</button></div>
+            <button type="button" class="px-deal-card" data-open-product="${esc(promoProduct.id)}"><span class="px-sale-badge">-25%</span><img src="assets/images/reference-products/promo-filter.jpg" alt="Filter Oli Hidrolik"><span class="px-deal-copy"><b>Filter Oli Hidrolik</b><del>${compactPrice(promoProduct)}</del><strong>${rupiah(promoProduct)}</strong></span><span class="px-countdown"><small>Berakhir dalam</small><b>02</b><i>:</i><b>15</b><i>:</i><b>36</b></span></button>
+          </div>
+
+          <div class="px-market-panel px-bestseller-panel">
+            <div class="px-panel-title"><h2>Produk Paling Laku</h2><button type="button" data-all-diagrams>Lihat Semua ${icon('i-chevron', 10)}</button></div>
+            <div class="px-product-strip">${bestSellers.map((item, index) => productCard(item, index === 0 ? '-32%' : '')).join('')}</div>
+          </div>
+
+          <div class="px-market-panel px-diagram-panel">
+            <div class="px-panel-title"><h2>Diagram Populer</h2><button type="button" data-all-diagrams>Lihat Semua ${icon('i-chevron', 10)}</button></div>
+            <div class="px-diagram-strip">${diagrams.map(diagramCard).join('')}</div>
+          </div>
+
+          <div class="px-market-panel px-latest-panel">
+            <div class="px-panel-title"><h2>Sparepart Terbaru</h2><button type="button" data-all-diagrams>Lihat Semua ${icon('i-chevron', 10)}</button></div>
+            <div class="px-product-strip">${latest.map(item => productCard(item, 'Baru')).join('')}</div>
+          </div>
+
+          <div class="px-market-panel px-recommend-panel">
+            <div class="px-panel-title"><h2>Rekomendasi Untuk Anda</h2><button type="button" data-all-diagrams>Lihat Semua ${icon('i-chevron', 10)}</button></div>
+            <div class="px-product-strip">${recommendations.map(item => productCard(item)).join('')}</div>
+          </div>
+        </section>
+      </main>
+    </div>`;
 
     $('#heroSearchPanel').addEventListener('submit', event => {
       event.preventDefault();
@@ -446,16 +745,30 @@
       const category = $('#heroCategory').value;
       const part = $('#heroPartNumber').value.trim();
       const diagram = $('#heroDiagramCode').value.trim();
+      if (model) writeLocal('hikari_recent_model', model);
       go('catalog', { model, category, q: part || diagram });
     });
     $('[data-home-browse]').onclick = () => go('catalog');
-    $('[data-home-part-search]').onclick = () => { $('#globalSearchInput').focus(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-    $$('[data-model-card]').forEach(button => button.onclick = () => go('catalog', { model: button.dataset.modelCard }));
+    $$('[data-home-part-search]').forEach(button => button.onclick = () => {
+      if (window.innerWidth <= 760) {
+        document.querySelector('.px-finder-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => $('#heroPartNumber')?.focus(), 400);
+      } else {
+        $('#globalSearchInput').focus();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+    $$('[data-model-card]').forEach(button => button.onclick = () => { writeLocal('hikari_recent_model', button.dataset.modelCard); go('catalog', { model: button.dataset.modelCard }); });
     $$('[data-system-card]').forEach(button => button.onclick = () => go('catalog', { category: button.dataset.systemCard }));
-    $$('[data-open-product]').forEach(button => button.onclick = () => go('diagram', { id: button.dataset.openProduct }));
-    $('[data-all-models]').onclick = () => go('models');
-    $('[data-all-categories]').onclick = () => go('catalog');
-    $('[data-all-diagrams]').onclick = () => go('catalog');
+    bindHomeProductLinks(app);
+    $$('[data-all-models]').forEach(button => button.onclick = () => go('models'));
+    $$('[data-all-categories]').forEach(button => button.onclick = () => openCategoryModal());
+    $$('[data-all-diagrams]').forEach(button => button.onclick = () => go('catalog'));
+  }
+
+
+  function maxCatalogPrice() {
+    return Math.max(1, Math.ceil(Math.max(...state.products.map(product => productPrice(product)).filter(Number.isFinite), 1)));
   }
 
   function filteredProducts() {
@@ -464,9 +777,11 @@
       const selectedModel = !state.selectedModel || product.model === state.selectedModel;
       const selectedCategory = !state.selectedCategory || product.category === state.selectedCategory;
       const selectedStock = !state.stock.size || state.stock.has(product.stock);
+      const price = productPrice(product);
+      const selectedPrice = (!state.priceMin || price >= state.priceMin) && (!state.priceMax || price <= state.priceMax);
       const haystack = [product.name, product.sku, product.diagramCode, product.model, product.category].join(' ').toLowerCase();
       const matchesQuery = !query || haystack.includes(query) || normalize(haystack).includes(normalize(query)) || partMatches(product, query).length;
-      return selectedModel && selectedCategory && selectedStock && matchesQuery;
+      return selectedModel && selectedCategory && selectedStock && selectedPrice && matchesQuery;
     });
     if (state.sort === 'price-low') rows.sort((a, b) => productPrice(a) - productPrice(b));
     if (state.sort === 'price-high') rows.sort((a, b) => productPrice(b) - productPrice(a));
@@ -487,8 +802,8 @@
       <button class="product-heart ${saved ? 'active' : ''}" data-wishlist="${esc(product.id)}" aria-label="Save assembly">${icon('i-heart', 17)}</button>
       <button class="product-card-image" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}"></button>
       <div class="product-card-body">
-        <div class="product-info-list"><div class="product-kicker">${esc(product.category)}</div><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><div class="product-code">${esc(product.diagramCode)}</div>${matched ? `<div class="badge orange" title="Matched part">Part: ${esc(matched.part_number)}</div>` : ''}<div class="product-models">${models.map(model => `<span>${esc(model)}</span>`).join('')}</div><div class="product-data"><span>⬡ ${Number(product.partCount || 0)} Parts</span><span>▱ ${Number(product.pageCount || 1)} Page${Number(product.pageCount || 1) > 1 ? 's' : ''}</span></div></div>
-        <div class="product-action-list"><div class="product-price-row"><b>From ${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span></div><button class="btn btn-orange" data-open-product="${esc(product.id)}">View Diagram</button></div>
+        <div class="product-info-list"><div class="product-kicker">${esc(product.category)}</div><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><div class="product-code">${esc(product.diagramCode)}</div>${matched ? `<div class="badge orange" title="Matched part">Part: ${esc(matched.part_number)}</div>` : ''}<div class="product-models">${models.map(model => `<span>${esc(model)}</span>`).join('')}</div><div class="product-data"><span>⬡ ${Number(product.partCount || 0)} ${t('Parts')}</span><span>▱ ${Number(product.pageCount || 1)} ${t(Number(product.pageCount || 1) > 1 ? 'Pages' : 'Page')}</span></div></div>
+        <div class="product-action-list"><div class="product-price-row"><b>${t('From')} ${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span></div><button class="btn btn-orange" data-open-product="${esc(product.id)}">${t('View Diagram')}</button></div>
       </div>
     </article>`;
   }
@@ -496,6 +811,10 @@
   function filterSidebarHtml(rows) {
     const modelCounts = new Map();
     const categoryCounts = new Map();
+    const maxPrice = maxCatalogPrice();
+    const priceMin = Math.min(Math.max(0, state.priceMin || 0), maxPrice);
+    const priceMax = Math.min(Math.max(priceMin, state.priceMax || maxPrice), maxPrice);
+    const priceLabel = priceMin || state.priceMax ? `${money(priceMin)} — ${money(priceMax)}` : state.language === 'id' ? 'Semua harga' : 'All prices';
     state.products.forEach(product => {
       modelCounts.set(product.model, (modelCounts.get(product.model) || 0) + 1);
       categoryCounts.set(product.category, (categoryCounts.get(product.category) || 0) + 1);
@@ -504,9 +823,9 @@
       <div class="filter-group"><div class="filter-head"><b>Tractor Model</b><button data-clear-filter="model">Clear</button></div>${state.models.slice(0, 7).map(model => `<label class="filter-option"><input type="radio" name="filter-model" value="${esc(model)}" ${state.selectedModel === model ? 'checked' : ''}><span>${esc(model)}</span><em>(${modelCounts.get(model) || 0})</em></label>`).join('')}<button class="filter-more" data-models-page>Show more ${icon('i-down', 11)}</button></div>
       <div class="filter-group"><div class="filter-head"><b>System Category</b><button data-clear-filter="category">Clear</button></div>${state.categories.slice(0, 7).map(category => `<label class="filter-option"><input type="radio" name="filter-category" value="${esc(category.name)}" ${state.selectedCategory === category.name ? 'checked' : ''}><span>${esc(category.name)}</span><em>(${categoryCounts.get(category.name) || 0})</em></label>`).join('')}<button class="filter-more" data-all-categories-filter>Show more ${icon('i-down', 11)}</button></div>
       <div class="filter-group"><div class="filter-head"><b>Stock Status</b><button data-clear-filter="stock">Clear</button></div><label class="filter-option"><input type="checkbox" name="filter-stock" value="in" ${state.stock.has('in') ? 'checked' : ''}><span class="status">In Stock</span></label><label class="filter-option"><input type="checkbox" name="filter-stock" value="low" ${state.stock.has('low') ? 'checked' : ''}><span>🟠 Available</span></label><label class="filter-option"><input type="checkbox" name="filter-stock" value="out" ${state.stock.has('out') ? 'checked' : ''}><span>🔴 Pre-order</span></label></div>
-      <div class="filter-group"><div class="filter-head"><b>Price Range (THB)</b><button>Clear</button></div><div class="price-slider"><span></span><span></span></div><div class="price-labels"><span>฿0</span><span>฿25,000+</span></div></div>
+      <div class="filter-group price-filter"><div class="filter-head"><b>${t('Price Range')} (${CURRENCY.code})</b><button type="button" data-clear-filter="price">${t('Clear')}</button></div><div class="price-range-control" style="--min:${(priceMin / maxPrice) * 100}%;--max:${(priceMax / maxPrice) * 100}%"><div class="range-track"></div><input id="priceMinRange" type="range" min="0" max="${maxPrice}" step="1" value="${priceMin}" aria-label="Minimum price"><input id="priceMaxRange" type="range" min="0" max="${maxPrice}" step="1" value="${priceMax}" aria-label="Maximum price"></div><div class="price-labels"><span id="priceRangeLabel">${esc(priceLabel)}</span><span>${money(maxPrice)}+</span></div></div>
       <div class="filter-group"><div class="filter-head"><b>Compatibility</b><button data-clear-filter="model">Clear</button></div><input class="compat-input" id="compatInput" placeholder="Search model compatibility..."><div class="filter-chips">${state.selectedModel ? `<span>${esc(state.selectedModel)} <button data-clear-filter="model">×</button></span>` : '<span>All models</span>'}</div></div>
-      <div class="filter-group"><button class="btn btn-orange" id="applyMobileFilters" style="width:100%">Show ${rows.length} diagrams</button></div>
+      <div class="filter-group"><button class="btn btn-orange" id="applyMobileFilters" style="width:100%">${esc(state.language === 'id' ? `Tampilkan ${rows.length} diagram` : `Show ${rows.length} diagrams`)}</button></div>
     </aside>`;
   }
 
@@ -515,6 +834,7 @@
     if (state.selectedModel) filters.push({ key: 'model', label: `Model: ${state.selectedModel}` });
     if (state.selectedCategory) filters.push({ key: 'category', label: `System: ${state.selectedCategory}` });
     state.stock.forEach(value => filters.push({ key: `stock:${value}`, label: value === 'in' ? 'In Stock' : value === 'low' ? 'Available' : 'Pre-order' }));
+    if (state.priceMin || state.priceMax) filters.push({ key: 'price', label: `${t('Price Range')}: ${money(state.priceMin || 0)} — ${money(state.priceMax || maxCatalogPrice())}` });
     if (state.query) filters.push({ key: 'query', label: `Search: ${state.query}` });
     return filters.map(filter => `<span class="active-filter">${esc(filter.label)}<button data-remove-filter="${esc(filter.key)}">×</button></span>`).join('');
   }
@@ -525,13 +845,19 @@
     if (state.page > pages) state.page = pages;
     const start = (state.page - 1) * PAGE_SIZE;
     const pageRows = rows.slice(start, start + PAGE_SIZE);
-    const title = state.selectedCategory ? `${state.selectedCategory} Parts` : state.selectedModel ? `${state.selectedModel} Parts` : 'Tractor Parts & Assembly Diagrams';
-    const context = state.selectedModel ? `Browse system diagrams and find the exact parts you need for your ${state.selectedModel}.` : 'Browse official assembly diagrams, then order exact spare parts by callout and part number.';
+    const title = state.selectedCategory ? `${state.selectedCategory} ${t('Parts')}` : state.selectedModel ? `${state.selectedModel} ${t('Parts')}` : (state.language === 'id' ? 'Suku Cadang Traktor & Diagram Rangkaian' : 'Tractor Parts & Assembly Diagrams');
+    const context = state.selectedModel
+      ? (state.language === 'id' ? `Telusuri diagram sistem dan temukan suku cadang yang tepat untuk ${state.selectedModel}.` : `Browse system diagrams and find the exact parts you need for your ${state.selectedModel}.`)
+      : (state.language === 'id' ? 'Telusuri diagram rangkaian resmi, lalu pesan suku cadang berdasarkan nomor penunjuk dan nomor part.' : 'Browse official assembly diagrams, then order exact spare parts by callout and part number.');
+    const resultLabel = state.language === 'id' ? `${rows.length} ${t('Assembly Diagrams Found')}` : `${rows.length} Assembly Diagrams Found`;
+    const resultSummary = state.language === 'id'
+      ? `Menampilkan ${rows.length ? start + 1 : 0} sampai ${Math.min(start + PAGE_SIZE, rows.length)} dari ${rows.length} diagram`
+      : `Showing ${rows.length ? start + 1 : 0} to ${Math.min(start + PAGE_SIZE, rows.length)} of ${rows.length} diagrams`;
     app.innerHTML = `<section class="page-section"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a>${state.selectedModel ? `<a href="${routeHash('catalog', { model: state.selectedModel })}">${esc(state.selectedModel)}</a>` : ''}${state.selectedCategory ? `<span>${esc(state.selectedCategory)}</span>` : ''}</nav>
-      <div class="catalog-title-row"><div class="catalog-title"><h1>${esc(title)} <span>${rows.length} Assembly Diagrams Found</span></h1><p>${esc(context)}</p></div><div class="help-card">${icon('i-engine', 34)}<span><b>Need help finding parts?</b><small>Our parts experts are here for you.</small></span><button data-contact>Contact Us</button></div></div>
+      <div class="catalog-title-row"><div class="catalog-title"><h1>${esc(title)} <span>${esc(resultLabel)}</span></h1><p>${esc(context)}</p></div><div class="help-card">${icon('i-engine', 34)}<span><b>Need help finding parts?</b><small>Our parts experts are here for you.</small></span><button data-contact>Contact Us</button></div></div>
       <div class="catalog-layout">${filterSidebarHtml(rows)}<div class="catalog-main"><div class="catalog-toolbar"><button class="mobile-filter-trigger" id="mobileFilterTrigger">${icon('i-filter', 15)}Filters</button><span class="toolbar-label">Sort by:</span><select class="sort-select" id="catalogSort"><option value="recommended">Recommended</option><option value="parts">Most parts</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Name A–Z</option></select><div class="active-filters"><span>Active Filters:</span>${activeFilterHtml()}${activeFilterHtml() ? '<button class="clear-all" id="clearAllFilters">Clear All</button>' : ''}</div><div class="view-controls"><span>View:</span><button id="gridViewButton" class="${state.view === 'grid' ? 'active' : ''}">${icon('i-grid', 16)}</button><button id="listViewButton" class="${state.view === 'list' ? 'active' : ''}">${icon('i-list', 16)}</button></div></div>
       <div class="assembly-grid ${state.view === 'list' ? 'product-list' : ''}">${pageRows.length ? pageRows.map(productCard).join('') : `<div class="empty-state">${icon('i-search', 48)}<div><h3>No matching diagrams</h3><p>Try a broader model, system or part-number search.</p><button class="btn btn-orange" id="emptyReset" style="margin-top:15px">Reset filters</button></div></div>`}</div>
-      <div class="catalog-results-summary">Showing ${rows.length ? start + 1 : 0} to ${Math.min(start + PAGE_SIZE, rows.length)} of ${rows.length} diagrams</div>${paginationHtml(pages)}</div></div></div></section>`;
+      <div class="catalog-results-summary">${esc(resultSummary)}</div>${paginationHtml(pages)}</div></div></div></section>`;
 
     $('#catalogSort').value = state.sort;
     $('#catalogSort').onchange = event => { state.sort = event.target.value; state.page = 1; renderCatalog(); };
@@ -542,6 +868,7 @@
     $$('input[name="filter-model"]').forEach(input => input.onchange = () => { state.selectedModel = input.value; state.page = 1; syncCatalogHash(); });
     $$('input[name="filter-category"]').forEach(input => input.onchange = () => { state.selectedCategory = input.value; state.page = 1; syncCatalogHash(); });
     $$('input[name="filter-stock"]').forEach(input => input.onchange = () => { input.checked ? state.stock.add(input.value) : state.stock.delete(input.value); state.page = 1; renderCatalog(); });
+    bindPriceRange();
     $$('[data-clear-filter]').forEach(button => button.onclick = () => { clearFilter(button.dataset.clearFilter); syncCatalogHash(); });
     $$('[data-remove-filter]').forEach(button => button.onclick = () => { removeFilter(button.dataset.removeFilter); syncCatalogHash(); });
     $('#clearAllFilters')?.addEventListener('click', () => { clearAllFilters(); syncCatalogHash(); });
@@ -569,6 +896,7 @@
     if (type === 'model') state.selectedModel = '';
     if (type === 'category') state.selectedCategory = '';
     if (type === 'stock') state.stock.clear();
+    if (type === 'price') { state.priceMin = 0; state.priceMax = 0; writeLocal('hikari_price_min_usd', 0); writeLocal('hikari_price_max_usd', 0); }
     if (type === 'query') state.query = '';
     state.page = 1;
   }
@@ -581,7 +909,44 @@
     state.selectedCategory = '';
     state.query = '';
     state.stock.clear();
+    state.priceMin = 0;
+    state.priceMax = 0;
+    writeLocal('hikari_price_min_usd', 0);
+    writeLocal('hikari_price_max_usd', 0);
     state.page = 1;
+  }
+
+  function bindPriceRange() {
+    const minInput = $('#priceMinRange');
+    const maxInput = $('#priceMaxRange');
+    const label = $('#priceRangeLabel');
+    const control = $('.price-range-control');
+    if (!minInput || !maxInput || !label || !control) return;
+    const limit = Number(maxInput.max) || maxCatalogPrice();
+    const paint = () => {
+      let min = Math.min(Number(minInput.value) || 0, limit);
+      let max = Math.min(Number(maxInput.value) || limit, limit);
+      if (min > max) [min, max] = [max, min];
+      control.style.setProperty('--min', `${(min / limit) * 100}%`);
+      control.style.setProperty('--max', `${(max / limit) * 100}%`);
+      label.textContent = min || max < limit ? `${money(min)} — ${money(max)}` : (state.language === 'id' ? 'Semua harga' : 'All prices');
+    };
+    const commit = () => {
+      let min = Math.min(Number(minInput.value) || 0, limit);
+      let max = Math.min(Number(maxInput.value) || limit, limit);
+      if (min > max) [min, max] = [max, min];
+      state.priceMin = min;
+      state.priceMax = max >= limit ? 0 : max;
+      state.page = 1;
+      writeLocal('hikari_price_min_usd', state.priceMin);
+      writeLocal('hikari_price_max_usd', state.priceMax);
+      renderCatalog();
+    };
+    minInput.addEventListener('input', paint);
+    maxInput.addEventListener('input', paint);
+    minInput.addEventListener('change', commit);
+    maxInput.addEventListener('change', commit);
+    paint();
   }
   function closeFilterDrawer() {
     state.filterOpen = false;
@@ -621,7 +986,6 @@
       state.currentSheet = sheet;
       state.detailZoom = 1;
       state.detailVisibleParts = 10;
-      state.detailMediaIndex = 0;
       state.selectedPartKeys.clear();
       const queryMatch = query ? visibleSheetParts(sheet).find(({ part }) => [part.part_number, part.name, part.callout].join(' ').toLowerCase().includes(query.toLowerCase())) : null;
       if (queryMatch) state.selectedPartKeys.add(partKey(sheet, queryMatch.index));
@@ -633,41 +997,6 @@
     }
   }
 
-  function detailMediaItems(sheet, product) {
-    const items = [];
-    if (sheet.pdf_url) items.push({ kind: 'pdf', url: sheet.pdf_url, thumb: sheet.preview_image || product.previewImage || FALLBACK_IMAGE, label: 'Main diagram PDF' });
-    else if (sheet.full_image || sheet.preview_image) items.push({ kind: 'image', url: sheet.full_image || sheet.preview_image, thumb: sheet.preview_image || sheet.full_image || product.previewImage || FALLBACK_IMAGE, label: 'Main diagram' });
-    else items.push({ kind: 'image', url: product.fullImage || product.previewImage || FALLBACK_IMAGE, thumb: product.previewImage || FALLBACK_IMAGE, label: 'Main diagram' });
-    (sheet.additional_media || []).forEach(media => items.push({ kind: 'image', url: media.url, thumb: media.url, label: media.label || media.type || 'Additional media' }));
-    return items;
-  }
-
-  function activeDetailMedia(sheet, product) {
-    const items = detailMediaItems(sheet, product);
-    state.detailMediaIndex = Math.max(0, Math.min(items.length - 1, Number(state.detailMediaIndex) || 0));
-    return { items, active: items[state.detailMediaIndex], index: state.detailMediaIndex };
-  }
-
-  function diagramCounterHtml(sheet, product) {
-    const media = activeDetailMedia(sheet, product);
-    if (media.index === 0 && media.active.kind === 'pdf') return `Page 1 / ${Math.max(1, Number(sheet.page_count) || 1)}`;
-    return media.items.length > 1 ? `Media ${media.index + 1} / ${media.items.length}` : 'Diagram View';
-  }
-
-  function diagramViewerHtml(sheet, product) {
-    const { items, active, index } = activeDetailMedia(sheet, product);
-    const controls = active.kind === 'image'
-      ? `<button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button>`
-      : '';
-    const viewer = active.kind === 'pdf'
-      ? `<iframe id="diagramPdf" class="diagram-pdf-viewer" src="${esc(active.url)}#toolbar=1&navpanes=0&view=FitH" title="${esc(cleanTitle(sheet.title))} PDF diagram"></iframe>`
-      : `<img id="diagramImage" src="${esc(active.url)}" alt="${esc(cleanTitle(sheet.title))} exploded parts diagram">`;
-    const nav = items.length > 1
-      ? `<button class="diagram-nav prev" data-diagram-nav="prev" aria-label="Previous media">${icon('i-chevron', 17)}</button><button class="diagram-nav next" data-diagram-nav="next" aria-label="Next media">${icon('i-chevron', 17)}</button>`
-      : '';
-    return `<div class="diagram-stage ${active.kind === 'pdf' ? 'is-pdf' : 'is-image'}" id="diagramStage"><div class="diagram-tools">${controls}<button id="downloadImage" aria-label="Download diagram">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print diagram">${icon('i-print', 18)}</button></div>${nav}${viewer}</div><div class="diagram-thumbs">${items.map((item, itemIndex) => `<button class="diagram-thumb ${itemIndex === index ? 'active' : ''}" data-diagram-media-index="${itemIndex}" title="${esc(item.label)}"><img src="${esc(item.thumb || FALLBACK_IMAGE)}" alt="${esc(item.label)}"><small>${esc(item.label)}</small></button>`).join('')}</div>`;
-  }
-
   function drawDetail() {
     const product = state.currentProduct;
     const sheet = state.currentSheet;
@@ -676,7 +1005,7 @@
     const related = state.products.filter(item => item.id !== product.id && item.model === product.model && item.category === product.category).slice(0, 5);
     const stock = stockMeta(product);
     app.innerHTML = `<section class="detail-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a><a href="${routeHash('catalog', { model: product.model })}">${esc(product.model)}</a><a href="${routeHash('catalog', { model: product.model, category: product.category })}">${esc(product.category)}</a><span>${esc(cleanTitle(product.name))}</span></nav>
-      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><span>${diagramCounterHtml(sheet, product)}</span><button class="btn" id="detailFullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header>${diagramViewerHtml(sheet, product)}</article>
+      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><span>Page 1 / ${Number(sheet.page_count || 1)}</span><button class="btn" id="detailFullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download diagram">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print diagram">${icon('i-print', 18)}</button></div><button class="diagram-nav prev" aria-label="Previous page">${icon('i-chevron', 17)}</button><img id="diagramImage" src="${esc(sheet.preview_image || sheet.full_image || product.previewImage || product.fullImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} exploded parts diagram"><button class="diagram-nav next" aria-label="Next page">${icon('i-chevron', 17)}</button></div><div class="diagram-thumbs"><button class="diagram-thumb active"><img src="${esc(sheet.preview_image || product.previewImage || FALLBACK_IMAGE)}" alt="Diagram preview"></button>${Number(sheet.page_count || 1) > 1 ? `<button class="diagram-thumb"><img src="${esc(sheet.full_image || product.fullImage || product.previewImage || FALLBACK_IMAGE)}" alt="Parts list preview"></button>` : ''}</div></article>
       <article class="detail-side"><div class="detail-summary"><div class="detail-summary-grid"><div><span class="official-label">OFFICIAL DIAGRAM</span><h1>${esc(titleCase(cleanTitle(sheet.title)))}</h1><div class="detail-code">Diagram Code: ${esc(sheet.diagram_code)}</div><div class="compatibility"><small>Compatible Models</small><div class="compatibility-row"><span class="badge">${esc(product.model)}</span><a href="${routeHash('catalog', { model: product.model })}">View all compatible models</a></div></div></div><div class="detail-summary-side"><div class="stock-box"><b>● ${esc(stock.label)}</b><small>${product.stock === 'out' ? 'Availability confirmed during RFQ' : 'Ships after stock verification'}</small></div><div class="help-box"><b>Need a part not listed?</b><small>Our experts can help you find it.</small><button data-contact>Request Help / RFQ</button></div></div></div><div class="detail-actions"><button class="btn" id="downloadDiagram">${icon('i-download', 15)}Download Diagram</button><button class="btn btn-orange" id="addAllVisible">${icon('i-list', 15)}Add All Visible to RFQ</button></div></div>
       <div class="parts-tabs"><button class="active">Parts List</button><button>Compatibility</button><button>Notes</button><button>Shipping</button><button class="expand-all" id="expandParts">${icon('i-expand', 13)}Expand All</button></div><div class="parts-table-wrap"><table class="parts-table"><thead><tr><th></th><th>Callout</th><th>Part Number</th><th>Part Name</th><th>Qty</th><th>Notes / Compatibility</th><th>Stock</th><th>Action</th></tr></thead><tbody>${shown.map(({ part, index }) => partRowHtml(sheet, part, index)).join('')}</tbody></table></div><div class="parts-footer"><span>Showing 1 to ${Math.min(state.detailVisibleParts, parts.length)} of ${parts.length} parts</span>${state.detailVisibleParts < parts.length ? '<button id="viewMoreParts">View More Parts⌄</button>' : '<span>All published parts shown</span>'}</div></article></div>
       <section class="related-section"><div class="section-headline"><div><div class="section-label">Related Assemblies for ${esc(product.category)}</div></div><button class="view-all" data-view-related>View All ${esc(product.category)} Diagrams ${icon('i-chevron', 13)}</button></div><div class="related-grid">${related.map(item => `<button class="related-card" data-open-product="${esc(item.id)}"><img src="${esc(item.previewImage || FALLBACK_IMAGE)}" alt=""><span><b>${esc(titleCase(cleanTitle(item.name)))}</b><small>Diagram Code: ${esc(item.diagramCode)}</small><span class="status">${esc(stockMeta(item).label)}</span></span></button>`).join('') || '<div class="empty-state"><p>No related assemblies found.</p></div>'}</div></section>
@@ -697,24 +1026,12 @@
   }
 
   function bindDetailEvents(parts) {
-    $('#zoomIn')?.addEventListener('click', () => updateZoom(.2));
-    $('#zoomOut')?.addEventListener('click', () => updateZoom(-.2));
-    $('#zoomReset')?.addEventListener('click', () => { state.detailZoom = 1; applyZoom(); });
-    $('#downloadImage')?.addEventListener('click', downloadCurrentDiagram);
-    $('#downloadDiagram')?.addEventListener('click', downloadCurrentDiagram);
-    $('#printDiagram')?.addEventListener('click', () => {
-      const { active } = activeDetailMedia(state.currentSheet, state.currentProduct);
-      if (active?.kind === 'pdf') window.open(active.url, '_blank', 'noopener');
-      else window.print();
-    });
-    $$('[data-diagram-media-index]').forEach(button => button.onclick = () => { state.detailMediaIndex = Number(button.dataset.diagramMediaIndex) || 0; state.detailZoom = 1; drawDetail(); });
-    $$('[data-diagram-nav]').forEach(button => button.onclick = () => {
-      const total = detailMediaItems(state.currentSheet, state.currentProduct).length;
-      const delta = button.dataset.diagramNav === 'prev' ? -1 : 1;
-      state.detailMediaIndex = (state.detailMediaIndex + delta + total) % total;
-      state.detailZoom = 1;
-      drawDetail();
-    });
+    $('#zoomIn').onclick = () => updateZoom(.2);
+    $('#zoomOut').onclick = () => updateZoom(-.2);
+    $('#zoomReset').onclick = () => { state.detailZoom = 1; applyZoom(); };
+    $('#downloadImage').onclick = downloadCurrentDiagram;
+    $('#downloadDiagram').onclick = downloadCurrentDiagram;
+    $('#printDiagram').onclick = () => window.print();
     $('#detailFullscreen').onclick = () => { $('#diagramPanel').classList.toggle('diagram-fullscreen'); document.body.classList.toggle('no-scroll', $('#diagramPanel').classList.contains('diagram-fullscreen')); };
     $('#viewMoreParts')?.addEventListener('click', () => { state.detailVisibleParts = Math.min(parts.length, state.detailVisibleParts + 18); drawDetail(); });
     $('#expandParts').onclick = () => { state.detailVisibleParts = parts.length; drawDetail(); };
@@ -763,15 +1080,13 @@
   function applyZoom() { const image = $('#diagramImage'); if (image) image.style.transform = `scale(${state.detailZoom})`; }
   function downloadCurrentDiagram() {
     const sheet = state.currentSheet;
-    const { active, index } = activeDetailMedia(sheet, state.currentProduct);
     const href = sheet.pdf_url || sheet.full_image || sheet.preview_image;
     if (!href) { toast('Diagram unavailable', 'No downloadable source is attached to this assembly.'); return; }
     const anchor = document.createElement('a');
     anchor.href = href;
-    if (active?.url) anchor.href = active.url;
     anchor.target = '_blank';
     anchor.rel = 'noopener';
-    anchor.download = active.kind === 'pdf' ? '' : `${sheet.model_code}-${sheet.diagram_code}-${index === 0 ? 'diagram' : `media-${index + 1}`}.webp`;
+    anchor.download = sheet.pdf_url ? '' : `${sheet.model_code}-${sheet.diagram_code}-diagram.webp`;
     document.body.append(anchor);
     anchor.click();
     anchor.remove();
@@ -814,6 +1129,7 @@
     const count = state.cart.reduce((sum, item) => sum + Number(item.qty || 0), 0);
     const subtotal = state.cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
     $('#cartCount').textContent = String(count);
+    if ($('#pxMobileCartCount')) $('#pxMobileCartCount').textContent = String(count);
     $('#cartTotal').textContent = money(subtotal);
     $('#drawerSubtitle').textContent = `${count} item${count === 1 ? '' : 's'}`;
     $('#drawerSubtotal').textContent = money(subtotal);
@@ -911,8 +1227,8 @@
   }
 
   function renderModels() {
-    app.innerHTML = `<section class="content-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards" style="margin-top:20px">${state.models.map(model => `<button class="model-card" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt=""><span><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} diagrams</small></span><span>›</span></button>`).join('')}</div></div></div></section>`;
-    $$('[data-model-card]').forEach(button => button.onclick = () => go('catalog', { model: button.dataset.modelCard }));
+    app.innerHTML = `<section class="content-page models-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards model-page-grid" style="margin-top:20px">${state.models.map(model => `<button class="model-card model-card--full" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(model)} tractor"><span class="model-card-copy"><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} diagrams</small><em>Open model catalog</em></span><span class="model-arrow">›</span></button>`).join('')}</div></div></div></section>`;
+    $$('[data-model-card]').forEach(button => button.onclick = () => { writeLocal('hikari_recent_model', button.dataset.modelCard); go('catalog', { model: button.dataset.modelCard }); });
   }
 
   function renderRfqPage() {
@@ -961,6 +1277,7 @@
   }
 
   function openModal(title, subtitle, html) {
+    $('#modal').classList.remove('systems-modal');
     $('#modalTitle').textContent = title;
     $('#modalSubtitle').textContent = subtitle || '';
     $('#modalBody').innerHTML = html;
@@ -970,10 +1287,34 @@
   function closeModal() {
     $('#modalBackdrop').classList.remove('open');
     document.body.classList.remove('no-scroll');
+    $('#modal').classList.remove('systems-modal');
   }
   function openCategoryModal() {
-    openModal('Browse all systems', `${state.categories.length} categories`, `<div class="system-grid">${state.categories.map(category => `<button class="system-card" data-modal-category="${esc(category.name)}">${icon(categoryIcon(category.name), 25)}${esc(category.name)} <small>(${category.count})</small></button>`).join('')}</div>`);
+    const totalDiagrams = state.categories.reduce((sum, category) => sum + Number(category.count || 0), 0);
+    openModal('System Explorer', 'Find the right tractor system before opening a diagram.', `
+      <section class="systems-explorer">
+        <div class="systems-explorer-intro"><div><span class="systems-eyebrow">HIKARI PARTS NAVIGATOR</span><h2>Browse every tractor system.</h2><p>Mulai dari nama sistem, lalu lanjut ke diagram dan suku cadang yang sesuai dengan model traktor Anda.</p></div><div class="systems-metrics" aria-label="Catalog summary"><span><b>${state.categories.length}</b><small>systems</small></span><span><b>${totalDiagrams.toLocaleString()}</b><small>diagrams</small></span></div></div>
+        <label class="systems-search" for="systemFinder">${icon('i-search', 18)}<input id="systemFinder" type="search" autocomplete="off" placeholder="Search a system: engine, hydraulic, axle…"><kbd>ESC</kbd></label>
+        <div class="systems-explorer-meta"><span id="systemFinderCount">${state.categories.length} systems available</span><span>Choose a system to open its catalog</span></div>
+        <div class="systems-explorer-grid">${state.categories.map(category => `<button class="system-explorer-card" data-modal-category="${esc(category.name)}" data-system-search="${esc(normalize(category.name))}"><span class="system-explorer-icon">${icon(categoryIcon(category.name), 24)}</span><span class="system-explorer-copy"><b>${esc(category.name)}</b><small>${Number(category.count || 0).toLocaleString()} assembly diagrams</small></span><span class="system-explorer-arrow">→</span></button>`).join('')}</div>
+        <div class="systems-empty" id="systemFinderEmpty" hidden><b>System tidak ditemukan.</b><span>Coba kata kunci lain atau lihat semua sistem.</span></div>
+      </section>`);
+    $('#modal').classList.add('systems-modal');
     $$('[data-modal-category]').forEach(button => button.onclick = () => { closeModal(); go('catalog', { category: button.dataset.modalCategory }); });
+    const finder = $('#systemFinder');
+    const resultCount = $('#systemFinderCount');
+    const empty = $('#systemFinderEmpty');
+    finder.addEventListener('input', () => {
+      const query = normalize(finder.value);
+      let visible = 0;
+      $$('.system-explorer-card').forEach(card => {
+        const matches = !query || card.dataset.systemSearch.includes(query);
+        card.hidden = !matches;
+        if (matches) visible += 1;
+      });
+      resultCount.textContent = `${visible} ${visible === 1 ? 'system' : 'systems'} ${query ? 'found' : 'available'}`;
+      empty.hidden = visible !== 0;
+    });
   }
 
   async function route() {
@@ -984,6 +1325,7 @@
     if (name === 'home') renderHome();
     else if (name === 'catalog') {
       state.selectedModel = params.get('model') || '';
+      if (state.selectedModel) writeLocal('hikari_recent_model', state.selectedModel);
       state.selectedCategory = params.get('category') || '';
       state.query = params.get('q') || '';
       state.page = 1;
@@ -995,6 +1337,7 @@
     else if (['help', 'contact', 'deals', 'about', 'terms'].includes(name)) renderContentPage(name);
     else renderNotFound('Page not found');
     updateHeaderActiveState();
+    localizeVisibleCopy();
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
   }
 
@@ -1025,14 +1368,36 @@
     $('#modalBody').addEventListener('click', event => { if (event.target.closest('[data-modal-close]')) closeModal(); });
     $('#modalBackdrop').onclick = event => { if (event.target === $('#modalBackdrop')) closeModal(); };
     $('#mobileMenuButton').onclick = () => $('.main-nav').classList.toggle('open');
+    $('#pxMobileMenuButton')?.addEventListener('click', () => $('.main-nav').classList.toggle('open'));
+    $('#pxMobileSearchButton')?.addEventListener('click', () => { if (parseRoute().name !== 'home') go('home'); setTimeout(() => { document.querySelector('.px-finder-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('#heroPartNumber')?.focus(); }, 80); });
+    $('#pxMobileCartButton')?.addEventListener('click', openCart);
     $('#browseCategoriesButton').onclick = openCategoryModal;
     $('#viewAllModelsButton').onclick = () => go('models');
-    $('#modelStripLinks').addEventListener('click', event => { const button = event.target.closest('[data-header-model]'); if (button) go('catalog', { model: button.dataset.headerModel }); });
+    $('#modelStripLinks').addEventListener('click', event => { const button = event.target.closest('[data-header-model]'); if (button) { writeLocal('hikari_recent_model', button.dataset.headerModel); go('catalog', { model: button.dataset.headerModel }); } });
     $('#accountButton').onclick = () => openModal('My Account', 'Account integration', '<div class="content-card" style="border:0;padding:4px"><h2>Customer account area</h2><p>Connect this button to your authentication provider and customer profile API. Cart and saved assemblies currently persist locally for guest users.</p><button class="btn btn-orange" data-modal-close>Continue as Guest</button></div>');
-    $('#langButton').onclick = () => toast('Language selector', 'English is active. Add translated catalog content through the CMS.');
-    $('#currencyButton').onclick = () => toast('Currency', `${CURRENCY.code} display is active. Server quotations remain authoritative.`);
+    const togglePreferenceMenu = (menuId, buttonId) => {
+      const menu = $(menuId);
+      const opening = !menu.classList.contains('open');
+      closePreferenceMenus();
+      menu.classList.toggle('open', opening);
+      $(buttonId).setAttribute('aria-expanded', String(opening));
+    };
+    $('#langButton').onclick = () => togglePreferenceMenu('#langMenu', '#langButton');
+    $('#currencyButton').onclick = () => togglePreferenceMenu('#currencyMenu', '#currencyButton');
+    $$('[data-language]').forEach(button => button.onclick = () => { setLanguage(button.dataset.language, true); closePreferenceMenus(); });
+    $$('[data-currency]').forEach(button => button.onclick = () => { setCurrency(button.dataset.currency, true); closePreferenceMenus(); });
+    $('#supportFab').onclick = () => {
+      const open = !$('#supportPanel').classList.contains('open');
+      $('#supportPanel').classList.toggle('open', open);
+      $('#supportFab').setAttribute('aria-expanded', String(open));
+    };
+    $('#supportClose').onclick = () => { $('#supportPanel').classList.remove('open'); $('#supportFab').setAttribute('aria-expanded', 'false'); };
+    document.addEventListener('click', event => {
+      if (!event.target.closest('.preference-control')) closePreferenceMenus();
+      if (!event.target.closest('#supportWidget')) { $('#supportPanel').classList.remove('open'); $('#supportFab').setAttribute('aria-expanded', 'false'); }
+    });
     $('#newsletterForm').onsubmit = event => { event.preventDefault(); toast('Subscription captured', 'Connect this form to your email-marketing endpoint.'); event.currentTarget.reset(); };
-    document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeModal(); closeCart(); closeFilterDrawer(); $('.main-nav').classList.remove('open'); } });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeModal(); closeCart(); closeFilterDrawer(); closePreferenceMenus(); $('#supportPanel').classList.remove('open'); $('#supportFab').setAttribute('aria-expanded', 'false'); $('.main-nav').classList.remove('open'); } });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && Date.now() - lastCatalogRefreshAt >= 300_000) refreshCatalogControl();
     });
@@ -1045,6 +1410,7 @@
     try {
       await loadCatalog();
       await route();
+      detectVisitorMarket();
     } catch (error) {
       console.error('[boot]', error);
       state.loading = false;

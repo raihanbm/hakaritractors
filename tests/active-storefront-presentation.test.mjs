@@ -5,10 +5,12 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('storefront v4 loads the consolidated production shell', async () => {
+test('storefront v7 loads the consolidated production shell with pixel-exact homepage cache markers', async () => {
   const html = await read('index.html');
-  assert.match(html, /assets\/css\/main\.css\?v=reference-v5/);
-  assert.match(html, /assets\/js\/app\.js\?v=reference-v5/);
+  assert.match(html, /assets\/css\/main\.css\?v=hikari-pixel-exact-v7/);
+  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-pixel-exact-v7/);
+  assert.match(html, /assets\/js\/app\.js\?v=hikari-pixel-exact-v7/);
+  assert.doesNotMatch(html, /preview-data\.js/);
   for (const id of ['globalSearchForm', 'modelStripLinks', 'app', 'cartDrawer', 'modalBackdrop']) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
