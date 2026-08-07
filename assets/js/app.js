@@ -44,6 +44,7 @@
     currentSheet: null,
     detailZoom: 1,
     detailVisibleParts: 10,
+    detailTab: 'parts',
     selectedPartKeys: new Set(),
     filterOpen: false,
     source: 'local'
@@ -979,6 +980,7 @@
       state.currentSheet = sheet;
       state.detailZoom = 1;
       state.detailVisibleParts = 10;
+      state.detailTab = 'parts';
       state.selectedPartKeys.clear();
       const queryMatch = query ? visibleSheetParts(sheet).find(({ part }) => [part.part_number, part.name, part.callout].join(' ').toLowerCase().includes(query.toLowerCase())) : null;
       if (queryMatch) state.selectedPartKeys.add(partKey(sheet, queryMatch.index));
@@ -988,6 +990,23 @@
       console.error('[diagram]', error);
       renderNotFound('Diagram could not be loaded', 'Please retry or contact Hikari support with the diagram code.');
     }
+  }
+
+  function detailTabHtml(product, sheet, parts, shown) {
+    const tabs = [['parts', 'Parts List'], ['compatibility', 'Compatibility'], ['notes', 'Notes'], ['shipping', 'Shipping']];
+    const tabButtons = tabs.map(([key, label]) => `<button type="button" class="${state.detailTab === key ? 'active' : ''}" data-detail-tab="${key}">${label}</button>`).join('');
+    if (state.detailTab === 'compatibility') {
+      const models = [...new Set(state.products.filter(item => item.category === product.category).map(item => item.model).filter(Boolean))];
+      return `<div class="parts-tabs">${tabButtons}<button class="expand-all" id="expandParts" type="button">${icon('i-expand', 13)}Expand All</button></div><section class="detail-tab-panel"><span class="official-label">FITMENT REVIEW</span><h3>Compatibility for ${esc(product.model)}</h3><p>This diagram is currently mapped to the selected tractor model. Select the exact model and confirm serial range before ordering.</p><div class="detail-chip-list">${models.map(model => `<a class="badge ${model === product.model ? 'active' : ''}" href="${routeHash('catalog', { model })}">${esc(model)}</a>`).join('')}</div><div class="detail-info-grid"><div><b>Model context</b><span>${esc(product.model)}</span></div><div><b>System</b><span>${esc(product.category)}</span></div><div><b>Diagram</b><span>${esc(sheet.diagram_code)}</span></div></div><p class="detail-note">If your tractor has a different serial range, market variant or superseded part, include it in the RFQ note so the Hikari team can check fitment.</p><button class="btn btn-orange" data-contact type="button">Request fitment help</button></section>`;
+    }
+    if (state.detailTab === 'notes') {
+      const noted = parts.filter(({ part }) => part.notes).slice(0, 30);
+      return `<div class="parts-tabs">${tabButtons}<button class="expand-all" id="expandParts" type="button">${icon('i-expand', 13)}Expand All</button></div><section class="detail-tab-panel"><span class="official-label">PART NOTES</span><h3>Notes and fitment guidance</h3><p>Use the callout and part number together. Notes from the source catalog are shown below.</p>${noted.length ? `<div class="detail-notes-list">${noted.map(({ part }) => `<div><b>${esc(part.callout)} · ${esc(part.part_number)}</b><span>${esc(part.notes)}</span></div>`).join('')}</div>` : '<div class="detail-empty-panel">No additional notes are published for this diagram.</div>'}<div class="detail-note"><b>Helpful RFQ details:</b> tractor model, serial number, required quantity, destination and any photo or measurement.</div></section>`;
+    }
+    if (state.detailTab === 'shipping') {
+      return `<div class="parts-tabs">${tabButtons}<button class="expand-all" id="expandParts" type="button">${icon('i-expand', 13)}Expand All</button></div><section class="detail-tab-panel"><span class="official-label">FREIGHT BY QUOTATION</span><h3>Shipping is confirmed with your RFQ</h3><p>Freight, duties and delivery timing depend on destination, package size and availability. We confirm the practical option before payment.</p><div class="detail-info-grid"><div><b>Indonesia</b><span>Courier or freight to your city</span></div><div><b>Export</b><span>Port and destination options</span></div><div><b>Terms</b><span>EXW, FOB, CIF or DAP when applicable</span></div></div><ul class="detail-bullet-list"><li>Destination can be added later in the quotation form.</li><li>Tax, customs and destination charges are not guessed by the catalog.</li><li>Send urgency or preferred courier in the buyer note.</li></ul><button class="btn btn-orange" data-contact type="button">Request shipping quotation</button></section>`;
+    }
+    return `<div class="parts-tabs">${tabButtons}<button class="expand-all" id="expandParts" type="button">${icon('i-expand', 13)}Expand All</button></div><div class="parts-table-wrap"><table class="parts-table"><thead><tr><th></th><th>Callout</th><th>Part Number</th><th>Part Name</th><th>Qty</th><th>Notes / Compatibility</th><th>Stock</th><th>Action</th></tr></thead><tbody>${shown.map(({ part, index }) => partRowHtml(sheet, part, index)).join('')}</tbody></table></div><div class="parts-footer"><span>Showing 1 to ${Math.min(state.detailVisibleParts, parts.length)} of ${parts.length} parts</span>${state.detailVisibleParts < parts.length ? '<button id="viewMoreParts">View More Parts⌄</button>' : '<span>All published parts shown</span>'}</div>`;
   }
 
   function drawDetail() {
@@ -1000,7 +1019,7 @@
     app.innerHTML = `<section class="detail-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a><a href="${routeHash('catalog', { model: product.model })}">${esc(product.model)}</a><a href="${routeHash('catalog', { model: product.model, category: product.category })}">${esc(product.category)}</a><span>${esc(cleanTitle(product.name))}</span></nav>
       <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><span>Page 1 / ${Number(sheet.page_count || 1)}</span><button class="btn" id="detailFullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download diagram">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print diagram">${icon('i-print', 18)}</button></div><button class="diagram-nav prev" aria-label="Previous page">${icon('i-chevron', 17)}</button><img id="diagramImage" src="${esc(sheet.preview_image || sheet.full_image || product.previewImage || product.fullImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} exploded parts diagram"><button class="diagram-nav next" aria-label="Next page">${icon('i-chevron', 17)}</button></div><div class="diagram-thumbs"><button class="diagram-thumb active"><img src="${esc(sheet.preview_image || product.previewImage || FALLBACK_IMAGE)}" alt="Diagram preview"></button>${Number(sheet.page_count || 1) > 1 ? `<button class="diagram-thumb"><img src="${esc(sheet.full_image || product.fullImage || product.previewImage || FALLBACK_IMAGE)}" alt="Parts list preview"></button>` : ''}</div></article>
       <article class="detail-side"><div class="detail-summary"><div class="detail-summary-grid"><div><span class="official-label">DIAGRAM REFERENCE</span><h1>${esc(titleCase(cleanTitle(sheet.title)))}</h1><div class="detail-code">Diagram Code: ${esc(sheet.diagram_code)}</div><div class="compatibility"><small>Compatible Models</small><div class="compatibility-row"><span class="badge">${esc(product.model)}</span><a href="${routeHash('catalog', { model: product.model })}">View all compatible models</a></div></div></div><div class="detail-summary-side"><div class="stock-box"><b>● ${esc(stock.label)}</b><small>${product.stock === 'out' ? 'Availability confirmed during RFQ' : 'Ships after stock verification'}</small></div><div class="help-box"><b>Need a part not listed?</b><small>Our experts can help you find it.</small><button data-contact>Request Help / RFQ</button></div></div></div><div class="detail-actions"><button class="btn" id="downloadDiagram">${icon('i-download', 15)}Download Diagram</button><button class="btn btn-orange" id="addAllVisible">${icon('i-list', 15)}Add All Visible to RFQ</button></div></div>
-      <div class="parts-tabs"><button class="active">Parts List</button><button>Compatibility</button><button>Notes</button><button>Shipping</button><button class="expand-all" id="expandParts">${icon('i-expand', 13)}Expand All</button></div><div class="parts-table-wrap"><table class="parts-table"><thead><tr><th></th><th>Callout</th><th>Part Number</th><th>Part Name</th><th>Qty</th><th>Notes / Compatibility</th><th>Stock</th><th>Action</th></tr></thead><tbody>${shown.map(({ part, index }) => partRowHtml(sheet, part, index)).join('')}</tbody></table></div><div class="parts-footer"><span>Showing 1 to ${Math.min(state.detailVisibleParts, parts.length)} of ${parts.length} parts</span>${state.detailVisibleParts < parts.length ? '<button id="viewMoreParts">View More Parts⌄</button>' : '<span>All published parts shown</span>'}</div></article></div>
+      ${detailTabHtml(product, sheet, parts, shown)}</article></div>
       <section class="related-section"><div class="section-headline"><div><div class="section-label">Related Assemblies for ${esc(product.category)}</div></div><button class="view-all" data-view-related>View All ${esc(product.category)} Diagrams ${icon('i-chevron', 13)}</button></div><div class="related-grid">${related.map(item => `<button class="related-card" data-open-product="${esc(item.id)}"><img src="${esc(item.previewImage || FALLBACK_IMAGE)}" alt=""><span><b>${esc(titleCase(cleanTitle(item.name)))}</b><small>Diagram Code: ${esc(item.diagramCode)}</small><span class="status">${esc(stockMeta(item).label)}</span></span></button>`).join('') || '<div class="empty-state"><p>No related assemblies found.</p></div>'}</div></section>
       </div></section>`;
     bindDetailEvents(parts);
@@ -1019,6 +1038,7 @@
   }
 
   function bindDetailEvents(parts) {
+    $$('[data-detail-tab]').forEach(button => button.onclick = () => { state.detailTab = button.dataset.detailTab; drawDetail(); });
     $('#zoomIn').onclick = () => updateZoom(.2);
     $('#zoomOut').onclick = () => updateZoom(-.2);
     $('#zoomReset').onclick = () => { state.detailZoom = 1; applyZoom(); };
