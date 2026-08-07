@@ -6,7 +6,7 @@ const html = await readFile(join(root, 'index.html'), 'utf8');
 const issues = [];
 if (/data:image\//i.test(html)) issues.push('index.html still contains an embedded image');
 if (/<style[\s>]/i.test(html)) issues.push('index.html still contains an embedded <style> block');
-if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(html)) issues.push('index.html still contains inline JavaScript');
+if (/<script(?![^>]*\bsrc=)(?![^>]*\btype=["']application\/ld\+json["'])[^>]*>/i.test(html)) issues.push('index.html still contains inline JavaScript');
 
 const refs = [...html.matchAll(/(?:src|href)="([^"#][^"]*)"/g)].map(m => m[1]);
 for (const ref of refs) {

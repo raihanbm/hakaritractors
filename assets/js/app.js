@@ -58,17 +58,17 @@
   }
 
   const ID_COPY = Object.freeze({
-    'Genuine Parts for Kubota Tractors': 'Suku Cadang Asli untuk Traktor Kubota',
+    'Kubota Tractor Parts Reference': 'Referensi Suku Cadang Traktor Kubota',
     'English': 'English', 'Home': 'Beranda', 'Parts': 'Suku Cadang', 'Diagrams': 'Diagram', 'Models': 'Model Traktor',
     'Request a Quote (RFQ)': 'Minta Penawaran (RFQ)', 'Request a Quote': 'Minta Penawaran', 'Deals': 'Penawaran',
     'Help Center': 'Pusat Bantuan', 'Contact Us': 'Hubungi Kami', 'Browse Categories': 'Jelajahi Kategori',
     'SHOP BY TRACTOR MODEL': 'CARI BERDASARKAN MODEL TRAKTOR', 'View All Models': 'Lihat Semua Model',
     'My Account': 'Akun Saya', 'Sign in / Register': 'Masuk / Daftar', 'Cart': 'Keranjang',
     'All Categories': 'Semua Kategori', 'Search': 'Cari', 'View Diagram': 'Lihat Diagram',
-    '100% Genuine Parts': 'Suku Cadang 100% Asli', 'Authentic parts for reliable performance': 'Suku cadang asli untuk performa yang andal',
+    'Kubota Parts References': 'Referensi Suku Cadang Kubota', 'Model and part references for reliable identification': 'Referensi model dan nomor part untuk identifikasi yang lebih tepat',
     'RFQ Support': 'Bantuan Penawaran', 'Need help? Our experts are here for you.': 'Butuh bantuan? Tim ahli kami siap membantu.',
-    'Diagram Based Ordering': 'Pesan Berdasarkan Diagram', 'Accurate parts with official diagrams': 'Suku cadang tepat berdasarkan diagram resmi',
-    'Worldwide Shipping': 'Pengiriman Internasional', 'Fast & secure delivery to your location': 'Pengiriman aman dan cepat ke lokasi Anda',
+    'Diagram Based Ordering': 'Pesan Berdasarkan Diagram', 'Accurate parts with exploded diagrams': 'Suku cadang tepat berdasarkan diagram rangkaian',
+    'International RFQ Support': 'Dukungan RFQ Internasional', 'Fast & secure delivery to your location': 'Pengiriman aman dan cepat ke lokasi Anda',
     'SHOP': 'BELANJA', 'SUPPORT': 'BANTUAN', 'COMPANY': 'PERUSAHAAN', 'NEWSLETTER': 'NEWSLETTER',
     'All Categories': 'Semua Kategori', 'Tractor Models': 'Model Traktor', 'Parts by Diagram': 'Suku Cadang per Diagram',
     'Special Deals': 'Penawaran Khusus', 'How to Order': 'Cara Memesan', 'Shipping & Delivery': 'Pengiriman',
@@ -84,7 +84,7 @@
     'Your RFQ cart is empty': 'Keranjang penawaran Anda masih kosong',
     'Open a diagram and add exact spare parts by callout.': 'Buka diagram dan tambahkan suku cadang sesuai nomor penunjuk.',
     'Add to RFQ': 'Tambah ke Penawaran', 'Download Diagram': 'Unduh Diagram', 'Add All Visible to RFQ': 'Tambah Semua ke Penawaran',
-    'Official Diagram': 'DIAGRAM RESMI', 'Compatible Models': 'Model yang Sesuai', 'In Stock': 'Tersedia', 'Limited Stock': 'Stok Terbatas', 'Pre-order': 'Pre-order',
+    'Diagram Reference': 'REFERENSI DIAGRAM', 'Compatible Models': 'Model yang Sesuai', 'In Stock': 'Tersedia', 'Limited Stock': 'Stok Terbatas', 'Pre-order': 'Pre-order',
     'Need a part not listed?': 'Belum menemukan suku cadang yang dicari?', 'Request Help / RFQ': 'Minta Bantuan / Penawaran',
     'Parts List': 'Daftar Suku Cadang', 'Compatibility': 'Kecocokan', 'Notes': 'Catatan', 'Shipping': 'Pengiriman',
     'Expand All': 'Tampilkan Semua', 'Callout': 'Penunjuk', 'Part Number': 'Nomor Part', 'Part Name': 'Nama Suku Cadang',
@@ -99,8 +99,8 @@
     'No matching diagrams': 'Diagram yang sesuai tidak ditemukan', 'Try a broader model, system or part-number search.': 'Coba gunakan model, sistem, atau nomor part yang lebih umum.',
     'Reset filters': 'Atur Ulang Filter', 'Showing': 'Menampilkan', 'to': 'sampai', 'of': 'dari', 'diagrams': 'diagram',
     'Page': 'Halaman', 'Pages': 'Halaman', 'Price Range': 'Rentang Harga',
-    'GENUINE KUBOTA TRACTOR PARTS': 'SUKU CADANG ASLI TRAKTOR KUBOTA',
-    'Find the correct spare part by tractor model, system, part number, or official exploded diagram.': 'Temukan suku cadang yang tepat berdasarkan model traktor, sistem, nomor part, atau diagram resmi.',
+    'KUBOTA TRACTOR PARTS REFERENCE': 'REFERENSI SUKU CADANG TRAKTOR KUBOTA',
+    'Find the correct spare part by tractor model, system, part number, or exploded diagram.': 'Temukan suku cadang yang tepat berdasarkan model traktor, sistem, nomor part, atau diagram rangkaian.',
     'Browse Parts': 'Jelajahi Suku Cadang', 'Find Part Number': 'Cari Nomor Part',
     'Model': 'Model', 'Select model': 'Pilih model', 'Category': 'Kategori', 'Select category': 'Pilih kategori',
     'Diagram Code': 'Kode Diagram', 'Search Parts': 'Cari Suku Cadang',
@@ -500,7 +500,7 @@
   function hydrateHeader() {
     $('#supportPhone').textContent = SITE.phone || '+62 852-8755-1869';
     $('#supportEmail').textContent = SITE.email || 'info@hikaritractors.com';
-    $('#genuineLabel').textContent = SITE.genuineLabel || 'Genuine Parts for Kubota Tractors';
+    $('#genuineLabel').textContent = SITE.genuineLabel || 'Kubota tractor parts reference · Dukungan RFQ Indonesia';
     const whatsapp = String(SITE.whatsapp || SITE.phone || '').replace(/\D/g, '');
     $('#supportWhatsappLink').href = `https://wa.me/${whatsapp}?text=${encodeURIComponent('Hello Hikari Tractors, I need help finding a spare part.')}`;
     $('#supportEmailLink').href = `mailto:${SITE.email || 'info@hikaritractors.com'}`;
@@ -677,7 +677,7 @@
         <img class="px-hero-image" src="${HERO_IMAGE}" alt="Traktor Kubota di lahan pertanian">
         <div class="px-hero-overlay"></div>
         <div class="px-container px-hero-inner">
-          <div class="px-hero-copy"><h1>Find the right part.<span>Order with confidence.</span></h1><p>Model-first tractor parts references, exploded diagrams, and RFQ support for fitment and commercial confirmation.</p><div class="px-hero-actions"><button class="px-primary" type="button" data-home-browse>Browse Parts Catalog ${icon('i-chevron', 14)}</button><button class="px-secondary" type="button" data-home-part-search>Search Part Number ${icon('i-chevron', 13)}</button></div><div class="px-hero-dots" aria-hidden="true"><i class="active"></i><i></i><i></i></div></div>
+          <div class="px-hero-copy"><h1>Find Kubota tractor parts.<span>Order with confidence.</span></h1><p>Kubota tractor parts references by model, part number, and exploded diagram. Referensi suku cadang traktor Kubota untuk Indonesia &amp; international RFQ support.</p><div class="px-hero-actions"><button class="px-primary" type="button" data-home-browse>Browse Parts Catalog ${icon('i-chevron', 14)}</button><button class="px-secondary" type="button" data-home-part-search>Search Part Number ${icon('i-chevron', 13)}</button></div><div class="px-hero-dots" aria-hidden="true"><i class="active"></i><i></i><i></i></div></div>
           <div class="px-trust-row"><span>${icon('i-engine', 17)}Model & part references</span><span>${icon('i-truck', 17)}Freight by quotation</span><span>${icon('i-user', 17)}Fitment support</span><span>${icon('i-box', 17)}RFQ-based ordering</span></div>
         </div>
       </section>
@@ -842,7 +842,7 @@
     const title = state.selectedCategory ? `${state.selectedCategory} ${t('Parts')}` : state.selectedModel ? `${state.selectedModel} ${t('Parts')}` : (state.language === 'id' ? 'Suku Cadang Traktor & Diagram Rangkaian' : 'Tractor Parts & Assembly Diagrams');
     const context = state.selectedModel
       ? (state.language === 'id' ? `Telusuri diagram sistem dan temukan suku cadang yang tepat untuk ${state.selectedModel}.` : `Browse system diagrams and find the exact parts you need for your ${state.selectedModel}.`)
-      : (state.language === 'id' ? 'Telusuri diagram rangkaian resmi, lalu pesan suku cadang berdasarkan nomor penunjuk dan nomor part.' : 'Browse official assembly diagrams, then order exact spare parts by callout and part number.');
+      : (state.language === 'id' ? 'Telusuri diagram rangkaian, lalu pesan suku cadang berdasarkan nomor penunjuk dan nomor part.' : 'Browse exploded assembly diagrams, then order exact spare parts by callout and part number.');
     const resultLabel = state.language === 'id' ? `${rows.length} ${t('Assembly Diagrams Found')}` : `${rows.length} Assembly Diagrams Found`;
     const resultSummary = state.language === 'id'
       ? `Menampilkan ${rows.length ? start + 1 : 0} sampai ${Math.min(start + PAGE_SIZE, rows.length)} dari ${rows.length} diagram`
@@ -1295,13 +1295,13 @@
         ['i-help', 'Human fitment review', 'Use RFQ support when serial range, supersession or market variant needs confirmation.']
       ]],
       contact: ['Contact Hikari Tractors', 'Parts support and quotation desk', [
-        ['i-phone', 'Phone', SITE.phone || '+66 2 123 4567'], ['i-mail', 'Email', SITE.email || 'support@hikaritractors.com'], ['i-globe', 'Worldwide supply', 'Freight terms and destination requirements are confirmed in the quotation.']
+        ['i-phone', 'Phone', SITE.phone || '+66 2 123 4567'], ['i-mail', 'Email', SITE.email || 'support@hikaritractors.com'], ['i-globe', 'International RFQ support', 'Freight terms and destination requirements are confirmed in the quotation.']
       ]],
       deals: ['Deals & Service Kits', 'Commercial offers are quote-controlled', [
         ['i-box', 'Maintenance kits', 'Bundle high-frequency filters, seals and service items by model.'], ['i-gear', 'Mixed-carton orders', 'Combine multiple small SKUs into one freight-ready quotation.'], ['i-truck', 'Distributor pricing', 'B2B price tiers and MOQs remain server-authoritative.']
       ]],
       about: ['About Hikari Tractors', 'Independent tractor-parts supplier', [
-        ['i-shield', 'Genuine-parts workflow', 'Catalog references, fitment and availability are reviewed before shipment.'], ['i-box', 'Deep diagram catalog', `${state.products.length.toLocaleString()} published assembly records across ${state.models.length} models.`], ['i-globe', 'Export support', 'EXW, FOB, CIF and delivered terms can be quoted based on destination.']
+        ['i-shield', 'Parts review workflow', 'Catalog references, fitment and availability are reviewed before shipment.'], ['i-box', 'Deep diagram catalog', `${state.products.length.toLocaleString()} published assembly records across ${state.models.length} models.`], ['i-globe', 'Export support', 'EXW, FOB, CIF and delivered terms can be quoted based on destination.']
       ]],
       terms: ['Terms & Conditions', 'Important storefront notices', [
         ['i-shield', 'Fitment confirmation', 'The buyer is responsible for providing accurate model and serial information.'], ['i-box', 'Quotation basis', 'Displayed prices and stock are not final until a quotation is accepted.'], ['i-truck', 'Freight and taxes', 'Shipping, duties, tax and destination charges are quoted separately unless stated otherwise.']
