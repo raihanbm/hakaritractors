@@ -36,3 +36,12 @@ test('storefront remains one coherent stylesheet without stale card overrides', 
     assert.ok(css.includes(selector), `${selector} should be owned by main.css`);
   }
 });
+
+test('parts table keeps price visible in a compact part-name cell', async () => {
+  const js = await read('assets/js/app.js');
+  const css = await read('assets/css/main.css');
+  assert.match(js, /const priceLabel = Number\(part\.estimated_usd\)/);
+  assert.match(js, /class="part-price"/);
+  assert.match(css, /\.part-price\{/);
+  assert.match(css, /\.part-name>span\{[^}]*text-overflow:ellipsis/);
+});

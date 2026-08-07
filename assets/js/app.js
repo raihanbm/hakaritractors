@@ -1031,10 +1031,11 @@
     const inCart = cartItemForKey(key);
     const stock = Number(part.admin_stock || 0);
     const stockLabel = stock > 0 ? `${stock} In Stock` : 'Pre-order';
+    const priceLabel = Number(part.estimated_usd) > 0 ? `${money(part.estimated_usd)} / pcs` : 'Price by quotation';
     const action = inCart
       ? `<div class="part-qty-control" aria-label="RFQ quantity for ${esc(part.part_number)}"><button type="button" data-part-qty="minus" data-part-index="${index}" aria-label="Decrease quantity">−</button><output>${Number(inCart.qty)}</output><button type="button" data-part-qty="plus" data-part-index="${index}" aria-label="Increase quantity">+</button><button type="button" class="part-remove" data-part-qty="remove" data-part-index="${index}" aria-label="Remove from RFQ">×</button></div>`
-      : `<button class="part-add" data-add-part="${index}">${icon('i-cart', 12)} Add to RFQ</button>`;
-    return `<tr class="${selected ? 'selected' : ''}" data-part-row="${index}"><td><input type="checkbox" data-select-part="${index}" ${selected ? 'checked' : ''}></td><td>${esc(part.callout)}</td><td class="part-number">${esc(part.part_number)}</td><td>${esc(part.name)}</td><td>${Number(part.quantity) || 1}</td><td>${esc(part.notes || '—')}</td><td class="part-stock">● ${esc(stockLabel)}</td><td class="part-action-cell">${action}</td></tr>`;
+      : `<button class="part-add" data-add-part="${index}" aria-label="Add ${esc(part.part_number)} to RFQ" title="Add ${esc(part.part_number)} to RFQ">${icon('i-cart', 12)}<span class="part-add-label">RFQ</span></button>`;
+    return `<tr class="${selected ? 'selected' : ''}" data-part-row="${index}"><td><input type="checkbox" data-select-part="${index}" ${selected ? 'checked' : ''}></td><td>${esc(part.callout)}</td><td class="part-number">${esc(part.part_number)}</td><td class="part-name"><span>${esc(part.name)}</span><small class="part-price">${esc(priceLabel)}</small></td><td>${Number(part.quantity) || 1}</td><td>${esc(part.notes || '—')}</td><td class="part-stock">● ${esc(stockLabel)}</td><td class="part-action-cell">${action}</td></tr>`;
   }
 
   function bindDetailEvents(parts) {
