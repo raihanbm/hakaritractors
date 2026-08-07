@@ -101,8 +101,12 @@
 .px-diagram-card img{width:100%;height:66px;object-fit:contain}.px-diagram-card span{display:flex;flex-direction:column;min-width:0}.px-diagram-card b{font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.px-diagram-card small{font-size:6px;color:#6f7881;margin-top:2px}.px-diagram-card em{font-style:normal;font-size:7px;color:#555f68;margin-top:3px}
 
 @media(max-width:760px){
-  body{font-size:13px;background:#f7f7f7}
-  .topbar,.header-main,.header-nav-wrap,.model-strip{display:none!important}
+  .header-nav-wrap{display:block!important;position:static;pointer-events:none}
+  .header-nav{height:0!important;display:block!important}
+  .header-nav .browse-button,.header-nav .mobile-menu-button{display:none!important}
+  .main-nav{pointer-events:none}
+  .main-nav.open{position:fixed!important;top:56px!important;left:8px;right:8px;z-index:120;pointer-events:auto}
+  .topbar,.header-main,.model-strip{display:none!important}
   .site-header{position:sticky;top:0;background:#fff;box-shadow:0 1px 0 #e6e8ea;z-index:90}
   .px-mobile-header{height:56px;display:grid;grid-template-columns:44px minmax(0,1fr) 82px;align-items:center;padding:0 8px;background:#fff}
   .px-mobile-header button{border:0;background:transparent;height:42px;display:grid;place-items:center;position:relative}.px-mobile-header svg{width:21px;height:21px}

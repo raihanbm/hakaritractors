@@ -1408,10 +1408,20 @@
     $('#modalClose').onclick = closeModal;
     $('#modalBody').addEventListener('click', event => { if (event.target.closest('[data-modal-close]')) closeModal(); });
     $('#modalBackdrop').onclick = event => { if (event.target === $('#modalBackdrop')) closeModal(); };
-    $('#mobileMenuButton').onclick = () => $('.main-nav').classList.toggle('open');
-    $('#pxMobileMenuButton')?.addEventListener('click', () => $('.main-nav').classList.toggle('open'));
-    $('#pxMobileSearchButton')?.addEventListener('click', () => { if (parseRoute().name !== 'home') go('home'); setTimeout(() => { document.querySelector('.px-finder-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('#heroPartNumber')?.focus(); }, 80); });
-    $('#pxMobileCartButton')?.addEventListener('click', openCart);
+    const setMobileNav = open => {
+      const nav = $('.main-nav');
+      nav.classList.toggle('open', Boolean(open));
+      $('#pxMobileMenuButton')?.setAttribute('aria-expanded', String(Boolean(open)));
+      $('#mobileMenuButton')?.setAttribute('aria-expanded', String(Boolean(open)));
+    };
+    const toggleMobileNav = () => setMobileNav(!$('.main-nav').classList.contains('open'));
+    $('#mobileMenuButton').onclick = toggleMobileNav;
+    $('#pxMobileMenuButton')?.addEventListener('click', toggleMobileNav);
+    $('#pxMobileSearchButton')?.addEventListener('click', () => { setMobileNav(false); if (parseRoute().name !== 'home') go('home'); setTimeout(() => { document.querySelector('.px-finder-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('#heroPartNumber')?.focus(); }, 80); });
+    $('#pxMobileCartButton')?.addEventListener('click', () => { setMobileNav(false); openCart(); });
+    document.addEventListener('click', event => {
+      if (event.target.closest('.main-nav a') || (!event.target.closest('.main-nav') && !event.target.closest('#pxMobileMenuButton') && !event.target.closest('#mobileMenuButton'))) setMobileNav(false);
+    });
     $('#browseCategoriesButton').onclick = openCategoryModal;
     $('#viewAllModelsButton').onclick = () => go('models');
     $('#modelStripLinks').addEventListener('click', event => { const button = event.target.closest('[data-header-model]'); if (button) { writeLocal('hikari_recent_model', button.dataset.headerModel); go('catalog', { model: button.dataset.headerModel }); } });

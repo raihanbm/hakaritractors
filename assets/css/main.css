@@ -418,4 +418,23 @@ html,body{min-height:100%}body{min-height:100vh;display:flex;flex-direction:colu
   .home-help-strip b{font-size:10px}.home-help-strip small{font-size:8px}
   .support-widget{bottom:10px}
 }
+@media(max-width:760px){
+  /* Mobile Parts List: keep primary identification, price, quantity and RFQ action in the viewport. */
+  .parts-table-wrap{overflow-x:hidden!important;overflow-y:auto}
+  .parts-table{min-width:0!important;width:100%;table-layout:fixed!important;font-size:7.2px}
+  .parts-table th,.parts-table td{padding:3px 3px!important;overflow:hidden}
+  .parts-table th:nth-child(1),.parts-table td:nth-child(1){width:23px;text-align:center}
+  .parts-table th:nth-child(2),.parts-table td:nth-child(2){width:34px;text-align:center}
+  .parts-table th:nth-child(3),.parts-table td:nth-child(3){width:76px}
+  .parts-table th:nth-child(4),.parts-table td:nth-child(4){width:auto}
+  .parts-table th:nth-child(5),.parts-table td:nth-child(5){width:27px;text-align:center}
+  .parts-table th:nth-child(6),.parts-table td:nth-child(6),.parts-table th:nth-child(7),.parts-table td:nth-child(7){display:none}
+  .parts-table th:nth-child(8),.parts-table td:nth-child(8){width:52px;min-width:52px;text-align:center}
+  .part-name{min-width:0;white-space:normal;line-height:1.05}
+  .part-name>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .part-price{font-size:6px;white-space:nowrap}
+  .part-add{width:48px!important;min-width:48px!important;height:27px!important;padding:0 2px!important;font-size:6.5px!important;gap:2px}
+  .part-add svg{width:11px;height:11px}
+}
+
 .rfq-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}

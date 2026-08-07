@@ -55,3 +55,15 @@ test('homepage SEO identifies Hikari Tractors Indonesia and Kubota references sa
   assert.match(html, /application\/ld\+json/);
   assert.doesNotMatch(html, /100% Genuine|Official Kubota|Authorized Kubota/);
 });
+
+test('mobile navigation escapes the hidden desktop header and closes predictably', async () => {
+  const css = await read('assets/css/pixel-exact-home.css');
+  const mainCss = await read('assets/css/main.css');
+  const js = await read('assets/js/app.js');
+  assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.header-nav-wrap\{display:block!important/);
+  assert.match(css, /\.main-nav\.open\{position:fixed!important;top:56px!important/);
+  assert.match(mainCss, /@media\(max-width:760px\)[\s\S]*?\.parts-table\{min-width:0!important;width:100%;table-layout:fixed!important/);
+  assert.match(mainCss, /\.parts-table th:nth-child\(8\),\.parts-table td:nth-child\(8\)\{width:52px/);
+  assert.match(js, /const setMobileNav = open =>/);
+  assert.match(js, /setMobileNav\(false\); if \(parseRoute\(\)\.name !== 'home'\)/);
+});
