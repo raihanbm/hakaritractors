@@ -1165,15 +1165,18 @@
   async function submitRfq() {
     const name = $('#rfqName').value.trim();
     const email = $('#rfqEmail').value.trim();
-    const destination = $('#rfqDestination').value.trim();
+    const phone = $('#rfqPhone')?.value.trim() || '';
+    const accountType = $('#rfqAccountType')?.value || 'retail';
+    const destination = $('#rfqDestination').value.trim() || 'To be confirmed';
     const incoterm = $('#rfqTerm').value;
     const note = $('#rfqNote').value.trim();
     const website = $('#rfqWebsite')?.value.trim() || '';
-    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const emailValid = !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if (!state.cart.length) { toast('RFQ cart is empty', 'Add at least one spare part.'); return; }
-    if (!name || !email || !destination) { toast('Complete quotation details', 'Name, email and destination are required.'); return; }
-    if (!emailValid) { toast('Enter a valid email address', 'Use an address such as name@company.com.'); return; }
-    if (name.length > 120 || email.length > 254 || destination.length > 160 || note.length > 2000 || website) { toast('Unable to submit RFQ', 'Check the form fields and try again.'); return; }
+    if (!name) { toast('Add your name first', 'A personal name or company name is enough.'); return; }
+    if (!email && !phone) { toast('Add one contact method', 'Email or WhatsApp/phone is enough — you do not need both.'); return; }
+    if (!emailValid) { toast('Enter a valid email address', 'Or leave email empty and use WhatsApp/phone.'); return; }
+    if (name.length > 120 || email.length > 254 || phone.length > 40 || destination.length > 160 || note.length > 2000 || website) { toast('Unable to submit RFQ', 'Check the form fields and try again.'); return; }
     const button = $('#submitRfqButton');
     button.disabled = true;
     button.textContent = 'Submitting…';
@@ -1182,9 +1185,10 @@
     const payload = {
       buyerName: name,
       buyerEmail: email,
+      buyerPhone: phone,
       destination,
       incoterm,
-      accountType: 'retail',
+      accountType,
       website,
       message: [note, 'RFQ cart:', itemSummary].filter(Boolean).join('\n\n'),
       items: rfqSnapshot.filter(item => item.partId).map(item => ({ partId: item.partId, quantity: item.qty }))
@@ -1201,7 +1205,19 @@
     } catch (error) {
       console.warn('[rfq-draft-fallback]', error);
     }
-    openModal(submitted ? 'Quotation request submitted' : 'RFQ draft prepared', submitted ? `Reference ${reference}` : 'Live API unavailable — this draft was prepared locally', `<div class="content-card" style="border:0;padding:4px;max-width:none"><h2>${submitted ? 'Thank you — our team received your RFQ.' : 'Your RFQ draft is ready.'}</h2><p><b>Reference:</b> ${esc(reference)}</p><p><b>Buyer:</b> ${esc(name)} · ${esc(email)}<br><b>Destination:</b> ${esc(destination)} · ${esc(incoterm)}</p><div style="border:1px solid var(--line);border-radius:6px;padding:12px;white-space:pre-wrap;font-size:10px">${esc(itemSummary)}</div>${submitted ? '' : '<p style="color:#b65012">No submission was claimed. Connect the storefront to the Internal Hikari public-order API, then retry.</p>'}<button class="btn btn-orange" id="downloadRfqDraft" style="margin-top:12px">Download RFQ CSV</button></div>`);
+    const channelText = [
+      `Hello Hikari Tractors, I would like a quotation.`,
+      `Reference: ${reference}`,
+      `Buyer: ${name}`,
+      `Buyer type: ${accountType === 'b2b' ? 'Company / Distributor' : accountType === 'export' ? 'Export buyer' : 'Individual / Workshop'}`,
+      `Destination: ${destination}`,
+      `Trade term: ${incoterm}`,
+      '', itemSummary, note ? `\nNote: ${note}` : ''
+    ].filter(Boolean).join('\n');
+    const subject = `Quotation request ${reference}`;
+    const emailHref = `mailto:${SITE.email || 'info@hikaritractors.com'}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(channelText)}`;
+    const whatsappHref = `https://wa.me/${String(SITE.phone || '+6285287551869').replace(/\D/g, '')}?text=${encodeURIComponent(channelText)}`;
+    openModal(submitted ? 'Choose how to continue' : 'RFQ draft prepared', submitted ? `Reference ${reference}` : 'Live API unavailable — no order was claimed', `<div class="content-card" style="border:0;padding:4px;max-width:none"><h2>${submitted ? 'Your quotation request is recorded.' : 'Your quotation message is ready.'}</h2><p><b>Reference:</b> ${esc(reference)}</p><p>You can continue by email or WhatsApp. NPWP, PO, company address and trade details can be provided later if they apply.</p><div style="border:1px solid var(--line);border-radius:6px;padding:12px;white-space:pre-wrap;font-size:10px">${esc(itemSummary)}</div><div class="quote-channel-actions"><a class="btn btn-orange" id="emailQuotation" href="${esc(emailHref)}">${icon('i-mail', 16)} Email quotation</a><a class="btn btn-dark" id="whatsappQuotation" target="_blank" rel="noopener noreferrer" href="${esc(whatsappHref)}">${icon('i-phone', 16)} WhatsApp quotation</a><button class="btn" id="downloadRfqDraft" type="button">Download RFQ CSV</button></div>${submitted ? '' : '<p style="color:#b65012">The API did not receive this request. You may still use the prepared email or WhatsApp draft.</p>'}</div>`);
     $('#downloadRfqDraft')?.addEventListener('click', () => downloadRfqCsv(rfqSnapshot, reference));
     if (submitted) {
       state.cart = [];
@@ -1230,7 +1246,7 @@
   }
 
   function renderRfqPage() {
-    app.innerHTML = `<section class="content-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Request a Quote</span></nav><div class="content-card"><h1>Request a Parts Quotation</h1><p>Upload or paste your parts list. Include the tractor model, serial range, destination and required quantities whenever possible.</p><div class="rfq-page-grid"><div class="rfq-upload">${icon('i-download', 54)}<div><h3>Bulk parts-list upload</h3><p>CSV, XLSX and PDF can be connected to Internal Hikari's signed upload flow.</p><button class="btn" id="downloadTemplate">Download CSV Template</button></div></div><form class="rfq-form" id="rfqPageForm"><label>Name / Company<input name="name" required></label><label>Email<input name="email" type="email" required></label><label>Destination<input name="destination" required></label><label>Buyer Type<select name="buyerType"><option>Retail / Workshop</option><option>B2B Distributor</option><option>Fleet Operator</option></select></label><label class="full">Parts, model or engine details<textarea name="message" required placeholder="Example: L3608, diagram 050101, 2× 1A021-73036, destination Jakarta..."></textarea></label><button class="btn btn-orange full" type="submit">Create RFQ</button></form></div></div></div></section>`;
+    app.innerHTML = `<section class="content-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Request a Quote</span></nav><div class="content-card"><h1>Request a Parts Quotation</h1><p>Upload or paste your parts list. Include the tractor model, serial range, destination and required quantities whenever possible.</p><div class="rfq-page-grid"><div class="rfq-upload">${icon('i-download', 54)}<div><h3>Bulk parts-list upload</h3><p>CSV, XLSX and PDF can be connected to Internal Hikari's signed upload flow.</p><button class="btn" id="downloadTemplate">Download CSV Template</button></div></div><form class="rfq-form" id="rfqPageForm"><label>Name / Company<input name="name" required></label><label>Email <small>(email or WhatsApp)</small><input name="email" type="email"></label><label>WhatsApp / Phone <small>(email or WhatsApp)</small><input name="phone" type="tel" placeholder="+62..."></label><label>Destination <small>(optional)</small><input name="destination" placeholder="Can be added later"></label><label>Buyer Type<select name="buyerType"><option value="retail">Individual / Workshop</option><option value="b2b">Company / Distributor</option><option value="export">Export buyer</option></select></label><label class="full">Parts, model or engine details<textarea name="message" required placeholder="Example: L3608, diagram 050101, 2× 1A021-73036, destination Jakarta..."></textarea></label><button class="btn btn-orange full" type="submit">Create RFQ</button></form></div></div></div></section>`;
     $('#downloadTemplate').onclick = () => {
       const blob = new Blob(['part_number,description,quantity,tractor_model,buyer_note\n'], { type: 'text/csv' });
       const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'Hikari-bulk-order-template.csv'; link.click(); URL.revokeObjectURL(link.href);
@@ -1238,7 +1254,7 @@
     $('#rfqPageForm').onsubmit = event => {
       event.preventDefault();
       const form = new FormData(event.currentTarget);
-      $('#rfqName').value = form.get('name'); $('#rfqEmail').value = form.get('email'); $('#rfqDestination').value = form.get('destination'); $('#rfqNote').value = form.get('message');
+      $('#rfqName').value = form.get('name'); $('#rfqEmail').value = form.get('email'); $('#rfqPhone').value = form.get('phone'); $('#rfqAccountType').value = form.get('buyerType'); $('#rfqDestination').value = form.get('destination'); $('#rfqNote').value = form.get('message');
       if (!state.cart.length) toast('Add parts to your RFQ', 'Open a diagram and choose exact spare parts first.');
       openCart();
     };
