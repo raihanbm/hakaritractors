@@ -6,7 +6,10 @@
       phone: "+62 852-8755-1869",
       email: "info@hikaritractors.com",
       genuineLabel: "Model-first parts identification & RFQ support",
-      currency: Object.freeze({ code: "IDR", symbol: "Rp", usdRate: 16300 })
+      currencies: Object.freeze({
+        IDR: Object.freeze({ code: "IDR", symbol: "Rp", usdRate: 16300, locale: "id-ID", fractionDigits: 0 }),
+        USD: Object.freeze({ code: "USD", symbol: "$", usdRate: 1, locale: "en-US", fractionDigits: 2 })
+      })
     })
   });
 })();

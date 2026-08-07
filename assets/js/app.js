@@ -128,8 +128,8 @@
     return /^Asia\/(Jakarta|Makassar|Jayapura)$/.test(zone) ? { language: 'id', currency: 'IDR' } : { language: 'en', currency: 'USD' };
   }
   function currencyProfile(code) {
-    const preset = SITE.currencies?.[code] || SITE.currencies?.USD || { code: 'USD', symbol: '$', usdRate: 1 };
-    return { code: preset.code, symbol: preset.symbol, rate: Number(preset.usdRate) || 1 };
+    const preset = SITE.currencies?.[code] || SITE.currencies?.USD || { code: 'USD', symbol: '$', usdRate: 1, locale: 'en-US', fractionDigits: 2 };
+    return { code: preset.code, symbol: preset.symbol, rate: Number(preset.usdRate) || 1, locale: preset.locale || 'en-US', fractionDigits: Number.isInteger(preset.fractionDigits) ? preset.fractionDigits : 2 };
   }
   function t(value) {
     const source = String(value ?? '');
@@ -204,7 +204,8 @@
   }
   function money(usd) {
     const value = Math.max(0, Number(usd) || 0) * CURRENCY.rate;
-    return `${CURRENCY.symbol}${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const formatted = value.toLocaleString(CURRENCY.locale, { minimumFractionDigits: CURRENCY.fractionDigits, maximumFractionDigits: CURRENCY.fractionDigits });
+    return CURRENCY.code === 'IDR' ? `Rp${formatted}` : `${CURRENCY.symbol}${formatted}`;
   }
   function productPrice(product) {
     return Number(product?.price) || 0;
