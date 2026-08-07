@@ -20,7 +20,8 @@ test('public catalog is sourced from the real Hikari Drive inventory, not demo S
   assert.ok(catalog.products.every((part) => part.previewImage?.endsWith('-visual.webp')));
   assert.ok(catalog.products.every((part) => part.fullImage?.endsWith('-full.webp')));
   assert.deepEqual([...new Set(catalog.products.map((part) => part.model))].sort(), [
-    'L3608', 'L4400DT', 'L5018DT-NES', 'M9000DT', 'M9540DT', 'MX5000DT', 'MX5100DT'
+    'L3218DT-ID', 'L3608', 'L3800D', 'L4018DT-ID/L4018TK-ID', 'L4028', 'L4400DT',
+    'L5018DT-NES', 'L5228', 'M9000DT', 'M9540DT', 'MX5000DT', 'MX5100DT'
   ]);
 });
 

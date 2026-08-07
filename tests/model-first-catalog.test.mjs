@@ -13,7 +13,8 @@ test('catalog derives tractor models from the verified product dataset', async (
   ]);
   const catalog = JSON.parse(catalogText);
   const models = [...new Set(catalog.products.map((part) => part.model))];
-  assert.equal(models.length, 7);
+  assert.equal(models.length, 12);
+  for (const model of ['L4028', 'L3800D', 'L3218DT-ID', 'L4018DT-ID/L4018TK-ID', 'L5228']) assert.ok(models.includes(model), `missing imported model ${model}`);
   assert.match(app, /state\.models = \[\.\.\.new Set\(state\.products\.map\(product => product\.model\)/);
   assert.match(html, /SHOP BY TRACTOR MODEL/);
   assert.doesNotMatch(app, /Excavator:\s*\[/);
