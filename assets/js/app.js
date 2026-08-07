@@ -632,10 +632,10 @@
     };
     const promoProduct = pick([/fuel filter/i, /oil filter/i, /filter/i], 0);
     const bestSellers = [
-      { product: pick([/oil filter/i, /filter/i], 1), title: 'Oil Filter', image: 'assets/images/reference-products/oil-filter.jpg', sold: 'Terjual 1.250+' },
-      { product: pick([/fuel filter/i, /separator/i], 2), title: 'Fuel Filter', image: 'assets/images/reference-products/fuel-filter.jpg', sold: 'Terjual 980+' },
-      { product: pick([/air cleaner/i, /air filter/i], 3), title: 'Air Filter', image: 'assets/images/reference-products/air-filter.jpg', sold: 'Terjual 875+' },
-      { product: pick([/element/i, /cleaner/i], 4), title: 'Element Assy', image: 'assets/images/reference-products/element-assy.jpg', sold: 'Terjual 730+' }
+      { product: pick([/oil filter/i, /filter/i], 1), title: 'Oil Filter', image: 'assets/images/reference-products/oil-filter.jpg' },
+      { product: pick([/fuel filter/i, /separator/i], 2), title: 'Fuel Filter', image: 'assets/images/reference-products/fuel-filter.jpg' },
+      { product: pick([/air cleaner/i, /air filter/i], 3), title: 'Air Filter', image: 'assets/images/reference-products/air-filter.jpg' },
+      { product: pick([/element/i, /cleaner/i], 4), title: 'Element Assy', image: 'assets/images/reference-products/element-assy.jpg' }
     ];
     const latest = [
       { product: pick([/o-ring/i, /ring/i], 10), title: 'O-Ring', image: 'assets/images/reference-products/oring.jpg' },
@@ -675,8 +675,8 @@
         <img class="px-hero-image" src="${HERO_IMAGE}" alt="Traktor Kubota di lahan pertanian">
         <div class="px-hero-overlay"></div>
         <div class="px-container px-hero-inner">
-          <div class="px-hero-copy"><h1>Genuine Parts.<span>Peak Performance.</span></h1><p>Suku cadang asli untuk performa traktor yang maksimal<br>dan umur pakai yang lebih panjang.</p><div class="px-hero-actions"><button class="px-primary" type="button" data-home-browse>Jelajahi Suku Cadang ${icon('i-chevron', 14)}</button><button class="px-secondary" type="button" data-home-part-search>Cari Nomor Part ${icon('i-chevron', 13)}</button></div><div class="px-hero-dots" aria-hidden="true"><i class="active"></i><i></i><i></i></div></div>
-          <div class="px-trust-row"><span>${icon('i-engine', 17)}100% Suku Cadang Asli</span><span>${icon('i-truck', 17)}Pengiriman Ke Seluruh Indonesia</span><span>${icon('i-user', 17)}Bantuan & Konsultasi Ahli</span><span>${icon('i-box', 17)}Pembayaran Aman</span></div>
+          <div class="px-hero-copy"><h1>Find the right part.<span>Order with confidence.</span></h1><p>Model-first tractor parts references, exploded diagrams, and RFQ support for fitment and commercial confirmation.</p><div class="px-hero-actions"><button class="px-primary" type="button" data-home-browse>Browse Parts Catalog ${icon('i-chevron', 14)}</button><button class="px-secondary" type="button" data-home-part-search>Search Part Number ${icon('i-chevron', 13)}</button></div><div class="px-hero-dots" aria-hidden="true"><i class="active"></i><i></i><i></i></div></div>
+          <div class="px-trust-row"><span>${icon('i-engine', 17)}Model & part references</span><span>${icon('i-truck', 17)}Freight by quotation</span><span>${icon('i-user', 17)}Fitment support</span><span>${icon('i-box', 17)}RFQ-based ordering</span></div>
         </div>
       </section>
 
@@ -704,13 +704,13 @@
 
         <section class="px-container px-market-grid">
           <div class="px-market-panel px-deals-panel">
-            <div class="px-panel-title"><h2>Penawaran Terbatas</h2><button type="button" data-all-diagrams>Lihat Semua ${icon('i-chevron', 10)}</button></div>
-            <button type="button" class="px-deal-card" data-open-product="${esc(promoProduct.id)}"><span class="px-sale-badge">-25%</span><img src="assets/images/reference-products/promo-filter.jpg" alt="Filter Oli Hidrolik"><span class="px-deal-copy"><b>Filter Oli Hidrolik</b><del>${compactPrice(promoProduct)}</del><strong>${rupiah(promoProduct)}</strong></span><span class="px-countdown"><small>Berakhir dalam</small><b>02</b><i>:</i><b>15</b><i>:</i><b>36</b></span></button>
+            <div class="px-panel-title"><h2>Featured Reference</h2><button type="button" data-all-diagrams>Browse Catalog ${icon('i-chevron', 10)}</button></div>
+            <button type="button" class="px-deal-card" data-open-product="${esc(promoProduct.id)}"><span class="px-sale-badge">REFERENCE</span><img src="assets/images/reference-products/promo-filter.jpg" alt="Featured tractor parts reference"><span class="px-deal-copy"><b>${esc(titleCase(cleanTitle(promoProduct.name || 'Tractor Parts Reference')))}</b><small>Diagram and fitment details</small><strong>${compactPrice(promoProduct)}</strong></span><span class="px-countdown"><small>Available for</small><b>RFQ</b></span></button>
           </div>
 
           <div class="px-market-panel px-bestseller-panel">
-            <div class="px-panel-title"><h2>Produk Paling Laku</h2><button type="button" data-all-diagrams>Lihat Semua ${icon('i-chevron', 10)}</button></div>
-            <div class="px-product-strip">${bestSellers.map((item, index) => productCard(item, index === 0 ? '-32%' : '')).join('')}</div>
+            <div class="px-panel-title"><h2>Popular References</h2><button type="button" data-all-diagrams>Browse Catalog ${icon('i-chevron', 10)}</button></div>
+            <div class="px-product-strip">${bestSellers.map(item => productCard(item)).join('')}</div>
           </div>
 
           <div class="px-market-panel px-diagram-panel">

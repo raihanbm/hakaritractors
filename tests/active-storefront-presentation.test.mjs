@@ -7,9 +7,9 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('storefront keeps the approved pixel-exact production shell with current cache markers', async () => {
   const html = await read('index.html');
-  assert.match(html, /assets\/css\/main\.css\?v=hikari-trust-v1/);
-  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-trust-v1/);
-  assert.match(html, /assets\/js\/app\.js\?v=hikari-trust-v1/);
+  assert.match(html, /assets\/css\/main\.css\?v=hikari-ui-professional-v2/);
+  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-ui-professional-v2/);
+  assert.match(html, /assets\/js\/app\.js\?v=hikari-ui-professional-v2/);
   assert.doesNotMatch(html, /preview-data\.js/);
   for (const id of ['globalSearchForm', 'modelStripLinks', 'app', 'cartDrawer', 'modalBackdrop']) {
     assert.match(html, new RegExp(`id="${id}"`));

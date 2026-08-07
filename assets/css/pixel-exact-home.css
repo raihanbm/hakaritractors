@@ -90,6 +90,7 @@
 .px-deal-card{position:relative;width:100%;height:121px;border:1px solid #e1e4e7;border-radius:4px;background:#fff;display:grid;grid-template-columns:58px minmax(0,1fr);grid-template-rows:77px 30px;gap:0 4px;padding:5px;text-align:left}
 .px-deal-card img{width:55px;height:67px;object-fit:contain}.px-sale-badge{position:absolute;left:5px;top:5px;background:#ff3118;color:#fff;border-radius:2px;padding:2px 5px;font-size:8px;font-weight:850}
 .px-deal-copy{display:flex;flex-direction:column;justify-content:center;min-width:0}.px-deal-copy b{font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.px-deal-copy del{font-size:7px;color:#9aa0a6;margin-top:7px}.px-deal-copy strong{font-size:10px;color:#ff3118;margin-top:2px}
+.px-deal-copy small{font-size:7px;color:#69727c;margin-top:5px;line-height:1.25}
 .px-countdown{grid-column:1/-1;border-radius:4px;background:#fff0ed;display:flex;align-items:center;justify-content:center;gap:6px;color:#ff4d27}.px-countdown small{font-size:7px;margin-right:2px}.px-countdown b{background:#fff;color:#121820;border-radius:2px;padding:3px 5px;font-size:10px}.px-countdown i{font-style:normal;color:#111820;font-weight:800}
 .px-product-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
 .px-product-card{min-width:0;height:121px;border:1px solid #e1e4e7;border-radius:4px;background:#fff;padding:4px;text-align:left;display:grid;grid-template-rows:65px minmax(0,1fr)}
@@ -157,4 +158,9 @@
 body:has(.px-home) .support-fab{display:none!important}
 .px-deals-panel .px-panel-title{gap:3px}
 .px-deals-panel .px-panel-title h2{font-size:10px;white-space:nowrap}
+.px-market-panel{box-shadow:0 5px 16px rgba(17,24,31,.045)}
+.px-market-panel:hover{border-color:#cfd6dc}
+.px-deal-card,.px-product-card,.px-diagram-card{transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.px-deal-card:hover,.px-product-card:hover,.px-diagram-card:hover{border-color:#f3a07b;box-shadow:0 7px 16px rgba(17,24,31,.08);transform:translateY(-1px)}
+.px-countdown{background:#f7f8f9;color:#505b65;border:1px solid #e5e8eb}.px-countdown b{color:#d84408;font-size:9px}.px-sale-badge{background:#27313a;letter-spacing:.4px}
 .px-deals-panel .px-panel-title button{font-size:7px;white-space:nowrap;gap:2px}
