@@ -7,9 +7,9 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('storefront keeps the approved pixel-exact production shell with current cache markers', async () => {
   const html = await read('index.html');
-  assert.match(html, /assets\/css\/main\.css\?v=hikari-ui-professional-v3/);
-  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-ui-professional-v3/);
-  assert.match(html, /assets\/js\/app\.js\?v=hikari-ui-diagram-assets-v5/);
+  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v6/);
+  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v6/);
+  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v6/);
   assert.doesNotMatch(html, /preview-data\.js/);
   for (const id of ['globalSearchForm', 'modelStripLinks', 'app', 'cartDrawer', 'modalBackdrop']) {
     assert.match(html, new RegExp(`id="${id}"`));
@@ -41,6 +41,27 @@ test('published diagram and PDF assets stay on the storefront instead of a laggi
   const js = await read('assets/js/app.js');
   assert.match(js, /assets\/diagrams\//);
   assert.match(js, /assets\/documents\//);
+});
+
+test('catalog uses clean parts illustrations with inline filters and no fake gallery or list mode', async () => {
+  const html = await read('index.html');
+  const js = await read('assets/js/app.js');
+  const css = await read('assets/css/main.css');
+  const cropScript = await read('scripts/generate-card-diagram-crops.py');
+  assert.match(html, />Parts Illustrations</);
+  assert.doesNotMatch(html, /data-nav="catalog">Parts <svg/);
+  assert.match(js, /showAllModels/);
+  assert.match(js, /data-toggle-models/);
+  assert.match(js, /data-toggle-categories/);
+  assert.doesNotMatch(js, /id="listViewButton"/);
+  assert.doesNotMatch(js, /class="diagram-nav/);
+  assert.doesNotMatch(js, /class="diagram-thumbs/);
+  assert.match(js, /ILUSTRASI KOMPONEN/);
+  assert.match(js, /Download Source PDF/);
+  assert.match(css, /\.product-card-image img\{[^}]*object-fit:contain!important/);
+  assert.match(css, /\.diagram-stage img\{[^}]*object-fit:contain/);
+  assert.match(cropScript, /CANVAS = \(760, 420\)/);
+  assert.match(cropScript, /product\.get\("fullImage"\)/);
 });
 
 test('parts table keeps price visible in a compact part-name cell', async () => {

@@ -120,8 +120,8 @@
   .detail-grid{grid-template-columns:806px minmax(0,1fr);gap:14px}
   .diagram-panel,.detail-side{border-radius:8px}
   .diagram-head{height:62px;min-height:62px;padding:12px 17px}.diagram-head h2{font-size:14px}.diagram-head p{font-size:9px}
-  .diagram-stage{height:415px;padding:0 38px}
-  .diagram-stage img{width:100%;height:100%;object-fit:cover;object-position:top center}
+  .diagram-stage{height:415px;padding:18px 46px}
+  .diagram-stage img{width:100%;height:100%;object-fit:contain;object-position:center}
   .diagram-tools{left:16px;top:10px}.diagram-tools button{width:36px;height:36px}
   .diagram-nav{width:38px;height:38px}.diagram-nav.prev{left:16px}.diagram-nav.next{right:16px}
   .diagram-thumbs{height:83px;padding:8px}.diagram-thumb{width:145px;height:64px}
@@ -238,8 +238,8 @@ html,body{min-height:100%}body{min-height:100vh;display:flex;flex-direction:colu
 .header-running-rail,.footer-running-rail{display:none!important}.model-strip{height:39px!important}.model-strip-inner{height:39px!important}#app{min-height:calc(100vh - 235px - 244px)!important}.content-page{min-height:calc(100vh - 235px - 244px)!important}.hero-bg img{animation:heroDrift 28s ease-in-out infinite alternate!important}.hero:before,.hero-copy h1 span:after{animation:none!important}.model-card,.system-card,.assembly-card,.product-card,.info-tile,.browse-button,.btn-orange,.support-fab{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease!important}.model-card:hover,.system-card:hover,.assembly-card:hover,.product-card:hover,.info-tile:hover{transform:translateY(-2px)}
 
 /* Imported catalog thumbnails: preserve diagram detail and crop the lower parts-table area only. */
-.product-card-image{overflow:hidden}
-.product-card-image img{width:100%;height:100%;object-fit:cover!important;object-position:center top!important;transform:scale(1.04)!important;transform-origin:top center!important}
+.product-card-image{overflow:hidden;background:#fff}
+.product-card-image img{width:100%;height:100%;object-fit:contain!important;object-position:center!important;transform:none!important}
 @media(max-width:820px){.systems-modal header{min-height:62px!important;padding:0 16px!important}.systems-explorer{padding:18px 14px 20px;overflow:auto;max-height:calc(100vh - 84px)}.systems-explorer-intro{display:grid;gap:16px}.systems-explorer h2{font-size:23px}.systems-explorer p{font-size:11px}.systems-metrics{width:max-content}.systems-search{height:47px;margin-top:18px}.systems-explorer-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.system-explorer-card{min-height:74px;grid-template-columns:34px minmax(0,1fr);gap:9px;padding:10px}.system-explorer-icon{width:34px;height:34px}.system-explorer-icon svg{width:19px;height:19px}.system-explorer-arrow{display:none}.system-explorer-copy b{font-size:10px}.system-explorer-copy small{font-size:8px}.systems-explorer-meta{font-size:9px}.systems-explorer-meta span:last-child{display:none}}
 @media(max-width:520px){.systems-modal{width:calc(100% - 12px)!important}.systems-explorer{padding:15px 12px}.systems-explorer-grid{grid-template-columns:1fr}.systems-explorer h2{font-size:21px}.systems-search kbd{display:none}.systems-metrics span{min-width:86px}.systems-metrics{min-width:172px}}
 /* =====================================================================
@@ -438,6 +438,19 @@ html,body{min-height:100%}body{min-height:100vh;display:flex;flex-direction:colu
   .part-price{font-size:6px;white-space:nowrap}
   .part-add{width:48px!important;min-width:48px!important;height:27px!important;padding:0 2px!important;font-size:6.5px!important;gap:2px}
   .part-add svg{width:11px;height:11px}
+  /* Narrow detail view must contain every child instead of widening the page. */
+  .detail-page,.detail-page .container,.detail-grid,.diagram-panel,.detail-side,.detail-summary,.parts-table-wrap{min-width:0!important;max-width:100%!important;width:100%!important}
+  .detail-page .container{width:calc(100% - 16px)!important}
+  .detail-page .breadcrumbs{max-width:100%;overflow-x:auto;white-space:nowrap}
+  .diagram-stage{width:100%!important;height:300px!important;padding:14px 8px 14px 52px!important;overflow:hidden!important}
+  .diagram-stage img{display:block;max-width:100%!important;max-height:100%!important;width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important}
+  .detail-summary{height:auto!important}
+  .detail-summary-grid{grid-template-columns:minmax(0,1fr)!important}
+  .detail-summary-side{grid-template-columns:minmax(0,1fr)!important}
+  .detail-actions{display:grid!important;grid-template-columns:minmax(0,1fr)!important;width:100%}
+  .detail-actions .btn{width:100%!important;min-width:0!important}
+  .parts-tabs{max-width:100%;overflow-x:auto;overflow-y:hidden}
+  .parts-footer{max-width:100%;gap:6px}.parts-footer button{min-width:0!important}
 }
 
 .rfq-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}

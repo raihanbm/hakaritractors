@@ -36,7 +36,9 @@
     priceMin: Number(readLocal('hikari_price_min_usd', 0)) || 0,
     priceMax: Number(readLocal('hikari_price_max_usd', 0)) || 0,
     sort: 'recommended',
-    view: readLocal('hikari_view', 'grid'),
+    view: 'grid',
+    showAllModels: false,
+    showAllCategories: false,
     page: 1,
     wishlist: new Set(readLocal('hikari_wishlist', [])),
     cart: readLocal('hikari_cart_v4', []),
@@ -59,7 +61,7 @@
 
   const ID_COPY = Object.freeze({
     'Kubota Tractor Parts Reference': 'Referensi Suku Cadang Traktor Kubota',
-    'English': 'English', 'Home': 'Beranda', 'Parts': 'Suku Cadang', 'Diagrams': 'Diagram', 'Models': 'Model Traktor',
+    'English': 'English', 'Home': 'Beranda', 'Parts': 'Suku Cadang', 'Spare Parts': 'Suku Cadang', 'Parts Illustrations': 'Ilustrasi Komponen', 'Support': 'Bantuan', 'Diagrams': 'Ilustrasi Komponen', 'Models': 'Model Traktor',
     'Request a Quote (RFQ)': 'Minta Penawaran (RFQ)', 'Request a Quote': 'Minta Penawaran', 'Deals': 'Penawaran',
     'Help Center': 'Pusat Bantuan', 'Contact Us': 'Hubungi Kami', 'Browse Categories': 'Jelajahi Kategori',
     'SHOP BY TRACTOR MODEL': 'CARI BERDASARKAN MODEL TRAKTOR', 'View All Models': 'Lihat Semua Model',
@@ -83,8 +85,8 @@
     'Chat via WhatsApp': 'Hubungi via WhatsApp', 'Close support chat': 'Tutup bantuan',
     'Your RFQ cart is empty': 'Keranjang penawaran Anda masih kosong',
     'Open a diagram and add exact spare parts by callout.': 'Buka diagram dan tambahkan suku cadang sesuai nomor penunjuk.',
-    'Add to RFQ': 'Tambah ke Penawaran', 'Download Diagram': 'Unduh Diagram', 'Add All Visible to RFQ': 'Tambah Semua ke Penawaran',
-    'Diagram Reference': 'REFERENSI DIAGRAM', 'Compatible Models': 'Model yang Sesuai', 'In Stock': 'Tersedia', 'Limited Stock': 'Stok Terbatas', 'Pre-order': 'Pre-order',
+    'Add to RFQ': 'Tambah ke Penawaran', 'Download Diagram': 'Unduh Ilustrasi', 'Download Source PDF': 'Unduh PDF Sumber', 'Add All Visible to RFQ': 'Tambah Semua ke Penawaran',
+    'Diagram Reference': 'ILUSTRASI KOMPONEN', 'PARTS ILLUSTRATION': 'ILUSTRASI KOMPONEN', 'Reference Code:': 'Kode Referensi:', 'Compatible Models': 'Model yang Sesuai', 'In Stock': 'Tersedia', 'Limited Stock': 'Stok Terbatas', 'Pre-order': 'Pre-order',
     'Need a part not listed?': 'Belum menemukan suku cadang yang dicari?', 'Request Help / RFQ': 'Minta Bantuan / Penawaran',
     'Parts List': 'Daftar Suku Cadang', 'Compatibility': 'Kecocokan', 'Notes': 'Catatan', 'Shipping': 'Pengiriman',
     'Expand All': 'Tampilkan Semua', 'Callout': 'Penunjuk', 'Part Number': 'Nomor Part', 'Part Name': 'Nama Suku Cadang',
@@ -92,7 +94,7 @@
     'From': 'Mulai', 'Assembly Diagrams Found': 'Diagram Rangkaian Ditemukan',
     'Need help finding parts?': 'Butuh bantuan mencari suku cadang?', 'Our parts experts are here for you.': 'Tim spesialis kami siap membantu.',
     'Contact Us': 'Hubungi Kami', 'Tractor Model': 'Model Traktor', 'System Category': 'Kategori Sistem',
-    'Stock Status': 'Status Stok', 'Clear': 'Hapus', 'Show more': 'Tampilkan lainnya', 'All models': 'Semua model',
+    'Stock Status': 'Status Stok', 'Clear': 'Hapus', 'Show more': 'Tampilkan lainnya', 'Show fewer': 'Tampilkan lebih sedikit', 'All models': 'Semua model',
     'Filters': 'Filter', 'Sort by:': 'Urutkan:', 'Recommended': 'Rekomendasi', 'Most parts': 'Part terbanyak',
     'Price: Low to High': 'Harga: Terendah ke Tertinggi', 'Price: High to Low': 'Harga: Tertinggi ke Terendah',
     'Active Filters:': 'Filter Aktif:', 'Clear All': 'Hapus Semua', 'View:': 'Tampilan:',
@@ -731,7 +733,7 @@
           </div>
 
           <div class="px-market-panel px-diagram-panel">
-            <div class="px-panel-title"><h2>Diagram Populer</h2><button type="button" data-all-diagrams>Lihat Semua ${icon('i-chevron', 10)}</button></div>
+            <div class="px-panel-title"><h2>Ilustrasi Komponen Populer</h2><button type="button" data-all-diagrams>Lihat Semua ${icon('i-chevron', 10)}</button></div>
             <div class="px-diagram-strip">${diagrams.map(diagramCard).join('')}</div>
           </div>
 
@@ -812,7 +814,7 @@
       <button class="product-card-image" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(previewImageUrl(product))}" alt="${esc(cleanTitle(product.name))}"></button>
       <div class="product-card-body">
         <div class="product-info-list"><div class="product-kicker">${esc(product.category)}</div><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><div class="product-code">${esc(product.diagramCode)}</div>${matched ? `<div class="badge orange" title="Matched part">Part: ${esc(matched.part_number)}</div>` : ''}<div class="product-models">${models.map(model => `<span>${esc(model)}</span>`).join('')}</div><div class="product-data"><span>⬡ ${Number(product.partCount || 0)} ${t('Parts')}</span><span>▱ ${Number(product.pageCount || 1)} ${t(Number(product.pageCount || 1) > 1 ? 'Pages' : 'Page')}</span></div></div>
-        <div class="product-action-list"><div class="product-price-row"><b>${t('From')} ${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span></div><button class="btn btn-orange" data-open-product="${esc(product.id)}">${t('View Diagram')}</button></div>
+        <div class="product-action-list"><div class="product-price-row"><b>${t('From')} ${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span></div><button class="btn btn-orange" data-open-product="${esc(product.id)}">${state.language === 'id' ? 'Lihat Detail Komponen' : 'View Parts Detail'}</button></div>
       </div>
     </article>`;
   }
@@ -828,13 +830,17 @@
       modelCounts.set(product.model, (modelCounts.get(product.model) || 0) + 1);
       categoryCounts.set(product.category, (categoryCounts.get(product.category) || 0) + 1);
     });
+    const visibleModels = state.showAllModels ? state.models : state.models.slice(0, 7);
+    const visibleCategories = state.showAllCategories ? state.categories : state.categories.slice(0, 7);
+    const modelsToggle = state.models.length > 7 ? `<button class="filter-more" data-toggle-models>${state.showAllModels ? 'Show fewer' : 'Show more'} ${icon('i-down', 11)}</button>` : '';
+    const categoriesToggle = state.categories.length > 7 ? `<button class="filter-more" data-toggle-categories>${state.showAllCategories ? 'Show fewer' : 'Show more'} ${icon('i-down', 11)}</button>` : '';
     return `<aside class="filter-sidebar ${state.filterOpen ? 'open' : ''}" id="filterSidebar">
-      <div class="filter-group"><div class="filter-head"><b>Tractor Model</b><button data-clear-filter="model">Clear</button></div>${state.models.slice(0, 7).map(model => `<label class="filter-option"><input type="radio" name="filter-model" value="${esc(model)}" ${state.selectedModel === model ? 'checked' : ''}><span>${esc(model)}</span><em>(${modelCounts.get(model) || 0})</em></label>`).join('')}<button class="filter-more" data-models-page>Show more ${icon('i-down', 11)}</button></div>
-      <div class="filter-group"><div class="filter-head"><b>System Category</b><button data-clear-filter="category">Clear</button></div>${state.categories.slice(0, 7).map(category => `<label class="filter-option"><input type="radio" name="filter-category" value="${esc(category.name)}" ${state.selectedCategory === category.name ? 'checked' : ''}><span>${esc(category.name)}</span><em>(${categoryCounts.get(category.name) || 0})</em></label>`).join('')}<button class="filter-more" data-all-categories-filter>Show more ${icon('i-down', 11)}</button></div>
+      <div class="filter-group"><div class="filter-head"><b>Tractor Model</b><button data-clear-filter="model">Clear</button></div>${visibleModels.map(model => `<label class="filter-option"><input type="radio" name="filter-model" value="${esc(model)}" ${state.selectedModel === model ? 'checked' : ''}><span>${esc(modelLabel(model))}</span><em>(${modelCounts.get(model) || 0})</em></label>`).join('')}${modelsToggle}</div>
+      <div class="filter-group"><div class="filter-head"><b>System Category</b><button data-clear-filter="category">Clear</button></div>${visibleCategories.map(category => `<label class="filter-option"><input type="radio" name="filter-category" value="${esc(category.name)}" ${state.selectedCategory === category.name ? 'checked' : ''}><span>${esc(category.name)}</span><em>(${categoryCounts.get(category.name) || 0})</em></label>`).join('')}${categoriesToggle}</div>
       <div class="filter-group"><div class="filter-head"><b>Stock Status</b><button data-clear-filter="stock">Clear</button></div><label class="filter-option"><input type="checkbox" name="filter-stock" value="in" ${state.stock.has('in') ? 'checked' : ''}><span class="status">In Stock</span></label><label class="filter-option"><input type="checkbox" name="filter-stock" value="low" ${state.stock.has('low') ? 'checked' : ''}><span>🟠 Available</span></label><label class="filter-option"><input type="checkbox" name="filter-stock" value="out" ${state.stock.has('out') ? 'checked' : ''}><span>🔴 Pre-order</span></label></div>
       <div class="filter-group price-filter"><div class="filter-head"><b>${t('Price Range')} (${CURRENCY.code})</b><button type="button" data-clear-filter="price">${t('Clear')}</button></div><div class="price-range-control" style="--min:${(priceMin / maxPrice) * 100}%;--max:${(priceMax / maxPrice) * 100}%"><div class="range-track"></div><input id="priceMinRange" type="range" min="0" max="${maxPrice}" step="1" value="${priceMin}" aria-label="Minimum price"><input id="priceMaxRange" type="range" min="0" max="${maxPrice}" step="1" value="${priceMax}" aria-label="Maximum price"></div><div class="price-labels"><span id="priceRangeLabel">${esc(priceLabel)}</span><span>${money(maxPrice)}+</span></div></div>
       <div class="filter-group"><div class="filter-head"><b>Compatibility</b><button data-clear-filter="model">Clear</button></div><input class="compat-input" id="compatInput" placeholder="Search model compatibility..."><div class="filter-chips">${state.selectedModel ? `<span>${esc(state.selectedModel)} <button data-clear-filter="model">×</button></span>` : '<span>All models</span>'}</div></div>
-      <div class="filter-group"><button class="btn btn-orange" id="applyMobileFilters" style="width:100%">${esc(state.language === 'id' ? `Tampilkan ${rows.length} diagram` : `Show ${rows.length} diagrams`)}</button></div>
+      <div class="filter-group"><button class="btn btn-orange" id="applyMobileFilters" style="width:100%">${esc(state.language === 'id' ? `Tampilkan ${rows.length} ilustrasi` : `Show ${rows.length} illustrations`)}</button></div>
     </aside>`;
   }
 
@@ -855,26 +861,24 @@
     const start = (state.page - 1) * PAGE_SIZE;
     const pageRows = rows.slice(start, start + PAGE_SIZE);
     const selectedModelLabel = modelLabel(state.selectedModel);
-    const title = state.selectedCategory ? `${state.selectedCategory} ${t('Parts')}` : state.selectedModel ? `${selectedModelLabel} ${t('Parts')}` : (state.language === 'id' ? 'Suku Cadang Traktor & Diagram Rangkaian' : 'Tractor Parts & Assembly Diagrams');
+    const title = state.selectedCategory ? `${state.selectedCategory} ${t('Parts')}` : state.selectedModel ? `${selectedModelLabel} ${t('Parts')}` : (state.language === 'id' ? 'Katalog Suku Cadang Traktor' : 'Tractor Parts Catalog');
     const context = state.selectedModel
-      ? (state.language === 'id' ? `Telusuri suku cadang yang tepat untuk ${selectedModelLabel} berdasarkan sistem, nomor part, atau diagram.` : `Browse the exact spare parts for ${selectedModelLabel} by system, part number, or diagram.`)
-      : (state.language === 'id' ? 'Telusuri diagram rangkaian, lalu pesan suku cadang berdasarkan nomor penunjuk dan nomor part.' : 'Browse exploded assembly diagrams, then order exact spare parts by callout and part number.');
+      ? (state.language === 'id' ? `Telusuri suku cadang yang tepat untuk ${selectedModelLabel} berdasarkan sistem, nomor part, atau ilustrasi komponen.` : `Browse the exact spare parts for ${selectedModelLabel} by system, part number, or parts illustration.`)
+      : (state.language === 'id' ? 'Pilih ilustrasi komponen, lalu cocokkan nomor penunjuk dengan nomor part yang dibutuhkan.' : 'Choose a parts illustration, then match its callout with the required part number.');
     const resultLabel = state.selectedModel
       ? `${modelPartCount(state.selectedModel).toLocaleString()} ${state.language === 'id' ? 'sparepart tersedia' : 'spare parts available'}`
-      : (state.language === 'id' ? `${rows.length} ${t('Assembly Diagrams Found')}` : `${rows.length} Assembly Diagrams Found`);
+      : (state.language === 'id' ? `${rows.length} ilustrasi komponen ditemukan` : `${rows.length} parts illustrations found`);
     const resultSummary = state.language === 'id'
-      ? `Menampilkan ${rows.length ? start + 1 : 0} sampai ${Math.min(start + PAGE_SIZE, rows.length)} dari ${rows.length} diagram`
-      : `Showing ${rows.length ? start + 1 : 0} to ${Math.min(start + PAGE_SIZE, rows.length)} of ${rows.length} diagrams`;
+      ? `Menampilkan ${rows.length ? start + 1 : 0} sampai ${Math.min(start + PAGE_SIZE, rows.length)} dari ${rows.length} ilustrasi`
+      : `Showing ${rows.length ? start + 1 : 0} to ${Math.min(start + PAGE_SIZE, rows.length)} of ${rows.length} illustrations`;
     app.innerHTML = `<section class="page-section"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a>${state.selectedModel ? `<a href="${routeHash('catalog', { model: state.selectedModel })}">${esc(modelLabel(state.selectedModel))}</a>` : ''}${state.selectedCategory ? `<span>${esc(state.selectedCategory)}</span>` : ''}</nav>
       <div class="catalog-title-row"><div class="catalog-title"><h1>${esc(title)} <span>${esc(resultLabel)}</span></h1><p>${esc(context)}</p></div><div class="help-card">${icon('i-engine', 34)}<span><b>Need help finding parts?</b><small>Our parts experts are here for you.</small></span><button data-contact>Contact Us</button></div></div>
-      <div class="catalog-layout">${filterSidebarHtml(rows)}<div class="catalog-main"><div class="catalog-toolbar"><button class="mobile-filter-trigger" id="mobileFilterTrigger">${icon('i-filter', 15)}Filters</button><span class="toolbar-label">Sort by:</span><select class="sort-select" id="catalogSort"><option value="recommended">Recommended</option><option value="parts">Most parts</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Name A–Z</option></select><div class="active-filters"><span>Active Filters:</span>${activeFilterHtml()}${activeFilterHtml() ? '<button class="clear-all" id="clearAllFilters">Clear All</button>' : ''}</div><div class="view-controls"><span>View:</span><button id="gridViewButton" class="${state.view === 'grid' ? 'active' : ''}">${icon('i-grid', 16)}</button><button id="listViewButton" class="${state.view === 'list' ? 'active' : ''}">${icon('i-list', 16)}</button></div></div>
-      <div class="assembly-grid ${state.view === 'list' ? 'product-list' : ''}">${pageRows.length ? pageRows.map(productCard).join('') : `<div class="empty-state">${icon('i-search', 48)}<div><h3>No matching diagrams</h3><p>Try a broader model, system or part-number search.</p><button class="btn btn-orange" id="emptyReset" style="margin-top:15px">Reset filters</button></div></div>`}</div>
+      <div class="catalog-layout">${filterSidebarHtml(rows)}<div class="catalog-main"><div class="catalog-toolbar"><button class="mobile-filter-trigger" id="mobileFilterTrigger">${icon('i-filter', 15)}Filters</button><span class="toolbar-label">Sort by:</span><select class="sort-select" id="catalogSort"><option value="recommended">Recommended</option><option value="parts">Most parts</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Name A–Z</option></select><div class="active-filters"><span>Active Filters:</span>${activeFilterHtml()}${activeFilterHtml() ? '<button class="clear-all" id="clearAllFilters">Clear All</button>' : ''}</div></div>
+      <div class="assembly-grid">${pageRows.length ? pageRows.map(productCard).join('') : `<div class="empty-state">${icon('i-search', 48)}<div><h3>No matching diagrams</h3><p>Try a broader model, system or part-number search.</p><button class="btn btn-orange" id="emptyReset" style="margin-top:15px">Reset filters</button></div></div>`}</div>
       <div class="catalog-results-summary">${esc(resultSummary)}</div>${paginationHtml(pages)}</div></div></div></section>`;
 
     $('#catalogSort').value = state.sort;
     $('#catalogSort').onchange = event => { state.sort = event.target.value; state.page = 1; renderCatalog(); };
-    $('#gridViewButton').onclick = () => { state.view = 'grid'; writeLocal('hikari_view', state.view); renderCatalog(); };
-    $('#listViewButton').onclick = () => { state.view = 'list'; writeLocal('hikari_view', state.view); renderCatalog(); };
     $$('[data-open-product]').forEach(button => button.onclick = () => go('diagram', { id: button.dataset.openProduct, q: state.query }));
     $$('[data-wishlist]').forEach(button => button.onclick = event => { event.stopPropagation(); toggleWishlist(button.dataset.wishlist); renderCatalog(); });
     $$('input[name="filter-model"]').forEach(input => input.onchange = () => { state.selectedModel = input.value; state.page = 1; syncCatalogHash(); });
@@ -888,8 +892,8 @@
     $('#mobileFilterTrigger').onclick = () => { state.filterOpen = true; $('#filterSidebar').classList.add('open'); $('#drawerBackdrop').classList.add('open'); document.body.classList.add('no-scroll'); };
     $('#applyMobileFilters').onclick = () => closeFilterDrawer();
     $('[data-contact]').onclick = () => go('contact');
-    $('[data-models-page]')?.addEventListener('click', () => go('models'));
-    $('[data-all-categories-filter]')?.addEventListener('click', () => openCategoryModal());
+    $('[data-toggle-models]')?.addEventListener('click', () => { state.showAllModels = !state.showAllModels; renderCatalog(); });
+    $('[data-toggle-categories]')?.addEventListener('click', () => { state.showAllCategories = !state.showAllCategories; renderCatalog(); });
     $$('.pagination button[data-page]').forEach(button => button.onclick = () => { state.page = Number(button.dataset.page); renderCatalog(); window.scrollTo({ top: 120, behavior: 'smooth' }); });
   }
 
@@ -1035,10 +1039,10 @@
     const related = state.products.filter(item => item.id !== product.id && item.model === product.model && item.category === product.category).slice(0, 5);
     const stock = stockMeta(product);
     app.innerHTML = `<section class="detail-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a><a href="${routeHash('catalog', { model: product.model })}">${esc(product.model)}</a><a href="${routeHash('catalog', { model: product.model, category: product.category })}">${esc(product.category)}</a><span>${esc(cleanTitle(product.name))}</span></nav>
-      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><span>Page 1 / ${Number(sheet.page_count || 1)}</span><button class="btn" id="detailFullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download diagram">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print diagram">${icon('i-print', 18)}</button></div><button class="diagram-nav prev" aria-label="Previous page">${icon('i-chevron', 17)}</button><img id="diagramImage" src="${esc(sheet.preview_image || sheet.full_image || product.previewImage || product.fullImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} exploded parts diagram"><button class="diagram-nav next" aria-label="Next page">${icon('i-chevron', 17)}</button></div><div class="diagram-thumbs"><button class="diagram-thumb active"><img src="${esc(sheet.preview_image || previewImageUrl(product))}" alt="Diagram preview"></button>${Number(sheet.page_count || 1) > 1 ? `<button class="diagram-thumb"><img src="${esc(sheet.full_image || product.fullImage || previewImageUrl(product))}" alt="Parts list preview"></button>` : ''}</div></article>
-      <article class="detail-side"><div class="detail-summary"><div class="detail-summary-grid"><div><span class="official-label">DIAGRAM REFERENCE</span><h1>${esc(titleCase(cleanTitle(sheet.title)))}</h1><div class="detail-code">Diagram Code: ${esc(sheet.diagram_code)}</div><div class="compatibility"><small>Compatible Models</small><div class="compatibility-row"><span class="badge">${esc(product.model)}</span><a href="${routeHash('catalog', { model: product.model })}">View all compatible models</a></div></div></div><div class="detail-summary-side"><div class="stock-box"><b>● ${esc(stock.label)}</b><small>${product.stock === 'out' ? 'Availability confirmed during RFQ' : 'Ships after stock verification'}</small></div><div class="help-box"><b>Need a part not listed?</b><small>Our experts can help you find it.</small><button data-contact>Request Help / RFQ</button></div></div></div><div class="detail-actions"><button class="btn" id="downloadDiagram">${icon('i-download', 15)}Download Diagram</button><button class="btn btn-orange" id="addAllVisible">${icon('i-list', 15)}Add All Visible to RFQ</button></div></div>
+      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><button class="btn" id="detailFullscreen" aria-label="Open illustration fullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download source PDF">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print illustration">${icon('i-print', 18)}</button></div><img id="diagramImage" src="${esc(sheet.preview_image || product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} parts illustration"></div></article>
+      <article class="detail-side"><div class="detail-summary"><div class="detail-summary-grid"><div><span class="official-label">${state.language === 'id' ? 'ILUSTRASI KOMPONEN' : 'PARTS ILLUSTRATION'}</span><h1>${esc(titleCase(cleanTitle(sheet.title)))}</h1><div class="detail-code">${state.language === 'id' ? 'Kode Referensi' : 'Reference Code'}: ${esc(sheet.diagram_code)}</div><div class="compatibility"><small>Compatible Models</small><div class="compatibility-row"><span class="badge">${esc(product.model)}</span><a href="${routeHash('catalog', { model: product.model })}">View all compatible models</a></div></div></div><div class="detail-summary-side"><div class="stock-box"><b>● ${esc(stock.label)}</b><small>${product.stock === 'out' ? 'Availability confirmed during RFQ' : 'Ships after stock verification'}</small></div><div class="help-box"><b>Need a part not listed?</b><small>Our experts can help you find it.</small><button data-contact>Request Help / RFQ</button></div></div></div><div class="detail-actions"><button class="btn" id="downloadDiagram">${icon('i-download', 15)}Download Source PDF</button><button class="btn btn-orange" id="addAllVisible">${icon('i-list', 15)}Add All Visible to RFQ</button></div></div>
       ${detailTabHtml(product, sheet, parts, shown)}</article></div>
-      <section class="related-section"><div class="section-headline"><div><div class="section-label">Related Assemblies for ${esc(product.category)}</div></div><button class="view-all" data-view-related>View All ${esc(product.category)} Diagrams ${icon('i-chevron', 13)}</button></div><div class="related-grid">${related.map(item => `<button class="related-card" data-open-product="${esc(item.id)}"><img src="${esc(item.previewImage || FALLBACK_IMAGE)}" alt=""><span><b>${esc(titleCase(cleanTitle(item.name)))}</b><small>Diagram Code: ${esc(item.diagramCode)}</small><span class="status">${esc(stockMeta(item).label)}</span></span></button>`).join('') || '<div class="empty-state"><p>No related assemblies found.</p></div>'}</div></section>
+      <section class="related-section"><div class="section-headline"><div><div class="section-label">Related Parts Illustrations for ${esc(product.category)}</div></div><button class="view-all" data-view-related>View All ${esc(product.category)} Illustrations ${icon('i-chevron', 13)}</button></div><div class="related-grid">${related.map(item => `<button class="related-card" data-open-product="${esc(item.id)}"><img src="${esc(item.previewImage || FALLBACK_IMAGE)}" alt=""><span><b>${esc(titleCase(cleanTitle(item.name)))}</b><small>Diagram Code: ${esc(item.diagramCode)}</small><span class="status">${esc(stockMeta(item).label)}</span></span></button>`).join('') || '<div class="empty-state"><p>No related assemblies found.</p></div>'}</div></section>
       </div></section>`;
     bindDetailEvents(parts);
   }
