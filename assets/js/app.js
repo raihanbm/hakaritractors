@@ -197,6 +197,9 @@
     if (mediaId) return api(`/api/public-media?id=${encodeURIComponent(mediaId)}`);
     if (!sourcePath) return '';
     if (/^https?:\/\//i.test(sourcePath)) return sourcePath;
+    // Published exploded diagrams are static Storefront files. Do not proxy
+    // them through Internal, where a deployment can lag behind visual assets.
+    if (String(sourcePath).startsWith('assets/diagrams/')) return sourcePath;
     return api(`/api/public-assets?path=${encodeURIComponent(String(sourcePath).replace(/^\/+/, ''))}`);
   }
   // The custom Apache/cPanel target may lag behind Vercel for newly published
