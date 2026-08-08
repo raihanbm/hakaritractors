@@ -199,6 +199,15 @@
     if (/^https?:\/\//i.test(sourcePath)) return sourcePath;
     return api(`/api/public-assets?path=${encodeURIComponent(String(sourcePath).replace(/^\/+/, ''))}`);
   }
+  // The custom Apache/cPanel target may lag behind Vercel for newly published
+  // diagram folders. Use the verified Vercel asset only for these five new books.
+  function previewImageUrl(product) {
+    const source = product?.previewImage || FALLBACK_IMAGE;
+    const importedBook = /^assets\/diagrams\/(?:l4028|l3800d|l3218dt-id|l4018dt-id-l4018tk-id|l5228)\//.test(source);
+    return importedBook && /(^|\.)hikaritractors\.com$/i.test(location.hostname)
+      ? `https://hakaritractors.vercel.app/${source}`
+      : source;
+  }
   function usdPrice(part, field = 'retail_price') {
     const raw = Number(part?.[field] ?? part?.retail_price ?? 0);
     return part?.currency === 'IDR' ? raw / 16300 : raw;
@@ -553,7 +562,7 @@
     popover.innerHTML = results.map(product => {
       const match = partMatches(product, query)[0];
       return `<button class="search-suggestion" type="button" data-suggestion-id="${esc(product.id)}">
-        <img src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="">
+        <img src="${esc(previewImageUrl(product))}" alt="">
         <span><b>${esc(match ? `${match.part_number} — ${match.name}` : cleanTitle(product.name))}</b><small>${esc(product.model)} · ${esc(product.category)} · Diagram ${esc(product.diagramCode)}</small></span>
         <em>${match ? 'Part match' : 'Open diagram'}</em>
       </button>`;
@@ -564,7 +573,7 @@
   function homeProductCard(product) {
     const stock = stockMeta(product);
     return `<article class="assembly-card">
-      <button class="assembly-image" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}"></button>
+      <button class="assembly-image" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(previewImageUrl(product))}" alt="${esc(cleanTitle(product.name))}"></button>
       <div class="assembly-copy"><small>${esc(product.category)}</small><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><code>${esc(product.diagramCode)}</code><div class="assembly-badges"><span>${esc(product.model)}</span></div><div class="assembly-meta"><span>⬡ ${Number(product.partCount || 0)} Parts</span><span>↻ Updated catalog</span></div></div>
       <div class="assembly-buy"><small>From</small><b>${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span><button class="btn btn-orange" data-open-product="${esc(product.id)}">View Diagram</button></div>
     </article>`;
@@ -575,7 +584,7 @@
     return `<article class="home-market-card">
       <button class="home-market-image" data-open-product="${esc(product.id)}" aria-label="Open ${esc(cleanTitle(product.name))}">
         ${badge ? `<span class="home-market-badge">${esc(badge)}</span>` : ''}
-        <img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}">
+        <img loading="lazy" src="${esc(previewImageUrl(product))}" alt="${esc(cleanTitle(product.name))}">
       </button>
       <div class="home-market-body">
         <span class="home-market-category">${esc(product.category)}</span>
@@ -667,11 +676,11 @@
       return money(productPrice(product)).replace('.00', '');
     };
     const productCard = (item, badge = '') => `<button class="px-product-card" type="button" data-open-product="${esc(item.product.id)}">
-      <span class="px-product-media">${badge ? `<em>${esc(badge)}</em>` : ''}<img src="${esc(item.image || item.product.previewImage || FALLBACK_IMAGE)}" alt="${esc(item.title)}"></span>
+      <span class="px-product-media">${badge ? `<em>${esc(badge)}</em>` : ''}<img src="${esc(item.image || previewImageUrl(item.product))}" alt="${esc(item.title)}"></span>
       <span class="px-product-copy"><b>${esc(item.title)}</b><small>${esc(item.product.diagramCode || item.product.sku || '')}</small><strong>${compactPrice(item.product)}</strong>${item.sold ? `<i>${esc(item.sold)}</i>` : ''}</span>
     </button>`;
     const diagramCard = product => `<button class="px-diagram-card" type="button" data-open-product="${esc(product.id)}">
-      <img src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}">
+      <img src="${esc(previewImageUrl(product))}" alt="${esc(cleanTitle(product.name))}">
       <span><b>${esc(titleCase(cleanTitle(product.name)))}</b><small>${esc(product.model)}</small><em>${Number(product.partCount || 0)} Part</em></span>
     </button>`;
 
@@ -797,7 +806,7 @@
     return `<article class="product-card">
       ${tags ? `<span class="product-card-tag">${tags}</span>` : ''}
       <button class="product-heart ${saved ? 'active' : ''}" data-wishlist="${esc(product.id)}" aria-label="Save assembly">${icon('i-heart', 17)}</button>
-      <button class="product-card-image" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(product.name))}"></button>
+      <button class="product-card-image" data-open-product="${esc(product.id)}"><img loading="lazy" src="${esc(previewImageUrl(product))}" alt="${esc(cleanTitle(product.name))}"></button>
       <div class="product-card-body">
         <div class="product-info-list"><div class="product-kicker">${esc(product.category)}</div><h3>${esc(titleCase(cleanTitle(product.name)))}</h3><div class="product-code">${esc(product.diagramCode)}</div>${matched ? `<div class="badge orange" title="Matched part">Part: ${esc(matched.part_number)}</div>` : ''}<div class="product-models">${models.map(model => `<span>${esc(model)}</span>`).join('')}</div><div class="product-data"><span>⬡ ${Number(product.partCount || 0)} ${t('Parts')}</span><span>▱ ${Number(product.pageCount || 1)} ${t(Number(product.pageCount || 1) > 1 ? 'Pages' : 'Page')}</span></div></div>
         <div class="product-action-list"><div class="product-price-row"><b>${t('From')} ${money(productPrice(product))}</b><span class="status">${esc(stock.label)}</span></div><button class="btn btn-orange" data-open-product="${esc(product.id)}">${t('View Diagram')}</button></div>
@@ -1023,7 +1032,7 @@
     const related = state.products.filter(item => item.id !== product.id && item.model === product.model && item.category === product.category).slice(0, 5);
     const stock = stockMeta(product);
     app.innerHTML = `<section class="detail-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a><a href="${routeHash('catalog', { model: product.model })}">${esc(product.model)}</a><a href="${routeHash('catalog', { model: product.model, category: product.category })}">${esc(product.category)}</a><span>${esc(cleanTitle(product.name))}</span></nav>
-      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><span>Page 1 / ${Number(sheet.page_count || 1)}</span><button class="btn" id="detailFullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download diagram">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print diagram">${icon('i-print', 18)}</button></div><button class="diagram-nav prev" aria-label="Previous page">${icon('i-chevron', 17)}</button><img id="diagramImage" src="${esc(sheet.preview_image || sheet.full_image || product.previewImage || product.fullImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} exploded parts diagram"><button class="diagram-nav next" aria-label="Next page">${icon('i-chevron', 17)}</button></div><div class="diagram-thumbs"><button class="diagram-thumb active"><img src="${esc(sheet.preview_image || product.previewImage || FALLBACK_IMAGE)}" alt="Diagram preview"></button>${Number(sheet.page_count || 1) > 1 ? `<button class="diagram-thumb"><img src="${esc(sheet.full_image || product.fullImage || product.previewImage || FALLBACK_IMAGE)}" alt="Parts list preview"></button>` : ''}</div></article>
+      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><span>Page 1 / ${Number(sheet.page_count || 1)}</span><button class="btn" id="detailFullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download diagram">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print diagram">${icon('i-print', 18)}</button></div><button class="diagram-nav prev" aria-label="Previous page">${icon('i-chevron', 17)}</button><img id="diagramImage" src="${esc(sheet.preview_image || sheet.full_image || product.previewImage || product.fullImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} exploded parts diagram"><button class="diagram-nav next" aria-label="Next page">${icon('i-chevron', 17)}</button></div><div class="diagram-thumbs"><button class="diagram-thumb active"><img src="${esc(sheet.preview_image || previewImageUrl(product))}" alt="Diagram preview"></button>${Number(sheet.page_count || 1) > 1 ? `<button class="diagram-thumb"><img src="${esc(sheet.full_image || product.fullImage || previewImageUrl(product))}" alt="Parts list preview"></button>` : ''}</div></article>
       <article class="detail-side"><div class="detail-summary"><div class="detail-summary-grid"><div><span class="official-label">DIAGRAM REFERENCE</span><h1>${esc(titleCase(cleanTitle(sheet.title)))}</h1><div class="detail-code">Diagram Code: ${esc(sheet.diagram_code)}</div><div class="compatibility"><small>Compatible Models</small><div class="compatibility-row"><span class="badge">${esc(product.model)}</span><a href="${routeHash('catalog', { model: product.model })}">View all compatible models</a></div></div></div><div class="detail-summary-side"><div class="stock-box"><b>● ${esc(stock.label)}</b><small>${product.stock === 'out' ? 'Availability confirmed during RFQ' : 'Ships after stock verification'}</small></div><div class="help-box"><b>Need a part not listed?</b><small>Our experts can help you find it.</small><button data-contact>Request Help / RFQ</button></div></div></div><div class="detail-actions"><button class="btn" id="downloadDiagram">${icon('i-download', 15)}Download Diagram</button><button class="btn btn-orange" id="addAllVisible">${icon('i-list', 15)}Add All Visible to RFQ</button></div></div>
       ${detailTabHtml(product, sheet, parts, shown)}</article></div>
       <section class="related-section"><div class="section-headline"><div><div class="section-label">Related Assemblies for ${esc(product.category)}</div></div><button class="view-all" data-view-related>View All ${esc(product.category)} Diagrams ${icon('i-chevron', 13)}</button></div><div class="related-grid">${related.map(item => `<button class="related-card" data-open-product="${esc(item.id)}"><img src="${esc(item.previewImage || FALLBACK_IMAGE)}" alt=""><span><b>${esc(titleCase(cleanTitle(item.name)))}</b><small>Diagram Code: ${esc(item.diagramCode)}</small><span class="status">${esc(stockMeta(item).label)}</span></span></button>`).join('') || '<div class="empty-state"><p>No related assemblies found.</p></div>'}</div></section>
@@ -1129,7 +1138,7 @@
       sku: part.part_number,
       name: part.name,
       price: partPrice(part),
-      image: sheet.preview_image || product.previewImage || FALLBACK_IMAGE,
+      image: sheet.preview_image || previewImageUrl(product),
       meta: `${sheet.model_code} · ${sheet.diagram_code} · Callout ${part.callout} · Diagram qty ${Number(part.quantity) || 1}`,
       qty: 1
     });
