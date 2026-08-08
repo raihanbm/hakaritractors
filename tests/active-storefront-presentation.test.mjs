@@ -132,8 +132,8 @@ test('parts table keeps price visible in a compact part-name cell', async () => 
 
 test('homepage SEO identifies Hikari Tractors Indonesia and Kubota references safely', async () => {
   const html = await read('index.html');
-  assert.match(html, /<title>Hikari Tractors Indonesia \| Kubota Tractor Parts Reference<\/title>/);
-  assert.match(html, /Find Kubota tractor parts by model, part number, and exploded diagram/);
+  assert.match(html, /<title>Hikari Tractors Indonesia \| Kubota Tractor Spare Parts &amp; RFQ<\/title>/);
+  assert.match(html, /Find Kubota tractor spare parts by model, part number, and exploded diagram\. Hikari Tractors Indonesia supports fitment checks and RFQ/);
   assert.match(html, /Hikari Tractors Indonesia/);
   assert.match(html, /assets\/images\/hikari-logo\.png/);
   assert.match(html, /application\/ld\+json/);
