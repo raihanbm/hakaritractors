@@ -282,7 +282,7 @@
     return { name, params: new URLSearchParams(search) };
   }
 
-  const INQUIRY_SESSION_KEY = 'hikari_inquiry_assist_seen';
+  const INQUIRY_SESSION_KEY = 'hikari_inquiry_assist_seen_v2';
   let inquiryPopupTimer = null;
   let inquiryPopupScrollHandler = null;
 
@@ -312,6 +312,11 @@
     };
   }
 
+  function canonicalInquiryPageUrl() {
+    const base = String(SITE.publicUrl || 'https://hikaritractors.com').replace(/\/+$/, '');
+    return `${base}${location.pathname}${location.search}${location.hash}`;
+  }
+
   function buildInquiryContext(seed = {}) {
     const { params } = parseRoute();
     const product = state.currentProduct || {};
@@ -320,7 +325,7 @@
     const category = seed.category || params.get('category') || state.selectedCategory || product.category || sheet.category || '';
     const query = seed.query || params.get('q') || state.query || '';
     const diagram = seed.diagram || seed.diagramCode || params.get('diagram') || product.diagramCode || sheet.diagram_code || '';
-    return { model, category, query, diagram, pageUrl: location.href };
+    return { model, category, query, diagram, pageUrl: canonicalInquiryPageUrl() };
   }
 
   function inquiryContextText(context = buildInquiryContext()) {
@@ -382,7 +387,7 @@
     });
     $$('[data-inquiry-rfq]', root).forEach(button => button.onclick = () => openInquiryRfq(inquiryContextForTrigger(button)));
     $('[data-inquiry-close]', root)?.addEventListener('click', () => {
-      sessionStorage.setItem('hikari_inquiry_assist_seen', 'dismissed');
+      sessionStorage.setItem(INQUIRY_SESSION_KEY, 'dismissed');
       $('#inquiryAssistPopup')?.remove();
     });
   }
@@ -396,18 +401,18 @@
 
   function scheduleInquiryPopup() {
     clearInquiryPopupTrigger();
-    if (parseRoute().name !== 'home' || sessionStorage.getItem('hikari_inquiry_assist_seen')) return;
+    if (parseRoute().name !== 'home' || sessionStorage.getItem(INQUIRY_SESSION_KEY)) return;
     const show = () => {
-      if (parseRoute().name !== 'home' || sessionStorage.getItem('hikari_inquiry_assist_seen')) return;
+      if (parseRoute().name !== 'home' || sessionStorage.getItem(INQUIRY_SESSION_KEY)) return;
       const popup = $('#inquiryAssistPopup');
       if (!popup) return;
-      sessionStorage.setItem('hikari_inquiry_assist_seen', 'shown');
+      sessionStorage.setItem(INQUIRY_SESSION_KEY, 'shown');
       popup.hidden = false;
       popup.classList.add('is-open');
       clearInquiryPopupTrigger();
     };
-    inquiryPopupTimer = window.setTimeout(show, 12000);
-    inquiryPopupScrollHandler = () => { if (window.scrollY > 420) show(); };
+    inquiryPopupTimer = window.setTimeout(show, 10000);
+    inquiryPopupScrollHandler = () => { if (window.scrollY > 180) show(); };
     window.addEventListener('scroll', inquiryPopupScrollHandler, { passive: true });
   }
   function toast(title, message = '') {

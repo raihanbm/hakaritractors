@@ -5,6 +5,7 @@
     storefront: Object.freeze({
       phone: "+62 852-8755-1869",
       email: "info@hikaritractors.com",
+      publicUrl: "https://hikaritractors.com",
       genuineLabel: "Kubota tractor parts reference · Dukungan RFQ Indonesia",
       currencies: Object.freeze({
         IDR: Object.freeze({ code: "IDR", symbol: "Rp", usdRate: 16300, locale: "id-ID", fractionDigits: 0 }),

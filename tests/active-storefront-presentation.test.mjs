@@ -7,9 +7,9 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('storefront keeps the approved pixel-exact production shell with current cache markers', async () => {
   const html = await read('index.html');
-  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v11/);
-  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v11/);
-  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v11/);
+  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v12/);
+  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v12/);
+  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v12/);
   assert.doesNotMatch(html, /preview-data\.js/);
   for (const id of ['globalSearchForm', 'modelStripLinks', 'app', 'cartDrawer', 'modalBackdrop']) {
     assert.match(html, new RegExp(`id="${id}"`));
@@ -190,12 +190,19 @@ test('inquiry assistance preserves catalog context across WhatsApp, RFQ, empty s
   assert.match(app, /data-inquiry-whatsapp/);
   assert.match(app, /data-inquiry-rfq/);
   assert.match(app, /empty-search-inquiry/);
-  assert.match(app, /sessionStorage\.getItem\('hikari_inquiry_assist_seen'\)/);
-  assert.match(app, /sessionStorage\.setItem\('hikari_inquiry_assist_seen'/);
+  assert.match(app, /const INQUIRY_SESSION_KEY = 'hikari_inquiry_assist_seen_v2'/);
+  assert.match(app, /sessionStorage\.getItem\(INQUIRY_SESSION_KEY\)/);
+  assert.match(app, /sessionStorage\.setItem\(INQUIRY_SESSION_KEY/);
+  assert.match(app, /function canonicalInquiryPageUrl/);
+  assert.match(app, /pageUrl: canonicalInquiryPageUrl\(\)/);
+  assert.doesNotMatch(app, /pageUrl: location\.href/);
+  assert.match(app, /window\.setTimeout\(show, 10000\)/);
+  assert.match(app, /window\.scrollY > 180/);
   assert.match(app, /model, category, query, diagram/);
   assert.match(app, /openCart\(\)/);
   assert.match(css, /\.inquiry-assist-banner/);
   assert.match(css, /\.inquiry-assist-popup/);
   assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.inquiry-assist-popup/);
   assert.match(runtime, /phone: "\+62 852-8755-1869"/);
+  assert.match(runtime, /publicUrl: "https:\/\/hikaritractors\.com"/);
 });
