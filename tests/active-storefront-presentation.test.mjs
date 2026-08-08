@@ -9,7 +9,7 @@ test('storefront keeps the approved pixel-exact production shell with current ca
   const html = await read('index.html');
   assert.match(html, /assets\/css\/main\.css\?v=hikari-ui-professional-v3/);
   assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-ui-professional-v3/);
-  assert.match(html, /assets\/js\/app\.js\?v=hikari-ui-diagram-assets-v4/);
+  assert.match(html, /assets\/js\/app\.js\?v=hikari-ui-diagram-assets-v5/);
   assert.doesNotMatch(html, /preview-data\.js/);
   for (const id of ['globalSearchForm', 'modelStripLinks', 'app', 'cartDrawer', 'modalBackdrop']) {
     assert.match(html, new RegExp(`id="${id}"`));
