@@ -92,7 +92,7 @@
     'Chat via WhatsApp': 'Hubungi via WhatsApp', 'Close support chat': 'Tutup bantuan',
     'Your RFQ cart is empty': 'Keranjang penawaran Anda masih kosong',
     'Open a diagram and add exact spare parts by callout.': 'Buka diagram dan tambahkan suku cadang sesuai nomor penunjuk.',
-    'Add to RFQ': 'Tambah ke Penawaran', 'Download Diagram': 'Unduh Ilustrasi', 'Download Source PDF': 'Unduh PDF Sumber', 'Add All Visible to RFQ': 'Tambah Semua ke Penawaran',
+    'Add to RFQ': 'Tambah ke Penawaran', 'Download Diagram': 'Unduh Ilustrasi', 'Download Source PDF': 'Unduh PDF Sumber', 'Open Source PDF': 'Buka PDF Sumber', 'Add All Visible to RFQ': 'Tambah Semua ke Penawaran',
     'Diagram Reference': 'ILUSTRASI KOMPONEN', 'PARTS ILLUSTRATION': 'ILUSTRASI KOMPONEN', 'Reference Code:': 'Kode Referensi:', 'Compatible Models': 'Model yang Sesuai', 'In Stock': 'Tersedia', 'Limited Stock': 'Stok Terbatas', 'Pre-order': 'Pre-order',
     'Need a part not listed?': 'Belum menemukan suku cadang yang dicari?', 'Request Help / RFQ': 'Minta Bantuan / Penawaran',
     'Parts List': 'Daftar Suku Cadang', 'Compatibility': 'Kecocokan', 'Notes': 'Catatan', 'Shipping': 'Pengiriman',
@@ -367,6 +367,7 @@
         featured: false,
         previewImage,
         fullImage,
+        pdfUrl,
         additional_media: assembly.additional_media || []
       });
     }))));
@@ -446,13 +447,17 @@
 
   function applyStaticPreviewImages(localCatalog) {
     const localProducts = Array.isArray(localCatalog?.products) ? localCatalog.products : [];
-    const previews = new Map(localProducts.filter(product => product.previewImage).map(product => [presentationKey(product), product.previewImage]));
+    const presentation = new Map(localProducts.map(product => [presentationKey(product), { previewImage: product.previewImage, pdfUrl: product.pdfUrl }]));
     state.products.forEach(product => {
-      const previewImage = previews.get(presentationKey(product));
-      if (!previewImage) return;
-      product.previewImage = previewImage;
+      const local = presentation.get(presentationKey(product));
+      if (!local) return;
+      if (local.previewImage) product.previewImage = local.previewImage;
+      if (local.pdfUrl) product.pdfUrl = local.pdfUrl;
       const sheet = state.sheetIndex[String(product.sheetId || product.id)]?.data;
-      if (sheet) sheet.preview_image = previewImage;
+      if (sheet) {
+        if (local.previewImage) sheet.preview_image = local.previewImage;
+        if (local.pdfUrl) sheet.pdf_url = local.pdfUrl;
+      }
     });
     state.baseProducts = state.products;
   }
@@ -1069,9 +1074,10 @@
     const shown = parts.slice(0, state.detailVisibleParts);
     const related = state.products.filter(item => item.id !== product.id && item.model === product.model && item.category === product.category).slice(0, 5);
     const stock = stockMeta(product);
+    const diagramPreview = previewImageUrl(product);
     app.innerHTML = `<section class="detail-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a><a href="${routeHash('catalog', { model: product.model })}">${esc(product.model)}</a><a href="${routeHash('catalog', { model: product.model, category: product.category })}">${esc(product.category)}</a><span>${esc(cleanTitle(product.name))}</span></nav>
-      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><button class="btn" id="detailFullscreen" aria-label="Open illustration fullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="downloadImage" aria-label="Download source PDF">${icon('i-download', 18)}</button><button id="printDiagram" aria-label="Print illustration">${icon('i-print', 18)}</button></div><img id="diagramImage" src="${esc(sheet.preview_image || product.previewImage || FALLBACK_IMAGE)}" alt="${esc(cleanTitle(sheet.title))} parts illustration"></div></article>
-      <article class="detail-side"><div class="detail-summary"><div class="detail-summary-grid"><div><span class="official-label">${state.language === 'id' ? 'ILUSTRASI KOMPONEN' : 'PARTS ILLUSTRATION'}</span><h1>${esc(titleCase(cleanTitle(sheet.title)))}</h1><div class="detail-code">${state.language === 'id' ? 'Kode Referensi' : 'Reference Code'}: ${esc(sheet.diagram_code)}</div><div class="compatibility"><small>Compatible Models</small><div class="compatibility-row"><span class="badge">${esc(product.model)}</span><a href="${routeHash('catalog', { model: product.model })}">View all compatible models</a></div></div></div><div class="detail-summary-side"><div class="stock-box"><b>● ${esc(stock.label)}</b><small>${product.stock === 'out' ? 'Availability confirmed during RFQ' : 'Ships after stock verification'}</small></div><div class="help-box"><b>Need a part not listed?</b><small>Our experts can help you find it.</small><button data-contact>Request Help / RFQ</button></div></div></div><div class="detail-actions"><button class="btn" id="downloadDiagram">${icon('i-download', 15)}Download Source PDF</button><button class="btn btn-orange" id="addAllVisible">${icon('i-list', 15)}Add All Visible to RFQ</button></div></div>
+      <div class="detail-grid"><article class="diagram-panel" id="diagramPanel"><header class="diagram-head"><div><h2>${esc(sheet.diagram_code)} ${esc(cleanTitle(sheet.title))}</h2><p>${esc(sheet.model_code)} · ${esc(sheet.category_label || product.category)}</p></div><div class="page-indicator"><button class="btn" id="detailFullscreen" aria-label="Open illustration fullscreen" style="width:34px;padding:0">${icon('i-expand', 17)}</button></div></header><div class="diagram-stage" id="diagramStage"><div class="diagram-tools"><button id="zoomIn" aria-label="Zoom in">${icon('i-plus', 18)}</button><button id="zoomOut" aria-label="Zoom out">${icon('i-minus', 18)}</button><button id="zoomReset" aria-label="Reset zoom">${icon('i-refresh', 18)}</button><button id="openPdfSource" aria-label="Open source PDF in new tab">${icon('i-expand', 18)}</button><button id="printDiagram" aria-label="Print illustration">${icon('i-print', 18)}</button></div><img id="diagramImage" src="${esc(diagramPreview)}" alt="${esc(cleanTitle(sheet.title))} parts illustration"></div></article>
+      <article class="detail-side"><div class="detail-summary"><div class="detail-summary-grid"><div><span class="official-label">${state.language === 'id' ? 'ILUSTRASI KOMPONEN' : 'PARTS ILLUSTRATION'}</span><h1>${esc(titleCase(cleanTitle(sheet.title)))}</h1><div class="detail-code">${state.language === 'id' ? 'Kode Referensi' : 'Reference Code'}: ${esc(sheet.diagram_code)}</div><div class="compatibility"><small>Compatible Models</small><div class="compatibility-row"><span class="badge">${esc(product.model)}</span><a href="${routeHash('catalog', { model: product.model })}">View all compatible models</a></div></div></div><div class="detail-summary-side"><div class="stock-box"><b>● ${esc(stock.label)}</b><small>${product.stock === 'out' ? 'Availability confirmed during RFQ' : 'Ships after stock verification'}</small></div><div class="help-box"><b>Need a part not listed?</b><small>Our experts can help you find it.</small><button data-contact>Request Help / RFQ</button></div></div></div><div class="detail-actions"><button class="btn" id="openSourcePdf">${icon('i-expand', 15)}Open Source PDF</button><button class="btn btn-orange" id="addAllVisible">${icon('i-list', 15)}Add All Visible to RFQ</button></div></div>
       ${detailTabHtml(product, sheet, parts, shown)}</article></div>
       <section class="related-section"><div class="section-headline"><div><div class="section-label">Related Parts Illustrations for ${esc(product.category)}</div></div><button class="view-all" data-view-related>View All ${esc(product.category)} Illustrations ${icon('i-chevron', 13)}</button></div><div class="related-grid">${related.map(item => `<button class="related-card" data-open-product="${esc(item.id)}"><img src="${esc(item.previewImage || FALLBACK_IMAGE)}" alt=""><span><b>${esc(titleCase(cleanTitle(item.name)))}</b><small>Diagram Code: ${esc(item.diagramCode)}</small><span class="status">${esc(stockMeta(item).label)}</span></span></button>`).join('') || '<div class="empty-state"><p>No related assemblies found.</p></div>'}</div></section>
       </div></section>`;
@@ -1096,8 +1102,8 @@
     $('#zoomIn').onclick = () => updateZoom(.2);
     $('#zoomOut').onclick = () => updateZoom(-.2);
     $('#zoomReset').onclick = () => { state.detailZoom = 1; applyZoom(); };
-    $('#downloadImage').onclick = downloadCurrentDiagram;
-    $('#downloadDiagram').onclick = downloadCurrentDiagram;
+    $('#openPdfSource').onclick = openSourcePdf;
+    $('#openSourcePdf').onclick = openSourcePdf;
     $('#printDiagram').onclick = () => window.print();
     $('#detailFullscreen').onclick = () => { $('#diagramPanel').classList.toggle('diagram-fullscreen'); document.body.classList.toggle('no-scroll', $('#diagramPanel').classList.contains('diagram-fullscreen')); };
     $('#viewMoreParts')?.addEventListener('click', () => { state.detailVisibleParts = Math.min(parts.length, state.detailVisibleParts + 18); drawDetail(); });
@@ -1145,18 +1151,15 @@
     applyZoom();
   }
   function applyZoom() { const image = $('#diagramImage'); if (image) image.style.transform = `scale(${state.detailZoom})`; }
-  function downloadCurrentDiagram() {
+  function openSourcePdf() {
     const sheet = state.currentSheet;
-    const href = sheet.pdf_url || sheet.full_image || sheet.preview_image;
-    if (!href) { toast('Diagram unavailable', 'No downloadable source is attached to this assembly.'); return; }
-    const anchor = document.createElement('a');
-    anchor.href = href;
-    anchor.target = '_blank';
-    anchor.rel = 'noopener';
-    anchor.download = sheet.pdf_url ? '' : `${sheet.model_code}-${sheet.diagram_code}-diagram.webp`;
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
+    const product = state.currentProduct;
+    const href = sheet?.pdf_url || product?.pdfUrl;
+    if (!href || !/\.pdf(?:$|[?#])/i.test(href)) {
+      toast('Source PDF unavailable', 'This assembly does not have a published source PDF.');
+      return;
+    }
+    window.open(href, '_blank', 'noopener,noreferrer');
   }
 
   function addPartToCart(index, announce = true) {
@@ -1415,6 +1418,7 @@
     if (state.loading) return;
     closeFilterDrawer();
     const { name, params } = parseRoute();
+    document.body.dataset.route = name;
     updateHeaderActiveState();
     if (name === 'home') renderHome();
     else if (name === 'catalog') {

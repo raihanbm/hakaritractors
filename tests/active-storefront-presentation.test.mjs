@@ -7,9 +7,9 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('storefront keeps the approved pixel-exact production shell with current cache markers', async () => {
   const html = await read('index.html');
-  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v7/);
-  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v7/);
-  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v7/);
+  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v8/);
+  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v8/);
+  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v8/);
   assert.doesNotMatch(html, /preview-data\.js/);
   for (const id of ['globalSearchForm', 'modelStripLinks', 'app', 'cartDrawer', 'modalBackdrop']) {
     assert.match(html, new RegExp(`id="${id}"`));
@@ -79,8 +79,8 @@ test('Indonesian homepage localizes hero and trust copy instead of mixing Englis
   ]) {
     assert.match(js, new RegExp(`'${source.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}':\\s*'[^']+'`), `${source} needs curated Indonesian copy`);
   }
-  assert.match(css, /html\[lang="id"\] \.px-hero-copy\{[^}]*top:18px/);
-  assert.match(css, /html\[lang="id"\] \.px-hero-copy p\{[^}]*margin:6px 0 8px/);
+  assert.match(css, /\.px-hero-copy\{[^}]*top:18px/);
+  assert.match(css, /\.px-hero-copy p\{[^}]*margin:6px 0 8px/);
   assert.match(css, /\.px-hero-actions button\{[^}]*white-space:nowrap/);
 });
 
@@ -97,6 +97,28 @@ test('card crop detects the parts-table boundary instead of using one fixed cuto
   assert.match(cropScript, /def detect_table_top\(/);
   assert.match(cropScript, /table_top = detect_table_top\(page\)/);
   assert.doesNotMatch(cropScript, /round\(height \* 0\.52\)/);
+});
+
+test('source PDF actions open real PDFs in a new tab and never fall back to WEBP downloads', async () => {
+  const js = await read('assets/js/app.js');
+  assert.match(js, /function openSourcePdf\(\)/);
+  assert.match(js, /window\.open\(href, '_blank', 'noopener,noreferrer'\)/);
+  const sourcePdfFunction = js.match(/function openSourcePdf\(\) \{[\s\S]*?\n  \}/)?.[0] || '';
+  assert.doesNotMatch(sourcePdfFunction, /sheet\.full_image|sheet\.preview_image/);
+  assert.doesNotMatch(sourcePdfFunction, /\.download\s*=/);
+  assert.match(js, /id="openPdfSource"[^>]*aria-label="Open source PDF in new tab"/);
+  assert.match(js, /id="openSourcePdf"/);
+  assert.match(js, /previewImageUrl\(product\)/);
+});
+
+test('every published tractor assembly has a real static PDF source', async () => {
+  const catalog = JSON.parse(await read('assets/data/drive-catalog.json'));
+  assert.equal(catalog.products.length, 1664);
+  for (const product of catalog.products) {
+    assert.match(product.pdfUrl || '', /^assets\/documents\/.+\.pdf$/i, `${product.model} ${product.diagramCode} needs a PDF URL`);
+    const pdf = await readFile(new URL(product.pdfUrl, root));
+    assert.equal(pdf.subarray(0, 5).toString('ascii'), '%PDF-', `${product.pdfUrl} must be a real PDF`);
+  }
 });
 
 test('parts table keeps price visible in a compact part-name cell', async () => {

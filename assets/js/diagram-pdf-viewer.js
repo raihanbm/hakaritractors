@@ -207,7 +207,7 @@
       var origLink = document.createElement('a');
       origLink.href = this.pdfUrl;
       origLink.target = '_blank';
-      origLink.rel = 'noopener';
+      origLink.rel = 'noopener noreferrer';
       origLink.textContent = 'Original';
       origLink.title = 'View original PDF';
       origLink.style.cssText = 'margin-left:auto;font-size:9.5px;color:#f15a24;text-decoration:none;font-weight:700;padding:0 6px';
