@@ -231,6 +231,9 @@
     return String(value || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   }
   function cleanTitle(value) { return String(value || '').replace(/\s*##\s*.*/, '').trim(); }
+  // Keep the source model key intact for fitment/database; only shorten buyer-facing copy.
+  function modelLabel(model) { return String(model) === 'L4018DT-ID/L4018TK-ID' ? 'L4018DT' : String(model || ''); }
+  function modelPartCount(model) { return state.products.filter(product => product.model === model).reduce((total, product) => total + Number(product.partCount || 0), 0); }
   function routeHash(name, params = {}) {
     const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== '' && value != null));
     return `#${name}${query.toString() ? `?${query}` : ''}`;
@@ -619,7 +622,7 @@
   }
 
   function renderHome() {
-    const modelCounts = state.models.map(model => ({ model, count: state.products.filter(product => product.model === model).length }));
+    const modelCounts = state.models.map(model => ({ model, count: modelPartCount(model) }));
     const preferredModelOrder = ['L3608', 'L4400DT', 'L5018DT-NES', 'M9000DT', 'M9540DT', 'MX5000DT', 'MX5100DT'];
     const models = preferredModelOrder.map(model => modelCounts.find(item => item.model === model)).filter(Boolean);
     modelCounts.filter(item => !preferredModelOrder.includes(item.model)).forEach(item => models.push(item));
@@ -685,13 +688,13 @@
       <main class="px-home-body">
         <section class="px-container px-models-block">
           <div class="px-section-title"><h2>Pilih Model Traktor</h2><button type="button" data-all-models>Lihat Semua ${icon('i-chevron', 11)}</button></div>
-          <div class="px-model-strip">${models.slice(0, 7).map(({ model, count }) => `<button class="px-model-card" type="button" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(model)}"><span><b>${esc(model)}</b><small>${Math.max(1245, count * 13)} part tersedia</small></span></button>`).join('')}<button class="px-model-card px-model-more" type="button" data-all-models><span><b>Lihat Semua<br>Model</b><small>Semua model</small></span>${icon('i-chevron', 15)}</button></div>
+          <div class="px-model-strip">${models.slice(0, 7).map(({ model, count }) => `<button class="px-model-card" type="button" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(modelLabel(model))} tractor"><span><b>${esc(modelLabel(model))}</b><small>${Number(count).toLocaleString('id-ID')} sparepart</small></span></button>`).join('')}<button class="px-model-card px-model-more" type="button" data-all-models><span><b>Lihat Semua<br>Model</b><small>Semua model</small></span>${icon('i-chevron', 15)}</button></div>
         </section>
 
         <section class="px-container px-finder-card">
           <h2>Temukan Part dengan Mudah</h2>
           <form id="heroSearchPanel" class="px-finder-form">
-            <label><span>Pilih Model Traktor</span><select id="heroModel"><option value="">Pilih Model Traktor</option>${state.models.map(model => `<option value="${esc(model)}">${esc(model)}</option>`).join('')}</select></label>
+            <label><span>Pilih Model Traktor</span><select id="heroModel"><option value="">Pilih Model Traktor</option>${state.models.map(model => `<option value="${esc(model)}">${esc(modelLabel(model))}</option>`).join('')}</select></label>
             <label><span>Pilih Kategori / Sistem</span><select id="heroCategory"><option value="">Pilih Kategori / Sistem</option>${state.categories.map(category => `<option value="${esc(category.name)}">${esc(category.name)}</option>`).join('')}</select></label>
             <label><span>Nomor Part (Opsional)</span><input id="heroPartNumber" placeholder="Nomor Part (Opsional)"></label>
             <label><span>Kode Diagram (Opsional)</span><input id="heroDiagramCode" placeholder="Kode Diagram (Opsional)"></label>
@@ -825,7 +828,7 @@
 
   function activeFilterHtml() {
     const filters = [];
-    if (state.selectedModel) filters.push({ key: 'model', label: `Model: ${state.selectedModel}` });
+    if (state.selectedModel) filters.push({ key: 'model', label: `Model: ${modelLabel(state.selectedModel)}` });
     if (state.selectedCategory) filters.push({ key: 'category', label: `System: ${state.selectedCategory}` });
     state.stock.forEach(value => filters.push({ key: `stock:${value}`, label: value === 'in' ? 'In Stock' : value === 'low' ? 'Available' : 'Pre-order' }));
     if (state.priceMin || state.priceMax) filters.push({ key: 'price', label: `${t('Price Range')}: ${money(state.priceMin || 0)} — ${money(state.priceMax || maxCatalogPrice())}` });
@@ -839,15 +842,18 @@
     if (state.page > pages) state.page = pages;
     const start = (state.page - 1) * PAGE_SIZE;
     const pageRows = rows.slice(start, start + PAGE_SIZE);
-    const title = state.selectedCategory ? `${state.selectedCategory} ${t('Parts')}` : state.selectedModel ? `${state.selectedModel} ${t('Parts')}` : (state.language === 'id' ? 'Suku Cadang Traktor & Diagram Rangkaian' : 'Tractor Parts & Assembly Diagrams');
+    const selectedModelLabel = modelLabel(state.selectedModel);
+    const title = state.selectedCategory ? `${state.selectedCategory} ${t('Parts')}` : state.selectedModel ? `${selectedModelLabel} ${t('Parts')}` : (state.language === 'id' ? 'Suku Cadang Traktor & Diagram Rangkaian' : 'Tractor Parts & Assembly Diagrams');
     const context = state.selectedModel
-      ? (state.language === 'id' ? `Telusuri diagram sistem dan temukan suku cadang yang tepat untuk ${state.selectedModel}.` : `Browse system diagrams and find the exact parts you need for your ${state.selectedModel}.`)
+      ? (state.language === 'id' ? `Telusuri suku cadang yang tepat untuk ${selectedModelLabel} berdasarkan sistem, nomor part, atau diagram.` : `Browse the exact spare parts for ${selectedModelLabel} by system, part number, or diagram.`)
       : (state.language === 'id' ? 'Telusuri diagram rangkaian, lalu pesan suku cadang berdasarkan nomor penunjuk dan nomor part.' : 'Browse exploded assembly diagrams, then order exact spare parts by callout and part number.');
-    const resultLabel = state.language === 'id' ? `${rows.length} ${t('Assembly Diagrams Found')}` : `${rows.length} Assembly Diagrams Found`;
+    const resultLabel = state.selectedModel
+      ? `${modelPartCount(state.selectedModel).toLocaleString()} ${state.language === 'id' ? 'sparepart tersedia' : 'spare parts available'}`
+      : (state.language === 'id' ? `${rows.length} ${t('Assembly Diagrams Found')}` : `${rows.length} Assembly Diagrams Found`);
     const resultSummary = state.language === 'id'
       ? `Menampilkan ${rows.length ? start + 1 : 0} sampai ${Math.min(start + PAGE_SIZE, rows.length)} dari ${rows.length} diagram`
       : `Showing ${rows.length ? start + 1 : 0} to ${Math.min(start + PAGE_SIZE, rows.length)} of ${rows.length} diagrams`;
-    app.innerHTML = `<section class="page-section"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a>${state.selectedModel ? `<a href="${routeHash('catalog', { model: state.selectedModel })}">${esc(state.selectedModel)}</a>` : ''}${state.selectedCategory ? `<span>${esc(state.selectedCategory)}</span>` : ''}</nav>
+    app.innerHTML = `<section class="page-section"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a>${state.selectedModel ? `<a href="${routeHash('catalog', { model: state.selectedModel })}">${esc(modelLabel(state.selectedModel))}</a>` : ''}${state.selectedCategory ? `<span>${esc(state.selectedCategory)}</span>` : ''}</nav>
       <div class="catalog-title-row"><div class="catalog-title"><h1>${esc(title)} <span>${esc(resultLabel)}</span></h1><p>${esc(context)}</p></div><div class="help-card">${icon('i-engine', 34)}<span><b>Need help finding parts?</b><small>Our parts experts are here for you.</small></span><button data-contact>Contact Us</button></div></div>
       <div class="catalog-layout">${filterSidebarHtml(rows)}<div class="catalog-main"><div class="catalog-toolbar"><button class="mobile-filter-trigger" id="mobileFilterTrigger">${icon('i-filter', 15)}Filters</button><span class="toolbar-label">Sort by:</span><select class="sort-select" id="catalogSort"><option value="recommended">Recommended</option><option value="parts">Most parts</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Name A–Z</option></select><div class="active-filters"><span>Active Filters:</span>${activeFilterHtml()}${activeFilterHtml() ? '<button class="clear-all" id="clearAllFilters">Clear All</button>' : ''}</div><div class="view-controls"><span>View:</span><button id="gridViewButton" class="${state.view === 'grid' ? 'active' : ''}">${icon('i-grid', 16)}</button><button id="listViewButton" class="${state.view === 'list' ? 'active' : ''}">${icon('i-list', 16)}</button></div></div>
       <div class="assembly-grid ${state.view === 'list' ? 'product-list' : ''}">${pageRows.length ? pageRows.map(productCard).join('') : `<div class="empty-state">${icon('i-search', 48)}<div><h3>No matching diagrams</h3><p>Try a broader model, system or part-number search.</p><button class="btn btn-orange" id="emptyReset" style="margin-top:15px">Reset filters</button></div></div>`}</div>
@@ -1268,7 +1274,7 @@
   }
 
   function renderModels() {
-    app.innerHTML = `<section class="content-page models-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards model-page-grid" style="margin-top:20px">${state.models.map(model => `<button class="model-card model-card--full" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(model)} tractor"><span class="model-card-copy"><b>${esc(model)}</b><small>${state.products.filter(product => product.model === model).length} diagrams</small><em>Open model catalog</em></span><span class="model-arrow">›</span></button>`).join('')}</div></div></div></section>`;
+    app.innerHTML = `<section class="content-page models-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards model-page-grid" style="margin-top:20px">${state.models.map(model => `<button class="model-card model-card--full" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(modelLabel(model))} tractor"><span class="model-card-copy"><b>${esc(modelLabel(model))}</b><small>${modelPartCount(model).toLocaleString()} spare parts</small><em>Open model catalog</em></span><span class="model-arrow">›</span></button>`).join('')}</div></div></div></section>`;
     $$('[data-model-card]').forEach(button => button.onclick = () => { writeLocal('hikari_recent_model', button.dataset.modelCard); go('catalog', { model: button.dataset.modelCard }); });
   }
 
