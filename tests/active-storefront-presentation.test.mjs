@@ -7,9 +7,9 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('storefront keeps the approved pixel-exact production shell with current cache markers', async () => {
   const html = await read('index.html');
-  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v9/);
-  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v9/);
-  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v9/);
+  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v10/);
+  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v10/);
+  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v10/);
   assert.doesNotMatch(html, /preview-data\.js/);
   for (const id of ['globalSearchForm', 'modelStripLinks', 'app', 'cartDrawer', 'modalBackdrop']) {
     assert.match(html, new RegExp(`id="${id}"`));
@@ -165,4 +165,15 @@ test('mobile buyer homepage uses sorted models, real tractor icons, and no clipp
   assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.px-model-strip\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);overflow:visible/);
   assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.px-product-strip\{display:grid;grid-template-columns:1fr;overflow:visible/);
   assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.px-diagram-strip\{display:grid;grid-template-columns:1fr;overflow:visible/);
+});
+
+test('homepage model picker uses one clear all-models CTA and never wraps a duplicate model card', async () => {
+  const [js, css] = await Promise.all([
+    read('assets/js/app.js'),
+    read('assets/css/pixel-exact-home.css'),
+  ]);
+  assert.match(js, /models\.slice\(0, 6\)\.map/);
+  assert.match(js, /<div class="px-section-title"><h2>Pilih Model Traktor<\/h2><button type="button" data-all-models>Lihat Semua/);
+  assert.doesNotMatch(js, /px-model-more/);
+  assert.doesNotMatch(css, /\.px-model-more/);
 });

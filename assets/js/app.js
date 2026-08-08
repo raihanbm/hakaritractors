@@ -747,7 +747,7 @@
       <main class="px-home-body">
         <section class="px-container px-models-block">
           <div class="px-section-title"><h2>Pilih Model Traktor</h2><button type="button" data-all-models>Lihat Semua ${icon('i-chevron', 11)}</button></div>
-          <div class="px-model-strip">${models.slice(0, 8).map(({ model, count }) => `<button class="px-model-card" type="button" data-model-card="${esc(model)}"><img src="${esc(tractorIconForModel(model))}" alt="${esc(modelLabel(model))} tractor"><span><b>${esc(modelLabel(model))}</b><small>${Number(count).toLocaleString('id-ID')} sparepart</small></span></button>`).join('')}<button class="px-model-card px-model-more" type="button" data-all-models><span><b>Lihat Semua<br>Model</b><small>Semua model</small></span>${icon('i-chevron', 15)}</button></div>
+          <div class="px-model-strip">${models.slice(0, 6).map(({ model, count }) => `<button class="px-model-card" type="button" data-model-card="${esc(model)}"><img src="${esc(tractorIconForModel(model))}" alt="${esc(modelLabel(model))} tractor"><span><b>${esc(modelLabel(model))}</b><small>${Number(count).toLocaleString('id-ID')} sparepart</small></span></button>`).join('')}</div>
         </section>
 
         <section class="px-container px-finder-card">
