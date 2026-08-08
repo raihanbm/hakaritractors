@@ -50,6 +50,8 @@
     detailTab: 'parts',
     selectedPartKeys: new Set(),
     filterOpen: false,
+    inquiryContext: null,
+    inquiryAutoNote: '',
     source: 'local'
   };
 
@@ -278,6 +280,135 @@
     const raw = location.hash.replace(/^#/, '') || 'home';
     const [name, search = ''] = raw.split('?');
     return { name, params: new URLSearchParams(search) };
+  }
+
+  const INQUIRY_SESSION_KEY = 'hikari_inquiry_assist_seen';
+  let inquiryPopupTimer = null;
+  let inquiryPopupScrollHandler = null;
+
+  function inquiryCopy() {
+    return state.language === 'id' ? {
+      bannerTitle: 'Belum menemukan part yang Anda cari?',
+      bannerDescription: 'Katalog online kami mungkin belum menampilkan seluruh referensi. Kirim nomor part, model traktor, foto, atau diagram — tim Hikari akan membantu mencocokkan part dan mengecek ketersediaannya.',
+      whatsapp: 'Tanya via WhatsApp', rfq: 'Kirim RFQ',
+      microcopy: 'B2C • B2B • Bulk Order • International Inquiry',
+      eyebrow: 'BUTUH BANTUAN?', popupTitle: 'Tidak ada di katalog? Tanyakan kepada kami.',
+      popupDescription: 'Kirim nomor part, model traktor, foto, atau diagram. Tim Hikari akan membantu mencari referensi yang tepat.',
+      popupFooter: 'Retail • Business • International Orders', popupNote: 'Bulk order atau kebutuhan ekspor? Hubungi tim kami.',
+      emptyTitle: 'Belum menemukan part ini di katalog?',
+      emptyDescription: 'Kirim detail yang Anda cari kepada tim Hikari. Kami dapat membantu mengecek referensi, kecocokan, dan ketersediaannya.',
+      inquiryLabel: 'Detail inquiry dari katalog'
+    } : {
+      bannerTitle: "Can't find the part you need?",
+      bannerDescription: 'Not every available reference may be listed in our online catalog. Send us the part number, tractor model, photo, or parts diagram and our team will help identify the correct reference and check availability.',
+      whatsapp: 'WhatsApp Us', rfq: 'Send an RFQ',
+      microcopy: 'Retail • Business • International Orders',
+      eyebrow: 'NEED HELP?', popupTitle: 'Not in the catalog? Ask our team.',
+      popupDescription: 'Send the part number, tractor model, photo, or parts diagram. Our team will help identify the right reference.',
+      popupFooter: 'Retail • Business • International Orders', popupNote: 'Bulk order or export requirement? Contact our team.',
+      emptyTitle: "Can't find this part in the catalog?",
+      emptyDescription: 'Send the details to the Hikari team. We can help check the reference, fitment, and availability.',
+      inquiryLabel: 'Catalog inquiry details'
+    };
+  }
+
+  function buildInquiryContext(seed = {}) {
+    const { params } = parseRoute();
+    const product = state.currentProduct || {};
+    const sheet = state.currentSheet || {};
+    const model = seed.model || params.get('model') || state.selectedModel || product.model || sheet.model_code || '';
+    const category = seed.category || params.get('category') || state.selectedCategory || product.category || sheet.category || '';
+    const query = seed.query || params.get('q') || state.query || '';
+    const diagram = seed.diagram || seed.diagramCode || params.get('diagram') || product.diagramCode || sheet.diagram_code || '';
+    return { model, category, query, diagram, pageUrl: location.href };
+  }
+
+  function inquiryContextText(context = buildInquiryContext()) {
+    const { model, category, query, diagram, pageUrl } = context;
+    const fields = state.language === 'id'
+      ? [['Model Traktor', model], ['Nomor Part / Kata kunci', query], ['Kategori / Sistem', category], ['Kode Diagram', diagram]]
+      : [['Tractor Model', model], ['Part Number / Search', query], ['Category / System', category], ['Diagram Code', diagram]];
+    return [...fields.filter(([, value]) => value).map(([label, value]) => `${label}: ${value}`), `${state.language === 'id' ? 'Halaman referensi' : 'Reference page'}: ${pageUrl}`].join('\n');
+  }
+
+  function inquiryMessage(context = buildInquiryContext()) {
+    const intro = state.language === 'id'
+      ? ['Halo Hikari Tractors, saya sedang mencari sparepart Kubota.', '', inquiryContextText(context), '', 'Saya belum menemukannya di katalog website. Mohon bantu cek referensi, kecocokan, ketersediaan, dan penawarannya.']
+      : ['Hello Hikari Tractors, I am looking for a Kubota spare part.', '', inquiryContextText(context), '', 'I could not find it in the website catalog. Please help check the reference, fitment, availability, and quotation.'];
+    return intro.filter(Boolean).join('\n');
+  }
+
+  function inquiryWhatsAppUrl(context = buildInquiryContext()) {
+    const whatsapp = String(SITE.whatsapp || SITE.phone || '').replace(/\D/g, '');
+    return `https://wa.me/${whatsapp}?text=${encodeURIComponent(inquiryMessage(context))}`;
+  }
+
+  function finderInquiryContext() {
+    return buildInquiryContext({
+      model: $('#heroModel')?.value || '',
+      category: $('#heroCategory')?.value || '',
+      query: $('#heroPartNumber')?.value.trim() || '',
+      diagram: $('#heroDiagramCode')?.value.trim() || ''
+    });
+  }
+
+  function inquiryContextForTrigger(trigger) {
+    return trigger?.dataset.inquirySource === 'finder' ? finderInquiryContext() : buildInquiryContext();
+  }
+
+  function openInquiryRfq(context = buildInquiryContext()) {
+    state.inquiryContext = context;
+    const generatedNote = inquiryMessage(context);
+    const note = $('#rfqNote');
+    if (note) {
+      const existing = note.value.trim();
+      const manualNote = state.inquiryAutoNote && existing.includes(state.inquiryAutoNote) ? existing.replace(state.inquiryAutoNote, '').trim() : existing;
+      note.value = [manualNote, generatedNote].filter(Boolean).join(manualNote ? '\n\n' : '');
+    }
+    state.inquiryAutoNote = generatedNote;
+    openCart();
+  }
+
+  function bindInquiryActions(root = document) {
+    $$('[data-inquiry-whatsapp]', root).forEach(link => {
+      const updateHref = () => {
+        const context = inquiryContextForTrigger(link);
+        link.href = inquiryWhatsAppUrl(context);
+      };
+      updateHref();
+      link.addEventListener('click', updateHref);
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+    });
+    $$('[data-inquiry-rfq]', root).forEach(button => button.onclick = () => openInquiryRfq(inquiryContextForTrigger(button)));
+    $('[data-inquiry-close]', root)?.addEventListener('click', () => {
+      sessionStorage.setItem('hikari_inquiry_assist_seen', 'dismissed');
+      $('#inquiryAssistPopup')?.remove();
+    });
+  }
+
+  function clearInquiryPopupTrigger() {
+    if (inquiryPopupTimer) window.clearTimeout(inquiryPopupTimer);
+    inquiryPopupTimer = null;
+    if (inquiryPopupScrollHandler) window.removeEventListener('scroll', inquiryPopupScrollHandler);
+    inquiryPopupScrollHandler = null;
+  }
+
+  function scheduleInquiryPopup() {
+    clearInquiryPopupTrigger();
+    if (parseRoute().name !== 'home' || sessionStorage.getItem('hikari_inquiry_assist_seen')) return;
+    const show = () => {
+      if (parseRoute().name !== 'home' || sessionStorage.getItem('hikari_inquiry_assist_seen')) return;
+      const popup = $('#inquiryAssistPopup');
+      if (!popup) return;
+      sessionStorage.setItem('hikari_inquiry_assist_seen', 'shown');
+      popup.hidden = false;
+      popup.classList.add('is-open');
+      clearInquiryPopupTrigger();
+    };
+    inquiryPopupTimer = window.setTimeout(show, 12000);
+    inquiryPopupScrollHandler = () => { if (window.scrollY > 420) show(); };
+    window.addEventListener('scroll', inquiryPopupScrollHandler, { passive: true });
   }
   function toast(title, message = '') {
     const node = document.createElement('div');
@@ -683,6 +814,7 @@
   }
 
   function renderHome() {
+    const inquiry = inquiryCopy();
     const modelCounts = state.models.map(model => ({ model, count: modelPartCount(model) })).sort((a, b) => modelSort(a.model, b.model));
     const models = modelCounts;
     const categories = [...state.categories].sort((a, b) => b.count - a.count);
@@ -761,6 +893,11 @@
           </form>
         </section>
 
+        <section class="px-container inquiry-assist-banner" aria-labelledby="inquiryBannerTitle">
+          <div class="inquiry-assist-copy"><h2 id="inquiryBannerTitle">${esc(inquiry.bannerTitle)}</h2><p>${esc(inquiry.bannerDescription)}</p></div>
+          <div class="inquiry-assist-actions"><a class="inquiry-assist-primary" data-inquiry-whatsapp data-inquiry-source="finder">${icon('i-phone', 14)} ${esc(inquiry.whatsapp)}</a><button class="inquiry-assist-secondary" type="button" data-inquiry-rfq data-inquiry-source="finder">${icon('i-mail', 14)} ${esc(inquiry.rfq)}</button><small>${esc(inquiry.microcopy)}</small></div>
+        </section>
+
         <section class="px-container px-systems-block">
           <div class="px-section-title"><h2>Jelajahi Berdasarkan Sistem</h2><button type="button" data-all-categories>Lihat Semua ${icon('i-chevron', 11)}</button></div>
           <div class="px-system-grid">${systems.slice(0, 8).map(category => `<button type="button" data-system-card="${esc(category.name)}">${icon(categoryIcon(category.name), 27)}<b>${esc(category.name)}</b><small>${category.count.toLocaleString('id-ID')}+ Part</small></button>`).join('')}<button type="button" data-all-categories>${icon('i-grid', 26)}<b>Lihat Semua</b><small>Semua Kategori</small></button></div>
@@ -793,6 +930,12 @@
           </div>
         </section>
       </main>
+      <aside class="inquiry-assist-popup" id="inquiryAssistPopup" hidden aria-labelledby="inquiryPopupTitle">
+        <button class="inquiry-assist-close" type="button" data-inquiry-close aria-label="Close assistance">${icon('i-close', 15)}</button>
+        <span class="inquiry-assist-eyebrow">${esc(inquiry.eyebrow)}</span><h2 id="inquiryPopupTitle">${esc(inquiry.popupTitle)}</h2><p>${esc(inquiry.popupDescription)}</p>
+        <div class="inquiry-assist-popup-actions"><a class="inquiry-assist-primary" data-inquiry-whatsapp>${icon('i-phone', 14)} ${esc(state.language === 'id' ? 'WhatsApp Sekarang' : inquiry.whatsapp)}</a><button class="inquiry-assist-secondary" type="button" data-inquiry-rfq>${icon('i-mail', 14)} ${esc(inquiry.rfq)}</button></div>
+        <small>${esc(inquiry.popupFooter)}</small><em>${esc(inquiry.popupNote)}</em>
+      </aside>
     </div>`;
 
     $('#heroSearchPanel').addEventListener('submit', event => {
@@ -820,6 +963,8 @@
     $$('[data-all-models]').forEach(button => button.onclick = () => go('models'));
     $$('[data-all-categories]').forEach(button => button.onclick = () => openCategoryModal());
     $$('[data-all-diagrams]').forEach(button => button.onclick = () => go('catalog'));
+    bindInquiryActions(app);
+    scheduleInquiryPopup();
   }
 
 
@@ -900,6 +1045,7 @@
   }
 
   function renderCatalog() {
+    const inquiry = inquiryCopy();
     const rows = filteredProducts();
     const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
     if (state.page > pages) state.page = pages;
@@ -919,7 +1065,7 @@
     app.innerHTML = `<section class="page-section"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><a href="#catalog">Parts</a>${state.selectedModel ? `<a href="${routeHash('catalog', { model: state.selectedModel })}">${esc(modelLabel(state.selectedModel))}</a>` : ''}${state.selectedCategory ? `<span>${esc(state.selectedCategory)}</span>` : ''}</nav>
       <div class="catalog-title-row"><div class="catalog-title"><h1>${esc(title)} <span>${esc(resultLabel)}</span></h1><p>${esc(context)}</p></div><div class="help-card">${icon('i-engine', 34)}<span><b>Need help finding parts?</b><small>Our parts experts are here for you.</small></span><button data-contact>Contact Us</button></div></div>
       <div class="catalog-layout">${filterSidebarHtml(rows)}<div class="catalog-main"><div class="catalog-toolbar"><button class="mobile-filter-trigger" id="mobileFilterTrigger">${icon('i-filter', 15)}Filters</button><span class="toolbar-label">Sort by:</span><select class="sort-select" id="catalogSort"><option value="recommended">Recommended</option><option value="parts">Most parts</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="name">Name A–Z</option></select><div class="active-filters"><span>Active Filters:</span>${activeFilterHtml()}${activeFilterHtml() ? '<button class="clear-all" id="clearAllFilters">Clear All</button>' : ''}</div></div>
-      <div class="assembly-grid">${pageRows.length ? pageRows.map(productCard).join('') : `<div class="empty-state">${icon('i-search', 48)}<div><h3>No matching diagrams</h3><p>Try a broader model, system or part-number search.</p><button class="btn btn-orange" id="emptyReset" style="margin-top:15px">Reset filters</button></div></div>`}</div>
+      <div class="assembly-grid">${pageRows.length ? pageRows.map(productCard).join('') : `<div class="empty-state empty-search-inquiry">${icon('i-search', 48)}<div><h3>${esc(inquiry.emptyTitle)}</h3><p>${esc(inquiry.emptyDescription)}</p><div class="empty-search-inquiry-actions"><a class="btn btn-orange" data-inquiry-whatsapp>${icon('i-phone', 15)} ${esc(inquiry.whatsapp)}</a><button class="btn" type="button" data-inquiry-rfq>${icon('i-mail', 15)} ${esc(inquiry.rfq)}</button><button class="empty-reset-link" id="emptyReset" type="button">${esc(state.language === 'id' ? 'Atur ulang filter' : 'Reset filters')}</button></div></div></div>`}</div>
       <div class="catalog-results-summary">${esc(resultSummary)}</div>${paginationHtml(pages)}</div></div></div></section>`;
 
     $('#catalogSort').value = state.sort;
@@ -937,6 +1083,7 @@
     $('#mobileFilterTrigger').onclick = () => { state.filterOpen = true; $('#filterSidebar').classList.add('open'); $('#drawerBackdrop').classList.add('open'); document.body.classList.add('no-scroll'); };
     $('#applyMobileFilters').onclick = () => closeFilterDrawer();
     $('[data-contact]').onclick = () => go('contact');
+    bindInquiryActions(app);
     $('[data-toggle-models]')?.addEventListener('click', () => { state.showAllModels = !state.showAllModels; renderCatalog(); });
     $('[data-toggle-categories]')?.addEventListener('click', () => { state.showAllCategories = !state.showAllCategories; renderCatalog(); });
     $$('.pagination button[data-page]').forEach(button => button.onclick = () => { state.page = Number(button.dataset.page); renderCatalog(); window.scrollTo({ top: 120, behavior: 'smooth' }); });
@@ -1217,11 +1364,17 @@
 
   function renderDrawerItems() {
     const container = $('#drawerItems');
-    if (!state.cart.length) {
+    const inquirySummary = state.inquiryContext ? inquiryContextText(state.inquiryContext) : '';
+    if (!state.cart.length && !state.inquiryContext) {
       container.innerHTML = `<div class="drawer-empty"><div>${icon('i-cart', 50)}<h3>Your RFQ cart is empty</h3><p>Open a diagram and add exact spare parts by callout.</p></div></div>`;
       return;
     }
-    container.innerHTML = state.cart.map(item => `<div class="cart-line" data-cart-key="${esc(item.key)}"><img src="${esc(item.image || FALLBACK_IMAGE)}" alt=""><div><b>${esc(item.name)}</b><small>${esc(item.sku)} · ${esc(item.meta)} · ${money(item.price)} each</small><div class="qty-control"><button data-cart-action="minus">−</button><span>${Number(item.qty)}</span><button data-cart-action="plus">+</button></div></div><button class="cart-line-remove" data-cart-action="remove">${icon('i-close', 15)}</button></div>`).join('');
+    const inquiryCard = state.inquiryContext ? `<div class="inquiry-rfq-context"><b>${esc(inquiryCopy().inquiryLabel)}</b><pre>${esc(inquirySummary)}</pre></div>` : '';
+    if (!state.cart.length) {
+      container.innerHTML = inquiryCard;
+      return;
+    }
+    container.innerHTML = `${inquiryCard}${state.cart.map(item => `<div class="cart-line" data-cart-key="${esc(item.key)}"><img src="${esc(item.image || FALLBACK_IMAGE)}" alt=""><div><b>${esc(item.name)}</b><small>${esc(item.sku)} · ${esc(item.meta)} · ${money(item.price)} each</small><div class="qty-control"><button data-cart-action="minus">−</button><span>${Number(item.qty)}</span><button data-cart-action="plus">+</button></div></div><button class="cart-line-remove" data-cart-action="remove">${icon('i-close', 15)}</button></div>`).join('')}`;
     $$('.cart-line').forEach(line => line.onclick = event => {
       const button = event.target.closest('[data-cart-action]');
       if (!button) return;
@@ -1257,8 +1410,9 @@
     const incoterm = $('#rfqTerm').value;
     const note = $('#rfqNote').value.trim();
     const website = $('#rfqWebsite')?.value.trim() || '';
-    const emailValid = !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    if (!state.cart.length) { toast('RFQ cart is empty', 'Add at least one spare part.'); return; }
+    const emailValid = !email || /^\S+@\S+\.\S+$/.test(email);
+    const hasInquiry = Boolean(state.inquiryContext);
+    if (!state.cart.length && !hasInquiry) { toast('RFQ cart is empty', 'Add an exact spare part or send an inquiry from the catalog.'); return; }
     if (!name) { toast('Add your name first', 'A personal name or company name is enough.'); return; }
     if (!email && !phone) { toast('Add one contact method', 'Email or WhatsApp/phone is enough — you do not need both.'); return; }
     if (!emailValid) { toast('Enter a valid email address', 'Or leave email empty and use WhatsApp/phone.'); return; }
@@ -1267,7 +1421,8 @@
     button.disabled = true;
     button.textContent = 'Submitting…';
     const rfqSnapshot = state.cart.map(item => ({ ...item }));
-    const itemSummary = rfqSnapshot.map(item => `${item.qty}× ${item.sku} ${item.name} (${item.meta})`).join('\n');
+    const inquirySummary = state.inquiryContext ? inquiryContextText(state.inquiryContext) : '';
+    const itemSummary = rfqSnapshot.length ? rfqSnapshot.map(item => `${item.qty}× ${item.sku} ${item.name} (${item.meta})`).join('\n') : inquirySummary;
     const payload = {
       buyerName: name,
       buyerEmail: email,
@@ -1276,7 +1431,7 @@
       incoterm,
       accountType,
       website,
-      message: [note, 'RFQ cart:', itemSummary].filter(Boolean).join('\n\n'),
+      message: [note, inquirySummary ? `${inquiryCopy().inquiryLabel}:\n${inquirySummary}` : '', rfqSnapshot.length ? `RFQ cart:\n${itemSummary}` : ''].filter(Boolean).join('\n\n'),
       items: rfqSnapshot.filter(item => item.partId).map(item => ({ partId: item.partId, quantity: item.qty }))
     };
     let reference = `HT-RFQ-${Date.now().toString().slice(-8)}`;
@@ -1302,7 +1457,7 @@
     ].filter(Boolean).join('\n');
     const subject = `Quotation request ${reference}`;
     const emailHref = `mailto:${SITE.email || 'info@hikaritractors.com'}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(channelText)}`;
-    const whatsappHref = `https://wa.me/${String(SITE.phone || '+628****1869').replace(/\D/g, '')}?text=${encodeURIComponent(channelText)}`;
+    const whatsappHref = `https://wa.me/${String(SITE.whatsapp || SITE.phone || '').replace(/\D/g, '')}?text=${encodeURIComponent(channelText)}`;
     let quotationUrl = '';
     try {
       const quotationResponse = await fetch(api('/api/public-orders/quotation'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reference, buyerName: name, buyerEmail: email, buyerPhone: phone, buyerType: accountType === 'b2b' ? 'Company / Distributor' : accountType === 'export' ? 'Export buyer' : 'Individual / Workshop', destination, incoterm, currency: CURRENCY.code, note, items: rfqSnapshot.map(item => ({ partNumber: item.sku, description: item.name, fitment: item.meta, quantity: item.qty, unitPrice: Number(item.price) * CURRENCY.rate })) }) });
@@ -1313,6 +1468,8 @@
     $('#downloadRfqDraft')?.addEventListener('click', () => downloadRfqCsv(rfqSnapshot, reference));
     if (submitted) {
       state.cart = [];
+      state.inquiryContext = null;
+      state.inquiryAutoNote = '';
       writeLocal('hikari_cart_v4', state.cart);
       updateCartUi();
       closeCart();
@@ -1425,6 +1582,7 @@
 
   async function route() {
     if (state.loading) return;
+    clearInquiryPopupTrigger();
     closeFilterDrawer();
     const { name, params } = parseRoute();
     document.body.dataset.route = name;

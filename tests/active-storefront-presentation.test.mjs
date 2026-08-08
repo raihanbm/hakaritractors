@@ -7,9 +7,9 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('storefront keeps the approved pixel-exact production shell with current cache markers', async () => {
   const html = await read('index.html');
-  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v10/);
-  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v10/);
-  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v10/);
+  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v11/);
+  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v11/);
+  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v11/);
   assert.doesNotMatch(html, /preview-data\.js/);
   for (const id of ['globalSearchForm', 'modelStripLinks', 'app', 'cartDrawer', 'modalBackdrop']) {
     assert.match(html, new RegExp(`id="${id}"`));
@@ -176,4 +176,26 @@ test('homepage model picker uses one clear all-models CTA and never wraps a dupl
   assert.match(js, /<div class="px-section-title"><h2>Pilih Model Traktor<\/h2><button type="button" data-all-models>Lihat Semua/);
   assert.doesNotMatch(js, /px-model-more/);
   assert.doesNotMatch(css, /\.px-model-more/);
+});
+
+test('inquiry assistance preserves catalog context across WhatsApp, RFQ, empty search, and session-only help', async () => {
+  const [app, css, runtime] = await Promise.all([
+    read('assets/js/app.js'),
+    read('assets/css/pixel-exact-home.css'),
+    read('assets/js/runtime-config.js'),
+  ]);
+  assert.match(app, /function buildInquiryContext/);
+  assert.match(app, /function inquiryWhatsAppUrl/);
+  assert.match(app, /SITE\.whatsapp \|\| SITE\.phone/);
+  assert.match(app, /data-inquiry-whatsapp/);
+  assert.match(app, /data-inquiry-rfq/);
+  assert.match(app, /empty-search-inquiry/);
+  assert.match(app, /sessionStorage\.getItem\('hikari_inquiry_assist_seen'\)/);
+  assert.match(app, /sessionStorage\.setItem\('hikari_inquiry_assist_seen'/);
+  assert.match(app, /model, category, query, diagram/);
+  assert.match(app, /openCart\(\)/);
+  assert.match(css, /\.inquiry-assist-banner/);
+  assert.match(css, /\.inquiry-assist-popup/);
+  assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.inquiry-assist-popup/);
+  assert.match(runtime, /phone: "\+62 852-8755-1869"/);
 });
