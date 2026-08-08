@@ -14,8 +14,17 @@
 ## Primary pages
 
 - [Catalog and RFQ](https://hikaritractors.com/)
+- [Kubota tractor parts catalog by model](https://hikaritractors.com/kubota-tractor-parts/)
+- [Import and export Kubota tractor parts from Indonesia](https://hikaritractors.com/import-export-kubota-tractor-parts-indonesia/)
 - [How to find tractor spare parts by model, part number, and diagram](https://hikaritractors.com/cara-cari-sparepart-kubota)
 - [Tractor parts RFQ for Indonesia and international buyers](https://hikaritractors.com/tractor-parts-rfq-indonesia-international)
 - [Help Center](https://hikaritractors.com/help-center)
 - [About Hikari Tractors](https://hikaritractors.com/about)
 - [Contact](https://hikaritractors.com/contact)
+
+## Catalog route families
+
+- Model pages: https://hikaritractors.com/kubota-tractor-parts/<model>/
+- Diagram pages: https://hikaritractors.com/kubota-tractor-parts/<model>/<diagram>/
+- Unique part-reference pages: https://hikaritractors.com/spare-parts/<normalized-part-number>/
+- The sitemap contains the generated public model, diagram, and part-reference routes. These are crawlable HTML pages backed by the reviewed catalog artifacts; availability and fitment still require RFQ confirmation.

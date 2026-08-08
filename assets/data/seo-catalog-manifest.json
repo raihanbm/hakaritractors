@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-08-08T12:39:54.347Z",
+  "source": "assets/data/sheets-index.json + assets/data/sheets/*.json",
+  "models": 12,
+  "diagrams": 1664,
+  "sourcePartRows": 24748,
+  "partIndexKeys": 16200,
+  "partPages": 8100,
+  "urlCount": 9789,
+  "sampleRoutes": [
+    "/kubota-tractor-parts/l3608/",
+    "/kubota-tractor-parts/l3608/l3608-c10100-clutch/",
+    "/spare-parts/tc42214500/"
+  ]
+}

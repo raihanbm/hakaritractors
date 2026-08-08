@@ -4,6 +4,6 @@ deployment:
     - export DEPLOYPATH=/home/hikw2587/public_html/
     - /bin/mkdir -p "$DEPLOYPATH"
     - /bin/cp -R assets "$DEPLOYPATH"
-    - /bin/cp -R about contact privacy-policy terms-and-conditions shipping-policy returns-and-refunds warranty help-center cara-cari-sparepart-kubota tractor-parts-rfq-indonesia-international "$DEPLOYPATH"
+    - /bin/cp -R about contact privacy-policy terms-and-conditions shipping-policy returns-and-refunds warranty help-center cara-cari-sparepart-kubota tractor-parts-rfq-indonesia-international import-export-kubota-tractor-parts-indonesia kubota-tractor-parts spare-parts "$DEPLOYPATH"
     - /bin/cp index.html 404.html sitemap.xml robots.txt llms.txt site.webmanifest "$DEPLOYPATH"
     - /bin/cp .htaccess "$DEPLOYPATH"

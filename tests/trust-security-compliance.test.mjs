@@ -13,7 +13,9 @@ const publicPathExists = href => {
 };
 const trustRoutes = ['about', 'contact', 'privacy-policy', 'terms-and-conditions', 'shipping-policy', 'returns-and-refunds', 'warranty', 'help-center'];
 const discoveryRoutes = ['cara-cari-sparepart-kubota', 'tractor-parts-rfq-indonesia-international'];
-const crawlableRoutes = [...trustRoutes, ...discoveryRoutes];
+const intentRoutes = ['import-export-kubota-tractor-parts-indonesia'];
+const crawlableRoutes = [...trustRoutes, ...discoveryRoutes, ...intentRoutes];
+const seoManifest = JSON.parse(readFileSync(join(root, 'assets/data/seo-catalog-manifest.json'), 'utf8'));
 
 test('trust and discovery pages are crawlable static documents with unique metadata and correct canonical URLs', () => {
   const seenTitles = new Set();
@@ -28,7 +30,7 @@ test('trust and discovery pages are crawlable static documents with unique metad
     assert.ok(!seenTitles.has(title), `${route} requires a unique title`);
     assert.ok(!seenDescriptions.has(description), `${route} requires a unique description`);
     seenTitles.add(title); seenDescriptions.add(description);
-    assert.match(html, new RegExp(`<link rel="canonical" href="https://hikaritractors\\.com/${route}">`));
+    assert.match(html, new RegExp(`<link rel="canonical" href="https://hikaritractors\\.com/${route}/?">`));
     for (const property of ['og:type', 'og:title', 'og:description', 'og:url', 'og:image', 'og:image:width', 'og:image:height']) assert.match(html, new RegExp(`property="${property}"`));
     assert.match(html, /name="twitter:card" content="summary_large_image"/);
     assert.doesNotMatch(html, /noindex/i, `${route} must stay indexable`);
@@ -53,7 +55,7 @@ test('robots and sitemap expose public trust routes while keeping administrative
   assert.match(robots, /Allow: \/\n/);
   assert.match(robots, /Disallow: \/api\//);
   assert.match(robots, /Sitemap: https:\/\/hikaritractors\.com\/sitemap\.xml/);
-  for (const route of crawlableRoutes) assert.match(sitemap, new RegExp(`<loc>https://hikaritractors\\.com/${route}</loc>`));
+  for (const route of crawlableRoutes) assert.match(sitemap, new RegExp(`<loc>https://hikaritractors\\.com/${route}/?</loc>`));
   assert.doesNotMatch(sitemap, /\/api\/|preview|localhost|vercel\.app/i);
 });
 
@@ -112,4 +114,21 @@ test('deployment configuration uses transparent canonical redirect, security hea
   for (const header of ['Content-Security-Policy', 'Strict-Transport-Security', 'X-Content-Type-Options', 'Referrer-Policy', 'Permissions-Policy', "frame-ancestors 'none'"]) assert.ok(apache.includes(header), `Apache missing ${header}`);
   assert.match(vercel, /www\.hikaritractors\.com/);
   assert.match(vercel, /Strict-Transport-Security/);
+});
+
+test('catalog SEO manifest publishes real model, diagram, and unique sparepart routes', () => {
+  assert.equal(seoManifest.models, 12);
+  assert.equal(seoManifest.diagrams, 1664);
+  assert.equal(seoManifest.partPages, 8100);
+  assert.ok(seoManifest.urlCount >= 9780);
+  for (const route of [
+    'kubota-tractor-parts/l3608',
+    'kubota-tractor-parts/l3608/l3608-c10100-clutch',
+    'spare-parts/tc42214500'
+  ]) assert.ok(publicPathExists(`/${route}/`), `missing generated SEO route: ${route}`);
+  const sitemap = read('sitemap.xml');
+  assert.match(sitemap, /https:\/\/hikaritractors\.com\/kubota-tractor-parts\/l3608\//);
+  assert.match(sitemap, /https:\/\/hikaritractors\.com\/kubota-tractor-parts\/l3608\/l3608-c10100-clutch\//);
+  assert.match(sitemap, /https:\/\/hikaritractors\.com\/spare-parts\/tc42214500\//);
+  assert.doesNotMatch(sitemap, /#catalog|#diagram|vercel\.app|localhost/i);
 });
