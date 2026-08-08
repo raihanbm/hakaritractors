@@ -7,9 +7,9 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('storefront keeps the approved pixel-exact production shell with current cache markers', async () => {
   const html = await read('index.html');
-  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v8/);
-  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v8/);
-  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v8/);
+  assert.match(html, /assets\/css\/main\.css\?v=hikari-parts-illustrations-v9/);
+  assert.match(html, /assets\/css\/pixel-exact-home\.css\?v=hikari-parts-illustrations-v9/);
+  assert.match(html, /assets\/js\/app\.js\?v=hikari-parts-illustrations-v9/);
   assert.doesNotMatch(html, /preview-data\.js/);
   for (const id of ['globalSearchForm', 'modelStripLinks', 'app', 'cartDrawer', 'modalBackdrop']) {
     assert.match(html, new RegExp(`id="${id}"`));
@@ -150,4 +150,19 @@ test('mobile navigation escapes the hidden desktop header and closes predictably
   assert.match(mainCss, /\.parts-table th:nth-child\(8\),\.parts-table td:nth-child\(8\)\{width:52px/);
   assert.match(js, /const setMobileNav = open =>/);
   assert.match(js, /setMobileNav\(false\); if \(parseRoute\(\)\.name !== 'home'\)/);
+});
+
+test('mobile buyer homepage uses sorted models, real tractor icons, and no clipped horizontal strips', async () => {
+  const js = await read('assets/js/app.js');
+  const css = await read('assets/css/pixel-exact-home.css');
+  const catalog = JSON.parse(await read('assets/data/drive-catalog.json'));
+  const models = [...new Set(catalog.products.map((product) => product.model))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+  assert.deepEqual(models.slice(0, 6), ['L3218DT-ID', 'L3608', 'L3800D', 'L4018DT-ID/L4018TK-ID', 'L4028', 'L4400DT']);
+  assert.match(js, /function modelSortKey\(/);
+  assert.match(js, /function tractorIconForModel\(/);
+  assert.match(js, /assets\/images\/tractor-icons\/tractor-icon-/);
+  assert.doesNotMatch(js, /assets\/images\/tractor-card\.webp/);
+  assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.px-model-strip\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);overflow:visible/);
+  assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.px-product-strip\{display:grid;grid-template-columns:1fr;overflow:visible/);
+  assert.match(css, /@media\(max-width:760px\)[\s\S]*?\.px-diagram-strip\{display:grid;grid-template-columns:1fr;overflow:visible/);
 });

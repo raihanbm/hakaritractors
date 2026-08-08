@@ -79,7 +79,7 @@
   .models-section{padding-bottom:10px}.systems-section{padding-bottom:10px}.assemblies-section{padding-bottom:11px}
   .model-cards{grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
   .model-card{height:72px;grid-template-columns:88px minmax(0,1fr) 22px;padding:5px 8px;border-radius:6px}
-  .model-card img{width:82px;height:58px;object-fit:cover;object-position:center 60%;border-radius:4px}
+  .model-card img{width:82px;height:58px;object-fit:contain;object-position:center;border-radius:4px}
   .model-card-copy{align-self:stretch;display:flex!important;flex-direction:column;justify-content:center;min-width:0}
   .model-card b{font-size:12px}.model-card small{font-size:8px;margin-top:1px}
   .model-card em{display:inline-flex;align-items:center;justify-content:center;width:69px;height:18px;margin-top:5px;border:1px solid #efb598;border-radius:3px;color:#5f6368;font-size:8px;font-style:normal;font-weight:700}

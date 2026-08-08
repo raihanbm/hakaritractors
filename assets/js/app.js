@@ -255,6 +255,17 @@
   // Keep the source model key intact for fitment/database; only shorten buyer-facing copy.
   function modelLabel(model) { return String(model) === 'L4018DT-ID/L4018TK-ID' ? 'L4018DT' : String(model || ''); }
   function modelPartCount(model) { return state.products.filter(product => product.model === model).reduce((total, product) => total + Number(product.partCount || 0), 0); }
+  function modelSortKey(model) {
+    return modelLabel(model).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  }
+  function modelSort(a, b) {
+    return modelSortKey(a).localeCompare(modelSortKey(b), undefined, { numeric: true, sensitivity: 'base' });
+  }
+  function tractorIconForModel(model) {
+    const sorted = [...state.models].sort(modelSort);
+    const index = Math.max(0, sorted.indexOf(model));
+    return `assets/images/tractor-icons/tractor-icon-${String((index % 8) + 1).padStart(2, '0')}.webp`;
+  }
   function routeHash(name, params = {}) {
     const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== '' && value != null));
     return `#${name}${query.toString() ? `?${query}` : ''}`;
@@ -433,7 +444,7 @@
 
   function buildMetadata() {
     state.productMap = new Map(state.products.map(product => [String(product.id), product]));
-    state.models = [...new Set(state.products.map(product => product.model).filter(Boolean))];
+    state.models = [...new Set(state.products.map(product => product.model).filter(Boolean))].sort(modelSort);
     const counts = new Map();
     state.products.forEach(product => counts.set(product.category, (counts.get(product.category) || 0) + 1));
     state.categories = [...counts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, count]) => ({ name, count }));
@@ -672,10 +683,8 @@
   }
 
   function renderHome() {
-    const modelCounts = state.models.map(model => ({ model, count: modelPartCount(model) }));
-    const preferredModelOrder = ['L3608', 'L4400DT', 'L5018DT-NES', 'M9000DT', 'M9540DT', 'MX5000DT', 'MX5100DT'];
-    const models = preferredModelOrder.map(model => modelCounts.find(item => item.model === model)).filter(Boolean);
-    modelCounts.filter(item => !preferredModelOrder.includes(item.model)).forEach(item => models.push(item));
+    const modelCounts = state.models.map(model => ({ model, count: modelPartCount(model) })).sort((a, b) => modelSort(a.model, b.model));
+    const models = modelCounts;
     const categories = [...state.categories].sort((a, b) => b.count - a.count);
     const categoryOrder = ['Engine', 'Cooling System', 'Electrical System', 'Clutch & Transmission', 'Front Axle & Chassis', 'Hydraulic System', 'Fuel System', 'Steering System'];
     const systems = categoryOrder.map(name => categories.find(category => normalize(category.name).includes(normalize(name).split(' ')[0]))).filter(Boolean);
@@ -738,7 +747,7 @@
       <main class="px-home-body">
         <section class="px-container px-models-block">
           <div class="px-section-title"><h2>Pilih Model Traktor</h2><button type="button" data-all-models>Lihat Semua ${icon('i-chevron', 11)}</button></div>
-          <div class="px-model-strip">${models.slice(0, 7).map(({ model, count }) => `<button class="px-model-card" type="button" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(modelLabel(model))} tractor"><span><b>${esc(modelLabel(model))}</b><small>${Number(count).toLocaleString('id-ID')} sparepart</small></span></button>`).join('')}<button class="px-model-card px-model-more" type="button" data-all-models><span><b>Lihat Semua<br>Model</b><small>Semua model</small></span>${icon('i-chevron', 15)}</button></div>
+          <div class="px-model-strip">${models.slice(0, 8).map(({ model, count }) => `<button class="px-model-card" type="button" data-model-card="${esc(model)}"><img src="${esc(tractorIconForModel(model))}" alt="${esc(modelLabel(model))} tractor"><span><b>${esc(modelLabel(model))}</b><small>${Number(count).toLocaleString('id-ID')} sparepart</small></span></button>`).join('')}<button class="px-model-card px-model-more" type="button" data-all-models><span><b>Lihat Semua<br>Model</b><small>Semua model</small></span>${icon('i-chevron', 15)}</button></div>
         </section>
 
         <section class="px-container px-finder-card">
@@ -1324,7 +1333,7 @@
   }
 
   function renderModels() {
-    app.innerHTML = `<section class="content-page models-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards model-page-grid" style="margin-top:20px">${state.models.map(model => `<button class="model-card model-card--full" data-model-card="${esc(model)}"><img src="assets/images/tractor-card.webp" alt="${esc(modelLabel(model))} tractor"><span class="model-card-copy"><b>${esc(modelLabel(model))}</b><small>${modelPartCount(model).toLocaleString()} spare parts</small><em>Open model catalog</em></span><span class="model-arrow">›</span></button>`).join('')}</div></div></div></section>`;
+    app.innerHTML = `<section class="content-page models-page"><div class="container"><nav class="breadcrumbs"><a href="#home">Home</a><span>Models</span></nav><div class="content-card"><h1>Shop by Tractor Model</h1><p>Select the exact model before opening system diagrams. This keeps every spare-part lookup inside the correct fitment context.</p><div class="model-cards model-page-grid" style="margin-top:20px">${state.models.map(model => `<button class="model-card model-card--full" data-model-card="${esc(model)}"><img src="${esc(tractorIconForModel(model))}" alt="${esc(modelLabel(model))} tractor"><span class="model-card-copy"><b>${esc(modelLabel(model))}</b><small>${modelPartCount(model).toLocaleString()} spare parts</small><em>Open model catalog</em></span><span class="model-arrow">›</span></button>`).join('')}</div></div></div></section>`;
     $$('[data-model-card]').forEach(button => button.onclick = () => { writeLocal('hikari_recent_model', button.dataset.modelCard); go('catalog', { model: button.dataset.modelCard }); });
   }
 
