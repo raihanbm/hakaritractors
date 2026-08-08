@@ -1,0 +1,21 @@
+# Hikari Tractors Indonesia
+
+> Hikari Tractors is an independent tractor spare-parts supplier. The catalog helps buyers identify parts by tractor model, system, exploded diagram, and part number; commercial requests are handled through RFQ.
+
+## Important facts
+
+- Website: https://hikaritractors.com/
+- Contact: info@hikaritractors.com | WhatsApp +62 852-8755-1869
+- Languages: Indonesian and English
+- Catalog use: identify model, system, exploded diagram, and part-number references.
+- RFQ: fitment, availability, pricing, freight options, lead time, and terms are confirmed before order acceptance.
+- Independence: Hikari Tractors is not presented as an official Kubota website, dealer, or authorized representative. Brand names, model names, and part numbers are used for identification only.
+
+## Primary pages
+
+- [Catalog and RFQ](https://hikaritractors.com/)
+- [How to find tractor spare parts by model, part number, and diagram](https://hikaritractors.com/cara-cari-sparepart-kubota)
+- [Tractor parts RFQ for Indonesia and international buyers](https://hikaritractors.com/tractor-parts-rfq-indonesia-international)
+- [Help Center](https://hikaritractors.com/help-center)
+- [About Hikari Tractors](https://hikaritractors.com/about)
+- [Contact](https://hikaritractors.com/contact)

@@ -12,11 +12,13 @@ const publicPathExists = href => {
   return existsSync(join(root, relative)) || existsSync(join(root, `${relative}.html`)) || existsSync(join(root, relative, 'index.html'));
 };
 const trustRoutes = ['about', 'contact', 'privacy-policy', 'terms-and-conditions', 'shipping-policy', 'returns-and-refunds', 'warranty', 'help-center'];
+const discoveryRoutes = ['cara-cari-sparepart-kubota', 'tractor-parts-rfq-indonesia-international'];
+const crawlableRoutes = [...trustRoutes, ...discoveryRoutes];
 
-test('trust pages are crawlable static documents with unique metadata and correct canonical URLs', () => {
+test('trust and discovery pages are crawlable static documents with unique metadata and correct canonical URLs', () => {
   const seenTitles = new Set();
   const seenDescriptions = new Set();
-  for (const route of trustRoutes) {
+  for (const route of crawlableRoutes) {
     const html = read(`${route}/index.html`);
     assert.match(html, /<main id="main"/);
     const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
@@ -51,12 +53,12 @@ test('robots and sitemap expose public trust routes while keeping administrative
   assert.match(robots, /Allow: \/\n/);
   assert.match(robots, /Disallow: \/api\//);
   assert.match(robots, /Sitemap: https:\/\/hikaritractors\.com\/sitemap\.xml/);
-  for (const route of trustRoutes) assert.match(sitemap, new RegExp(`<loc>https://hikaritractors\\.com/${route}</loc>`));
+  for (const route of crawlableRoutes) assert.match(sitemap, new RegExp(`<loc>https://hikaritractors\\.com/${route}</loc>`));
   assert.doesNotMatch(sitemap, /\/api\/|preview|localhost|vercel\.app/i);
 });
 
 test('public internal links resolve to a concrete static route and blank anchors are absent', () => {
-  for (const file of ['index.html', ...trustRoutes.map(route => `${route}/index.html`)]) {
+  for (const file of ['index.html', ...crawlableRoutes.map(route => `${route}/index.html`)]) {
     const html = read(file);
     assert.doesNotMatch(html, /href=["']#["']/i, `${file} contains a blank anchor`);
     for (const href of html.matchAll(/href="([^"]+)"/g)) {
@@ -87,11 +89,24 @@ test('RFQ client contract includes bounded fields, privacy-safe honeypot, and no
   assert.match(preview, /name="robots" content="noindex, nofollow, noarchive"/);
 });
 
+test('discovery guides expose truthful structured data and an AI-readable route index', () => {
+  for (const route of discoveryRoutes) {
+    const html = read(`${route}/index.html`);
+    assert.match(html, /"@type":"Article"/);
+    assert.match(html, /"@type":"FAQPage"/);
+    assert.match(html, /Independent supplier notice/);
+    assert.match(html, /tidak dipresentasikan|not presented as an official Kubota/i);
+  }
+  const llms = read('llms.txt');
+  for (const route of discoveryRoutes) assert.match(llms, new RegExp(`https://hikaritractors\\.com/${route}`));
+  assert.match(llms, /not presented as an official Kubota website/i);
+});
+
 test('deployment configuration uses transparent canonical redirect, security headers, and publishes required public documents', () => {
   const apache = read('.htaccess');
   const vercel = read('vercel.json');
   const cpanel = read('.cpanel.yml');
-  for (const expected of ['404.html', 'sitemap.xml', 'about contact privacy-policy terms-and-conditions shipping-policy returns-and-refunds warranty help-center']) assert.ok(cpanel.includes(expected), `cPanel deploy missing ${expected}`);
+  for (const expected of ['404.html', 'sitemap.xml', 'llms.txt', 'about contact privacy-policy terms-and-conditions shipping-policy returns-and-refunds warranty help-center cara-cari-sparepart-kubota tractor-parts-rfq-indonesia-international']) assert.ok(cpanel.includes(expected), `cPanel deploy missing ${expected}`);
   assert.match(apache, /HTTP_HOST} !\^hikaritractors\\\.com\$/);
   assert.match(apache, /https:\/\/hikaritractors\.com%\{REQUEST_URI\}/);
   for (const header of ['Content-Security-Policy', 'Strict-Transport-Security', 'X-Content-Type-Options', 'Referrer-Policy', 'Permissions-Policy', "frame-ancestors 'none'"]) assert.ok(apache.includes(header), `Apache missing ${header}`);
