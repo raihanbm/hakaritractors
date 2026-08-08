@@ -37,6 +37,12 @@ test('storefront remains one coherent stylesheet without stale card overrides', 
   }
 });
 
+test('published diagram and PDF assets stay on the storefront instead of a lagging API proxy', async () => {
+  const js = await read('assets/js/app.js');
+  assert.match(js, /assets\/diagrams\//);
+  assert.match(js, /assets\/documents\//);
+});
+
 test('parts table keeps price visible in a compact part-name cell', async () => {
   const js = await read('assets/js/app.js');
   const css = await read('assets/css/main.css');
