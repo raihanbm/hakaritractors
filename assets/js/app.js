@@ -15,6 +15,7 @@
   const PAGE_SIZE = 20;
   let catalogRefreshPromise = null;
   let lastCatalogRefreshAt = 0;
+  let staticPresentationCatalog = null;
 
   const state = {
     loading: true,
@@ -60,6 +61,12 @@
   }
 
   const ID_COPY = Object.freeze({
+    'Find Kubota tractor parts.': 'Temukan suku cadang traktor Kubota.',
+    'Order with confidence.': 'Pesan dengan lebih yakin.',
+    'Kubota tractor parts references by model, part number, and exploded diagram. Referensi suku cadang traktor Kubota untuk Indonesia & international RFQ support.': 'Cari referensi suku cadang berdasarkan model, nomor part, dan ilustrasi komponen. Tersedia dukungan RFQ untuk Indonesia dan kebutuhan internasional.',
+    'Browse Parts Catalog': 'Jelajahi Katalog Suku Cadang', 'Search Part Number': 'Cari Nomor Part',
+    'Model & part references': 'Referensi model & nomor part', 'Freight by quotation': 'Ongkir sesuai penawaran',
+    'Fitment support': 'Bantuan kecocokan', 'RFQ-based ordering': 'Pemesanan melalui RFQ',
     'Kubota Tractor Parts Reference': 'Referensi Suku Cadang Traktor Kubota',
     'English': 'English', 'Home': 'Beranda', 'Parts': 'Suku Cadang', 'Spare Parts': 'Suku Cadang', 'Parts Illustrations': 'Ilustrasi Komponen', 'Support': 'Bantuan', 'Diagrams': 'Ilustrasi Komponen', 'Models': 'Model Traktor',
     'Request a Quote (RFQ)': 'Minta Penawaran (RFQ)', 'Request a Quote': 'Minta Penawaran', 'Deals': 'Penawaran',
@@ -431,7 +438,29 @@
     state.categories = [...counts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, count]) => ({ name, count }));
   }
 
+  function presentationKey(product) {
+    let model = normalize(product?.model);
+    if (model.startsWith('l4018dt')) model = 'l4018dt';
+    return `${model}::${normalize(product?.diagramCode || product?.sku)}`;
+  }
+
+  function applyStaticPreviewImages(localCatalog) {
+    const localProducts = Array.isArray(localCatalog?.products) ? localCatalog.products : [];
+    const previews = new Map(localProducts.filter(product => product.previewImage).map(product => [presentationKey(product), product.previewImage]));
+    state.products.forEach(product => {
+      const previewImage = previews.get(presentationKey(product));
+      if (!previewImage) return;
+      product.previewImage = previewImage;
+      const sheet = state.sheetIndex[String(product.sheetId || product.id)]?.data;
+      if (sheet) sheet.preview_image = previewImage;
+    });
+    state.baseProducts = state.products;
+  }
+
   async function loadCatalog() {
+    const localCatalogPromise = fetch('assets/data/drive-catalog.json', { cache: 'no-store' })
+      .then(response => response.ok ? response.json() : null)
+      .catch(() => null);
     if (window.HIKARI_PREVIEW_DATA?.products?.length) {
       state.baseProducts = window.HIKARI_PREVIEW_DATA.products;
       state.products = state.baseProducts;
@@ -455,18 +484,19 @@
       if (!response.ok) throw new Error(`Catalog API ${response.status}`);
       const payload = await response.json();
       mapPublicCatalog(payload.data || []);
+      staticPresentationCatalog = await localCatalogPromise;
+      applyStaticPreviewImages(staticPresentationCatalog);
     } catch (remoteError) {
       console.warn('[catalog-api-fallback]', remoteError);
       const [catalog, sheetIndex, sheetSearch, control] = await Promise.all([
-        fetch('assets/data/drive-catalog.json', { cache: 'no-store' }).then(response => {
-          if (!response.ok) throw new Error(`Local catalog ${response.status}`);
-          return response.json();
-        }),
+        localCatalogPromise,
         fetch('assets/data/sheets-index.json', { cache: 'no-store' }).then(response => response.ok ? response.json() : {}),
         fetch('assets/data/sheets-search.json', { cache: 'no-store' }).then(response => response.ok ? response.json() : ({ partNumbers: {}, partNames: {}, sheets: {} })),
         fetch('assets/data/catalog-control-state.json', { cache: 'no-store' }).then(response => response.ok ? response.json() : null).catch(() => null)
       ]);
-      state.baseProducts = Array.isArray(catalog.products) ? catalog.products : [];
+      if (!Array.isArray(catalog?.products)) throw new Error('Local catalog unavailable');
+      staticPresentationCatalog = catalog;
+      state.baseProducts = catalog.products;
       state.products = state.baseProducts;
       state.sheetIndex = sheetIndex || {};
       state.sheetSearch = sheetSearch || { partNumbers: {}, partNames: {}, sheets: {} };
@@ -493,6 +523,7 @@
           if (!response.ok) throw new Error(`Catalog API ${response.status}`);
           const payload = await response.json();
           mapPublicCatalog(payload.data || []);
+          applyStaticPreviewImages(staticPresentationCatalog);
         } else {
           const response = await fetch('assets/data/catalog-control-state.json', { cache: 'no-store' });
           const control = response.ok ? await response.json() : null;

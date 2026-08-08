@@ -25,10 +25,30 @@ def first_page(image: Image.Image, page_count: int) -> Image.Image:
     return image.crop((0, 0, image.width, page_height))
 
 
+def detect_table_top(page: Image.Image) -> int:
+    gray = ImageOps.grayscale(page)
+    width, height = gray.size
+    left, right = round(width * 0.04), round(width * 0.96)
+    pixels = gray.load()
+    for y in range(round(height * 0.34), round(height * 0.72)):
+        longest = run = 0
+        for x in range(left, right):
+            if pixels[x, y] < 210:
+                run += 1
+                longest = max(longest, run)
+            else:
+                run = 0
+        if longest >= round((right - left) * 0.78):
+            return y
+    return round(height * 0.62)
+
+
 def content_crop(page: Image.Image) -> Image.Image:
     width, height = page.size
-    # Kubota first pages keep the drawing between the source header and parts table.
-    region = page.crop((round(width * 0.045), round(height * 0.11), round(width * 0.955), round(height * 0.52))).convert("RGB")
+    table_top = detect_table_top(page)
+    # Stop before the table legend as well as the table grid itself.
+    bottom = max(round(height * 0.38), table_top - round(height * 0.025))
+    region = page.crop((round(width * 0.045), round(height * 0.10), round(width * 0.955), bottom)).convert("RGB")
     gray = ImageOps.grayscale(region)
     ink = gray.point(lambda value: 255 if value < 238 else 0)
     bbox = ink.getbbox()

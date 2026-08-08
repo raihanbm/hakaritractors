@@ -46,7 +46,11 @@
 .px-hero-copy h1 span{display:block;color:var(--px-orange);margin-top:3px}
 .px-hero-copy p{margin:10px 0 14px;font-size:11px;line-height:1.55;color:#fff}
 .px-hero-actions{display:flex;gap:12px}
-.px-hero-actions button{height:29px;padding:0 17px;border-radius:3px;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.px-hero-actions button{height:29px;padding:0 17px;border-radius:3px;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
+@media(min-width:761px){
+  html[lang="id"] .px-hero-copy{top:18px}
+  html[lang="id"] .px-hero-copy p{margin:6px 0 8px}
+}
 .px-primary{border:1px solid var(--px-orange);background:var(--px-orange);color:#fff}
 .px-secondary{border:1px solid rgba(255,255,255,.66);background:rgba(8,12,16,.42);color:#fff}
 .px-hero-dots{display:none}
